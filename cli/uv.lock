@@ -2858,7 +2858,7 @@ trino = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "nao-core", extra = ["all"] },
+    { name = "nao-core", extra = ["all", "evals"] },
     { name = "pytest" },
     { name = "ruff" },
     { name = "ty" },
@@ -2930,7 +2930,7 @@ provides-extras = ["postgres", "bigquery", "snowflake", "duckdb", "clickhouse", 
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "nao-core", extras = ["all"] },
+    { name = "nao-core", extras = ["all", "evals"] },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "ruff", specifier = ">=0.8.0" },
     { name = "ty", specifier = ">=0.0.9" },
