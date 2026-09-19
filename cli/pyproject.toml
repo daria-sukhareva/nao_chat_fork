@@ -95,6 +95,7 @@ all-databases = [
 all-llms = ["nao-core[openai,anthropic,mistral,gemini,ollama]"]
 all = ["nao-core[all-databases,all-llms,notion,confluence,semantic-layer,aws-secrets,k8s-secrets]"]
 dev = ["pytest>=9.0.2", "pytest-cov", "pytest-timeout>=2.3.0"]
+evals = ["deepeval>=2.0"]
 
 [project.scripts]
 nao = "nao_core.main:main"
