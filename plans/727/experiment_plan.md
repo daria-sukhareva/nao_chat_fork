@@ -120,8 +120,8 @@ keep-or-drop decision on the metrics tree.
 
 ## Open Decisions
 
-- What the metrics tree contains and where it lives in the context (e.g. a section
-  of the semantic model, or a separate document the agent reads).
+- Where the [metrics tree](metrics_tree.md) lives in the context for the treatment
+  run (e.g. a section of `RULES.md`, or a separate document the agent reads).
 - Which metrics count as "better", and the minimum improvement that matters.
 
 - Where the canonical dataset lives: `example/tests/evals/` in the fork, the demo's

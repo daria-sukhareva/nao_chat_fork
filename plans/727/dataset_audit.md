@@ -41,21 +41,21 @@ metrics tree. A case is useful only if its score can differ between the two. Eve
 rule and definition the context controls should have at least one case that fails
 when the agent ignores it, and the metrics tree needs cases it could improve.
 
-| Stratum                                                                     | Source of expected behavior     | Covered by                                                             | Status                                      |
-| --------------------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
-| Numeric lookup, full history                                                | SQL tests                       | q004, q005, q006, q007                                                 | `Confirmed` covered                         |
-| Semantic definition (troubled success)                                      | semantic model                  | q003                                                                   | `Confirmed` covered                         |
-| Explanation / diagnosis                                                     | SQL test + agent answer         | q008                                                                   | covered, reference partly unverified        |
-| Undefined metric → say so, offer closest                                    | RULES: "Do not make up metrics" | q002                                                                   | `Confirmed` covered                         |
-| Terminology: never "session"                                                | RULES                           | none                                                                   | **gap**                                     |
-| Default window: last 7 days                                                 | RULES                           | none (all cases say "full history" or are undated)                     | **gap**                                     |
-| Rates as % with pp change                                                   | RULES                           | none checked; q005/q006 answers are percentages but references omit pp | **gap**                                     |
-| "Metrics at a glance" table first                                           | RULES                           | none                                                                   | **gap**                                     |
-| Primary reliability rates (first-attempt success, troubled success, failed) | semantic model                  | none                                                                   | **gap**                                     |
-| Negative: ambiguous question → ask                                          | general                         | none                                                                   | **gap**                                     |
-| Negative: out of scope → decline                                            | general                         | none                                                                   | **gap**                                     |
-| Metric relationships / drivers (what the metrics tree adds)                 | metrics tree (not written yet)  | none                                                                   | **gap**: no headroom for the experiment     |
-| Brand palette in charts                                                     | RULES                           | none                                                                   | `Not yet measurable` with text-only metrics |
+| Stratum                                                                     | Source of expected behavior     | Covered by                                                             | Status                                          |
+| --------------------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------- |
+| Numeric lookup, full history                                                | SQL tests                       | q004, q005, q006, q007                                                 | `Confirmed` covered                             |
+| Semantic definition (troubled success)                                      | semantic model                  | q003                                                                   | `Confirmed` covered                             |
+| Explanation / diagnosis                                                     | SQL test + agent answer         | q008                                                                   | covered, reference partly unverified            |
+| Undefined metric → say so, offer closest                                    | RULES: "Do not make up metrics" | q002                                                                   | `Confirmed` covered                             |
+| Terminology: never "session"                                                | RULES                           | none                                                                   | **gap**                                         |
+| Default window: last 7 days                                                 | RULES                           | none (all cases say "full history" or are undated)                     | **gap**                                         |
+| Rates as % with pp change                                                   | RULES                           | none checked; q005/q006 answers are percentages but references omit pp | **gap**                                         |
+| "Metrics at a glance" table first                                           | RULES                           | none                                                                   | **gap**                                         |
+| Primary reliability rates (first-attempt success, troubled success, failed) | semantic model                  | none                                                                   | **gap**                                         |
+| Negative: ambiguous question → ask                                          | general                         | none                                                                   | **gap**                                         |
+| Negative: out of scope → decline                                            | general                         | none                                                                   | **gap**                                         |
+| Metric relationships / drivers (what the metrics tree adds)                 | metrics tree + demo DB          | q015, q016, q017                                                       | covered, references not yet backed by SQL tests |
+| Brand palette in charts                                                     | RULES                           | none                                                                   | `Not yet measurable` with text-only metrics     |
 
 Four of the eight cases are numeric lookups that `nao test` already covers
 deterministically. Only q002 directly tests a `RULES.md` rule.
@@ -66,7 +66,7 @@ deterministically. Only q002 directly tests a `RULES.md` rule.
 
 | id   | Reference provenance                                    | Findings                                                                                                                                                                                                                                                                                                                                              |
 | ---- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| q001 | **Unknown**: no SQL test or run output backs it         | "CH001 was the only functional charger" cannot be traced. Question is a judgment ("wrong port"), so a single gold string is fragile. Never run in any saved eval output.                                                                                                                                                                              |
+| q001 | **Unknown**: no SQL test or run output backs it         | "CH001 was the only functional charger" is partly supported by the demo DB: CH-002 had 0 successful visits of 101 (all ConnectorLockFailure), CH-001 had all 33. The decommissioning part is still untraced. Question is a judgment ("wrong port"), so a single gold string is fragile. Never run in any saved eval output.                           |
 | q002 | Expert-authored (plan)                                  | Terminology: reference says **uptime**; the semantic model has semantic model `uptime`, measure `uptime_average`, metric `average_uptime` ("Average uptime"). `Needs decision`: which names count as correct. Historically fails RAG (ContextualRelevancy 0.0 in 4/4 runs) while Correctness passed in the plan: the most diagnostic case in the set. |
 | q003 | User-authored from SQL test `troubled_error_code_check` | Numbers verified (WeakSignal, 1 visit). Uses "visit", consistent with the terminology rule.                                                                                                                                                                                                                                                           |
 | q004 | SQL test `decommissioned_ports_check`                   | Verified (2). Plan's reference (4) was stale.                                                                                                                                                                                                                                                                                                         |
@@ -135,12 +135,15 @@ nothing scores it yet (`Needs decision`, see section 7).
 | q012 | Undefined metric (2nd) | What is our mean time between failures?                 | Says MTBF is not defined in the semantic model and names the closest defined metric.                         | Does not compute an invented metric.                                                              |
 | q013 | Negative: ambiguous    | How are we doing?                                       | Asks which metric or period the user means, or gives the primary reliability metrics with the window stated. | Does not invent metrics.                                                                          |
 | q014 | Negative: out of scope | What will energy prices be next month?                  | Says this is outside the available data.                                                                     | No fabricated numbers.                                                                            |
-| q015 | Metric drivers         | What drives our overall charging reliability?           | Depends on the metrics tree (`Needs decision`).                                                              | Names the drivers from the metrics tree, not invented ones.                                       |
 
-q015 stands for a set of metrics-tree cases; their references can only be written
-once the tree exists, and must be written **before** the treatment run. Values for
-q010 and q011 need SQL tests first (`Needs decision`): the dataset's
-latest date determines whether "last 7 days" returns data at all.
+Values for q010 and q011 need SQL tests first. The demo data covers only
+2025-10-01 to 2025-10-14, so "last 7 days" relative to today returns no data: q010
+needs either an explicit period or a decision on what the agent should say when the
+default window is empty (`Needs decision`).
+
+**Applied:** metrics-tree cases q015–q017 (drop in successful visits, Oct 1–7 vs.
+Oct 8–14, 2025), with references computed directly from the demo database before
+any treatment run. See [metrics tree](metrics_tree.md).
 
 ---
 
@@ -148,8 +151,8 @@ latest date determines whether "last 7 days" returns data at all.
 
 - **Motivation:** measure whether a context change (first: a metrics tree) improves
   final answers compared with a baseline.
-- **Composition:** 8 cases (5 SQL-backed lookups, 1 definition, 1 refusal,
-  1 explanation); proposed +6 rule and negative cases.
+- **Composition:** 11 cases (5 SQL-backed lookups, 1 definition, 1 refusal,
+  1 explanation, 3 metrics-tree diagnosis); proposed +6 rule and negative cases.
 - **Collection:** expert-authored from SQL tests, `RULES.md`, and the semantic model;
   no production traces.
 - **Labeling:** one author; no agreement measured (F1).
@@ -166,8 +169,9 @@ latest date determines whether "last 7 days" returns data at all.
 
 ## 7. Decisions needed
 
-1. **Metrics-tree cases:** which questions the metrics tree should improve, and
-   their references, written before the treatment run.
+1. **Metrics-tree cases:** q015–q017 added. Still open: SQL tests in
+   `kwwhat/demo/chat-bi/tests/` backing their numbers, and whether to add a
+   known vs. unknown driver case.
 2. **Constraints field (F3):** add `constraints` to the JSONL schema and score it
    with a third GEval rubric ("Rule compliance"), or fold rule requirements into
    `expected_output`? Recommended: the separate field, so Correctness stays about
