@@ -54,6 +54,7 @@ class EvalResult:
     input: str
     expected_output: str | None
     actual_output: str | None = None
+    retrieval_context: list[str] = field(default_factory=list)
     agent_model: str | None = None
     judge_model: str | None = None
     passed: bool = False
@@ -209,7 +210,7 @@ def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions) -> EvalR
     except Exception as e:
         return _fail_with_error(result, "metric_error", f"Could not build judge metrics: {e}")
 
-    test_case = _build_test_case(case, answer)
+    test_case = _build_test_case(result)
     result.metrics = [measure_metric(name, metric, test_case, options.verbose) for name, metric in named_metrics]
 
     if any(metric.error for metric in result.metrics):
@@ -303,20 +304,20 @@ def _build_metrics(judge: Any, options: EvalOptions) -> list[tuple[str, Any]]:
     return named_metrics
 
 
-def _build_test_case(case: EvalCase, answer: AgentAnswer) -> Any:
+def _build_test_case(result: EvalResult) -> Any:
     from deepeval.test_case import LLMTestCase
 
-    retrieval_context = build_retrieval_context(answer.tool_results)
     return LLMTestCase(
-        input=case.input,
-        actual_output=answer.text,
-        expected_output=case.expected_output,
-        retrieval_context=retrieval_context or None,  # type: ignore[arg-type]
+        input=result.input,
+        actual_output=result.actual_output or "",
+        expected_output=result.expected_output,
+        retrieval_context=result.retrieval_context or None,  # type: ignore[arg-type]
     )
 
 
 def _record_answer(result: EvalResult, answer: AgentAnswer) -> None:
     result.actual_output = answer.text
+    result.retrieval_context = build_retrieval_context(answer.tool_results)
     result.agent_model = answer.model
     result.usage = answer.usage
     result.cost = answer.cost

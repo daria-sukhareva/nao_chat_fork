@@ -16,7 +16,17 @@ from nao_core.commands.evals.runner import (
 )
 
 CASE = EvalCase(id="q001", input="How many ports are decommissioned?", expected_output="4 ports.")
-ANSWER = AgentAnswer(text="There are 4 decommissioned ports.", model="anthropic:claude-sonnet-4-6")
+ANSWER = AgentAnswer(
+    text="There are 4 decommissioned ports.",
+    model="anthropic:claude-sonnet-4-6",
+    tool_results=[
+        {
+            "toolName": "execute_sql",
+            "args": {},
+            "output": {"columns": ["decommissioned_ports"], "data": [{"decommissioned_ports": 4}]},
+        }
+    ],
+)
 
 
 class FakeMetric:
@@ -25,8 +35,10 @@ class FakeMetric:
         self.score = score
         self.reason = "because"
         self._error = error
+        self.judged_test_cases = []
 
     def measure(self, test_case):
+        self.judged_test_cases.append(test_case)
         if self._error:
             raise self._error
 
@@ -140,6 +152,9 @@ def test_save_results_records_versions_and_summary(tmp_path, fake_metrics):
     assert len(data["config"]["completeness"]["rubric_version"]) == 12
     assert data["summary"] == {"total": 2, "passed": 1, "failed": 0, "errored": 1}
     assert data["results"][1]["error_type"] == "timeout"
+    assert data["results"][0]["retrieval_context"] == [
+        "[SQL result]\nColumns: decommissioned_ports\ndecommissioned_ports\n4"
+    ]
 
 
 def write_dataset(tmp_path, *rows: dict):
@@ -219,3 +234,14 @@ def test_build_metrics_includes_each_selected_suite():
 
     assert names == ["Correctness", "Completeness"]
     assert geval.call_args_list[1].kwargs["threshold"] == 0.8
+
+
+def test_metrics_are_judged_on_the_saved_retrieval_context(fake_metrics):
+    metric = FakeMetric(score=0.9)
+    fake_metrics.return_value = [("Faithfulness", metric)]
+
+    result = run_case(CASE, make_client(), make_options(suites=["rag"]))
+
+    judged_test_case = metric.judged_test_cases[0]
+    assert judged_test_case.retrieval_context == result.retrieval_context
+    assert result.retrieval_context
