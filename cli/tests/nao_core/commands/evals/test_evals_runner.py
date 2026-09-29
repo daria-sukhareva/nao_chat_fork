@@ -5,7 +5,15 @@ import pytest
 
 from nao_core.commands.evals.case import EvalCase
 from nao_core.commands.evals.client import AgentAnswer, AgentBackendError, AgentTimeoutError
-from nao_core.commands.evals.runner import EvalOptions, MetricSuite, evals, measure_metric, run_case, save_results
+from nao_core.commands.evals.runner import (
+    EvalOptions,
+    MetricSuite,
+    _build_metrics,
+    evals,
+    measure_metric,
+    run_case,
+    save_results,
+)
 
 CASE = EvalCase(id="q001", input="How many ports are decommissioned?", expected_output="4 ports.")
 ANSWER = AgentAnswer(text="There are 4 decommissioned ports.", model="anthropic:claude-sonnet-4-6")
@@ -28,7 +36,7 @@ def make_options(suites: list[MetricSuite] = ["correctness"], judge_model: str |
         suites=suites,
         model=None,
         judge_model=judge_model,
-        correctness_threshold=0.5,
+        thresholds={"correctness": 0.5, "completeness": 0.5},
         verbose=False,
     )
 
@@ -116,7 +124,7 @@ def test_measure_metric_uses_the_metric_threshold():
 
 def test_save_results_records_versions_and_summary(tmp_path, fake_metrics):
     fake_metrics.return_value = [("Correctness", FakeMetric(score=0.9))]
-    options = make_options(suites=["rag", "correctness"])
+    options = make_options(suites=["rag", "correctness", "completeness"])
     results = [
         run_case(CASE, make_client(), options),
         run_case(CASE, make_client(error=AgentTimeoutError("slow")), options),
@@ -126,9 +134,10 @@ def test_save_results_records_versions_and_summary(tmp_path, fake_metrics):
 
     data = json.loads(output_file.read_text())
     assert output_file.name.startswith("evals_results_")
-    assert data["config"]["metrics"] == ["rag", "correctness"]
+    assert data["config"]["metrics"] == ["rag", "correctness", "completeness"]
     assert data["config"]["deepeval_version"]
     assert len(data["config"]["correctness"]["rubric_version"]) == 12
+    assert len(data["config"]["completeness"]["rubric_version"]) == 12
     assert data["summary"] == {"total": 2, "passed": 1, "failed": 0, "errored": 1}
     assert data["results"][1]["error_type"] == "timeout"
 
@@ -189,3 +198,24 @@ def test_rag_only_run_does_not_require_expected_output(tmp_path, monkeypatch, fa
     evals(metrics=["rag"])
 
     fake_backend.return_value.ask.assert_called_once()
+
+
+def test_completeness_only_run_requires_expected_output(tmp_path, monkeypatch, fake_backend):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(tmp_path, {"id": "q001", "input": "a"})
+
+    with pytest.raises(SystemExit):
+        evals(metrics=["completeness"])
+
+    fake_backend.assert_not_called()
+
+
+def test_build_metrics_includes_each_selected_suite():
+    options = make_options(suites=["correctness", "completeness"])
+    options.thresholds["completeness"] = 0.8
+
+    with patch("deepeval.metrics.GEval") as geval:
+        names = [name for name, _ in _build_metrics("judge", options)]
+
+    assert names == ["Correctness", "Completeness"]
+    assert geval.call_args_list[1].kwargs["threshold"] == 0.8

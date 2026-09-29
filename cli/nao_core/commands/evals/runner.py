@@ -16,22 +16,24 @@ from nao_core.ui import UI
 
 from .case import DatasetValidationError, EvalCase, dataset_path_for, load_cases, select_cases
 from .client import DEFAULT_TIMEOUT_SECONDS, AgentAnswer, AgentBackendError, AgentTimeoutError, EvalsClient
-from .correctness import (
-    CORRECTNESS_METRIC_NAME,
-    DEFAULT_CORRECTNESS_THRESHOLD,
-    build_correctness_metric,
-    correctness_rubric_version,
-)
+from .completeness import COMPLETENESS_RUBRIC
+from .correctness import CORRECTNESS_RUBRIC
 from .judge import resolve_judge
 from .rag import build_rag_metrics, build_retrieval_context
+from .rubric import GEvalRubric
 
 BACKEND_URL = os.getenv("NAO_EVAL_URL", os.getenv("BACKEND_URL", "http://localhost:5005"))
 OUTPUTS_FOLDER = "tests/outputs"
 
 os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "YES")
 
-MetricSuite = Literal["rag", "correctness"]
-ALL_SUITES: list[MetricSuite] = ["rag", "correctness"]
+MetricSuite = Literal["rag", "correctness", "completeness"]
+ReferenceSuite = Literal["correctness", "completeness"]
+ALL_SUITES: list[MetricSuite] = ["rag", "correctness", "completeness"]
+REFERENCE_RUBRICS: dict[ReferenceSuite, GEvalRubric] = {
+    "correctness": CORRECTNESS_RUBRIC,
+    "completeness": COMPLETENESS_RUBRIC,
+}
 
 ErrorType = Literal["timeout", "backend_error", "metric_error"]
 
@@ -68,7 +70,7 @@ class EvalOptions:
     suites: list[MetricSuite]
     model: ModelConfig | None
     judge_model: str | None
-    correctness_threshold: float
+    thresholds: dict[ReferenceSuite, float]
     verbose: bool
 
 
@@ -112,14 +114,18 @@ def evals(
         list[MetricSuite] | None,
         Parameter(
             name=["--metrics"],
-            help="Metric suites to run: rag (Faithfulness, ContextualRelevancy, AnswerRelevancy) "
-            "and/or correctness (reference-based GEval). Defaults to both.",
+            help="Metric suites to run: rag (Faithfulness, ContextualRelevancy, AnswerRelevancy), "
+            "correctness and/or completeness (reference-based GEval). Defaults to all three.",
         ),
     ] = None,
-    threshold: Annotated[
+    correctness_threshold: Annotated[
         float,
-        Parameter(name=["--threshold"], help="Minimum Correctness score required to pass."),
-    ] = DEFAULT_CORRECTNESS_THRESHOLD,
+        Parameter(name=["--correctness-threshold", "--threshold"], help="Minimum Correctness score required to pass."),
+    ] = CORRECTNESS_RUBRIC.default_threshold,
+    completeness_threshold: Annotated[
+        float,
+        Parameter(name=["--completeness-threshold"], help="Minimum Completeness score required to pass."),
+    ] = COMPLETENESS_RUBRIC.default_threshold,
     timeout: Annotated[
         float,
         Parameter(name=["--timeout"], help="Maximum seconds to wait for each agent answer."),
@@ -129,12 +135,13 @@ def evals(
         Parameter(name=["-v", "--verbose"], help="Print metric reasons alongside scores."),
     ] = False,
 ):
-    """Run LLM-as-judge evals: the RAG triad and reference-based Correctness.
+    """Run LLM-as-judge evals: the RAG triad and reference-based Correctness and Completeness.
 
     Examples:
         nao evals
         nao evals -m anthropic:claude-sonnet-4-6 -j anthropic:claude-sonnet-4-6
-        nao evals --metrics correctness --threshold 0.7
+        nao evals --metrics correctness --correctness-threshold 0.7
+        nao evals --metrics completeness
         nao evals --metrics rag
         nao evals -s q001 --timeout 120
         nao evals -u user@example.com --password secret
@@ -148,7 +155,9 @@ def evals(
         return
 
     project_path = Path.cwd()
-    cases = _load_selected_cases(project_path, select, require_expected_output="correctness" in suites)
+    cases = _load_selected_cases(
+        project_path, select, require_expected_output=any(suite in REFERENCE_RUBRICS for suite in suites)
+    )
     if not cases:
         return
 
@@ -156,7 +165,7 @@ def evals(
         suites=suites,
         model=agent_model,
         judge_model=judge_model,
-        correctness_threshold=threshold,
+        thresholds={"correctness": correctness_threshold, "completeness": completeness_threshold},
         verbose=verbose,
     )
     _print_run_header(cases, options)
@@ -288,8 +297,9 @@ def _build_metrics(judge: Any, options: EvalOptions) -> list[tuple[str, Any]]:
     named_metrics: list[tuple[str, Any]] = []
     if "rag" in options.suites:
         named_metrics.extend(build_rag_metrics(judge))
-    if "correctness" in options.suites:
-        named_metrics.append((CORRECTNESS_METRIC_NAME, build_correctness_metric(judge, options.correctness_threshold)))
+    for suite, rubric in REFERENCE_RUBRICS.items():
+        if suite in options.suites:
+            named_metrics.append((rubric.name, rubric.build_metric(judge, options.thresholds[suite])))
     return named_metrics
 
 
@@ -328,11 +338,9 @@ def _describe_config(options: EvalOptions) -> dict[str, Any]:
         "judge_model": options.judge_model,
         "deepeval_version": _deepeval_version(),
     }
-    if "correctness" in options.suites:
-        config["correctness"] = {
-            "threshold": options.correctness_threshold,
-            "rubric_version": correctness_rubric_version(),
-        }
+    for suite, rubric in REFERENCE_RUBRICS.items():
+        if suite in options.suites:
+            config[suite] = {"threshold": options.thresholds[suite], "rubric_version": rubric.version()}
     return config
 
 
