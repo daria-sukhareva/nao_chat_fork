@@ -30,18 +30,22 @@ export const evalsRoutes = async (app: App) => {
 
 			try {
 				const { input, model } = request.body;
-				const modelSelection = model as LlmSelectedModel | undefined;
-				const resolvedModelId =
-					model?.modelId ?? (await testAgentService.resolveModelSelection(projectId)).modelId;
-				const result = await testAgentService.runTest(projectId, input, modelSelection);
+				const resolvedModel = await testAgentService.resolveModelSelection(
+					projectId,
+					model as LlmSelectedModel | undefined,
+				);
+				const result = await testAgentService.runTest(projectId, input, resolvedModel);
 				const toolResults = TestAgentService.extractToolCalls(result)
 					.filter((tc) => CONTEXT_TOOLS.has(tc.toolName))
 					.map(({ toolName, args, result: output }) => ({ toolName, args, output }));
 
 				return reply.send({
 					text: result.text,
-					model_id: resolvedModelId,
+					model: resolvedModel,
 					tool_results: toolResults,
+					usage: result.usage,
+					cost: result.cost,
+					duration_ms: result.durationMs,
 				});
 			} catch (err) {
 				const message = err instanceof Error ? err.message : 'Unknown error';
