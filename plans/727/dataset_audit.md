@@ -36,8 +36,10 @@ correctness (owned by `nao test` SQL tests), chart rendering, multi-turn behavio
 
 ## 2. Coverage matrix
 
-The objective is context drift, and `RULES.md` is the context most likely to drift.
-Each rule should have at least one case that would fail if the rule were ignored.
+The objective is comparing context variants: the baseline against the baseline plus a
+metrics tree. A case is useful only if its score can differ between the two. Every
+rule and definition the context controls should have at least one case that fails
+when the agent ignores it, and the metrics tree needs cases it could improve.
 
 | Stratum                                                                     | Source of expected behavior     | Covered by                                                             | Status                                      |
 | --------------------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
@@ -52,6 +54,7 @@ Each rule should have at least one case that would fail if the rule were ignored
 | Primary reliability rates (first-attempt success, troubled success, failed) | semantic model                  | none                                                                   | **gap**                                     |
 | Negative: ambiguous question → ask                                          | general                         | none                                                                   | **gap**                                     |
 | Negative: out of scope → decline                                            | general                         | none                                                                   | **gap**                                     |
+| Metric relationships / drivers (what the metrics tree adds)                 | metrics tree (not written yet)  | none                                                                   | **gap**: no headroom for the experiment     |
 | Brand palette in charts                                                     | RULES                           | none                                                                   | `Not yet measurable` with text-only metrics |
 
 Four of the eight cases are numeric lookups that `nao test` already covers
@@ -86,7 +89,8 @@ The references for q005 and q006 are single sentences without either. Correctnes
 penalizes "unsupported additions", so an agent that **follows** `RULES.md` loses
 points, and an agent that ignores it scores better. This is the "script" pattern:
 the reference records what the author expected, not what the configured context
-requires. It penalizes exactly the behavior the evals exist to protect.
+requires. A context change that makes the agent follow its rules more closely could
+score as worse.
 
 **F3. Rule compliance cannot be expressed as one gold string.** Terminology, glance
 table, pp change and default window are properties of an answer, not its wording.
@@ -107,7 +111,9 @@ earlier runs of the decommissioned-ports question, ContextualRelevancy ranged
 around its 0.5 threshold, flipping pass/fail. The runs are not controlled (code, data
 and context changed between them), so this is a warning sign rather than a
 measurement. Headroom and difficulty spread are `Not yet measurable` until Phase 2
-runs repeat the same answers.
+runs repeat the same answers. For the metrics-tree experiment this matters twice:
+cases already at ceiling in the baseline cannot improve, and swings this large would
+hide a real improvement unless each case is repeated.
 
 **F7. No dev/test separation.** With 8 cases a split is not meaningful yet.
 `Assumed`: treat the whole set as dev until it grows; count every run used to tune a
@@ -129,15 +135,19 @@ nothing scores it yet (`Needs decision`, see section 7).
 | q012 | Undefined metric (2nd) | What is our mean time between failures?                 | Says MTBF is not defined in the semantic model and names the closest defined metric.                         | Does not compute an invented metric.                                                              |
 | q013 | Negative: ambiguous    | How are we doing?                                       | Asks which metric or period the user means, or gives the primary reliability metrics with the window stated. | Does not invent metrics.                                                                          |
 | q014 | Negative: out of scope | What will energy prices be next month?                  | Says this is outside the available data.                                                                     | No fabricated numbers.                                                                            |
+| q015 | Metric drivers         | What drives our overall charging reliability?           | Depends on the metrics tree (`Needs decision`).                                                              | Names the drivers from the metrics tree, not invented ones.                                       |
 
-Values for q010 and q011 need SQL tests first (`Needs decision`): the dataset's
+q015 stands for a set of metrics-tree cases; their references can only be written
+once the tree exists, and must be written **before** the treatment run. Values for
+q010 and q011 need SQL tests first (`Needs decision`): the dataset's
 latest date determines whether "last 7 days" returns data at all.
 
 ---
 
 ## 6. Datasheet (skeleton)
 
-- **Motivation:** detect context drift in final answers that SQL tests miss.
+- **Motivation:** measure whether a context change (first: a metrics tree) improves
+  final answers compared with a baseline.
 - **Composition:** 8 cases (5 SQL-backed lookups, 1 definition, 1 refusal,
   1 explanation); proposed +6 rule and negative cases.
 - **Collection:** expert-authored from SQL tests, `RULES.md`, and the semantic model;
@@ -146,8 +156,8 @@ latest date determines whether "last 7 days" returns data at all.
 - **Provenance fields (proposed per row):** `source` (sql test name / expert / plan),
   `data_snapshot` (date of the `nao test` result used), `label_provenance`
   (verified_sql / expert / agent_derived), `stratum`.
-- **Recommended use:** dev set for calibrating the five metrics; smoke test for
-  context changes.
+- **Recommended use:** dev set for calibrating the five metrics; paired baseline vs.
+  treatment comparisons of context changes.
 - **Discouraged use:** CI gate or model comparison claims before Phase 2 calibration.
 - **Refresh:** re-check every SQL-backed reference against the latest `nao test`
   results before each eval run (F5).
@@ -156,15 +166,17 @@ latest date determines whether "last 7 days" returns data at all.
 
 ## 7. Decisions needed
 
-1. **Constraints field (F3):** add `constraints` to the JSONL schema and score it
+1. **Metrics-tree cases:** which questions the metrics tree should improve, and
+   their references, written before the treatment run.
+2. **Constraints field (F3):** add `constraints` to the JSONL schema and score it
    with a third GEval rubric ("Rule compliance"), or fold rule requirements into
    `expected_output`? Recommended: the separate field, so Correctness stays about
    facts and rule compliance is measured on its own.
-2. **q005/q006 references (F2):** rewrite them to include the glance table and
+3. **q005/q006 references (F2):** rewrite them to include the glance table and
    pp change, or move those requirements to `constraints`?
-3. **q001:** find a SQL-backed source for "CH001 was the only functional charger",
+4. **q001:** find a SQL-backed source for "CH001 was the only functional charger",
    or drop the case.
-4. **q008:** verify "4 ports over 3 days" and "ConnectorLockFailure on 1 port" with
+5. **q008:** verify "4 ports over 3 days" and "ConnectorLockFailure on 1 port" with
    SQL, or remove them from the reference.
-5. **Uptime naming (q002):** accept `uptime`, `average_uptime`, or "Average uptime"?
-6. **Second labeler:** who can independently label a calibration sample (F1)?
+6. **Uptime naming (q002):** accept `uptime`, `average_uptime`, or "Average uptime"?
+7. **Second labeler:** who can independently label a calibration sample (F1)?

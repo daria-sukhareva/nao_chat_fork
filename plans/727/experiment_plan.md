@@ -1,6 +1,6 @@
 # Eval Experiment Plan
 
-Roadmap for making `nao evals` trustworthy enough to compare context changes, for
+Roadmap for using `nao evals` to measure whether a context change improves the agent, for
 [getnao/nao#727](https://github.com/getnao/nao/issues/727).
 
 Builds on the [Correctness plan](correctness_plan.md) and the
@@ -16,15 +16,22 @@ every eval case gets one agent answer, and all five metrics score that same answ
 
 ## Objective
 
-Detect **context drift** that deterministic SQL tests miss: the agent returns a
-numerically correct result while ignoring configured context (`RULES.md`, semantic
-definitions, terminology, framing).
+Measure whether a change to the project context makes the agent's answers better.
+The first experiment:
 
-Scoring the same answer with both families makes their disagreements diagnostic:
+1. **Baseline:** run the evals on the current context.
+2. **Treatment:** add a **metrics tree** to the context, change nothing else.
+3. **Compare:** per-metric score differences between the two runs, with uncertainty.
 
-- context fine, answer wrong → answer drifted from what the context supports;
-- answer right, context irrelevant or unsupported → the answer is right for the wrong reasons;
-- both fail → context change broke the agent.
+The question is "is the metrics tree better, on which metrics, and by how much",
+not whether a single run passes.
+
+Scoring the same answer with both families shows where a change acts:
+
+- **RAG triad:** did the agent pull more relevant context and stay grounded in it?
+- **Reference-based:** did the final answer get closer to the expected one?
+
+A change can improve one family and not the other; both are reported.
 
 ---
 
@@ -57,15 +64,18 @@ The dataset serves both families.
   4 decommissioned ports / 99.71% uptime were stale against current data: 2 / 99.87%).
 - **Context-dependent cases (RAG):** questions whose answer depends on configured
   context (undefined metrics, terminology, `RULES.md` rules), not just number lookups.
-- **Drift cases:** cases that should fail when context is removed or broken, so the
-  evals have room to detect a regression.
+- **Headroom cases:** questions a metrics tree could plausibly improve (metric
+  relationships, drivers of a top-level metric, "why did X change"). Cases the
+  baseline already answers perfectly cannot show an improvement.
+- **Frozen before the baseline:** the dataset is versioned before the baseline run and
+  not edited between arms; any change invalidates the comparison.
 - **Optional expected context:** which context each case should use (semantic model,
   `RULES.md`), enabling a later context-recall check.
 - **Unverified facts** are either verified via SQL or removed from references
   (currently `q008`: "4 ports over 3 days", "ConnectorLockFailure on 1 port").
 
 **Exit:** reviewed, versioned dataset with provenance per case; coverage of lookup,
-context-dependent, and drift cases.
+context-dependent, and headroom cases.
 
 ### Phase 2: Scorers (`braintrust-write-eval-scorer`, `braintrust-validate-eval-scorer`)
 
@@ -93,18 +103,26 @@ labels, and documented blind spots.
 
 ### Phase 3: Experiment design (`braintrust-design-eval-experiment`)
 
-- Paired design: same cases, same data snapshot, one variable changed (e.g. a
-  `RULES.md` edit, semantic model change, chat model).
-- Repetitions per case to separate agent and judge variance from real effects.
-- Pre-specified analysis: per-metric deltas, RAG vs. reference disagreement table,
-  release rule (`braintrust-define-eval-release-gate`) before any CI gating.
+- **Arms:** A = current context (baseline), B = current context + metrics tree.
+- **Held fixed:** cases, dataset version, data snapshot, chat model, judge model,
+  rubric versions, `nao` build.
+- **Paired design:** every case runs in both arms and is compared case by case.
+- **Repetitions:** several runs per case per arm, to separate agent and judge
+  variance from a real effect.
+- **Decided before running:** which metrics define "better", the smallest
+  improvement worth keeping the metrics tree for, and how per-case results are
+  combined.
 
-**Exit:** a controlled comparison of a real context change, reported with
-uncertainty.
+**Exit:** baseline and metrics-tree results compared with uncertainty, and a
+keep-or-drop decision on the metrics tree.
 
 ---
 
 ## Open Decisions
+
+- What the metrics tree contains and where it lives in the context (e.g. a section
+  of the semantic model, or a separate document the agent reads).
+- Which metrics count as "better", and the minimum improvement that matters.
 
 - Where the canonical dataset lives: `example/tests/evals/` in the fork, the demo's
   `chat-bi/tests/evals/`, or one copied from the other.
