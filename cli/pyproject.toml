@@ -95,6 +95,7 @@ all-databases = [
 all-llms = ["nao-core[openai,anthropic,mistral,gemini,ollama]"]
 all = ["nao-core[all-databases,all-llms,notion,confluence,semantic-layer,aws-secrets,k8s-secrets]"]
 dev = ["pytest>=9.0.2", "pytest-cov", "pytest-timeout>=2.3.0"]
+evals = ["deepeval>=2.0"]
 
 [project.scripts]
 nao = "nao_core.main:main"
@@ -104,7 +105,7 @@ Homepage = "https://getnao.io"
 Repository = "https://github.com/naolabs/chat"
 
 [dependency-groups]
-dev = ["pytest>=9.0.2", "ruff>=0.8.0", "ty>=0.0.9", "nao-core[all]"]
+dev = ["pytest>=9.0.2", "ruff>=0.8.0", "ty>=0.0.9", "nao-core[all,evals]"]
 
 [build-system]
 requires = ["hatchling"]
