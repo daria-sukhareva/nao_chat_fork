@@ -2,7 +2,7 @@
 
 This file describes how the north star metric for an EV charging network decomposes into its drivers. Use it to do root cause analysis: when a metric moves, traverse the tree top-down, quantify how much each child contributed, descend into the biggest contributor, and repeat until you reach a leaf you can segment and explain.
 
-Metric ids in `backticks` use the semantic layer's metric names where one exists. Ids without a semantic layer metric are logical names, marked TODO in the table at the end.
+Metric ids in `backticks` use the semantic layer's metric names where one exists. Ids without a semantic layer metric are logical names. The table at the end shows where each metric is calculated: the semantic model, a skill, or TODO if nothing calculates it yet.
 
 ---
 
@@ -15,7 +15,7 @@ total_successful_visits                         [north star, monthly]
 total_visits                                    [demand vs capacity — comparison, not a product]
 ├── demand
 │   = monthly_active_drivers × visits_per_driver
-│   └── monthly_active_drivers = new_drivers + retained_drivers + resurrected_drivers
+│   └── monthly_active_drivers = new_drivers + returning_drivers + anonymous_drivers
 └── supply: free_port_minutes
     = total_commissioned_minutes × uptime_ratio × availability
 
@@ -49,9 +49,9 @@ One try to charge on a connector. It starts at the connector's `Preparing` Statu
 Consecutive charge attempts by one driver at one location, where each attempt starts within a time window of the previous one's stop.
 
 - **Authenticated** (idTag present): same location and idTag, gap ≤ 30 minutes. The driver can move between chargers and ports and stay in the same visit.
-- **Unauthenticated** (no idTag): same charger and port, gap ≤ 2 minutes. Moving to another port starts a new visit.
+- **Anonymous** (no idTag): same charger and port, gap ≤ 2 minutes. Moving to another port starts a new visit.
 
-An attempt without an idTag inherits one from an attempt on the same port within 2 minutes, so a failed plug-in followed by a successful authorized one is one authenticated visit. Every visit has at least one attempt. All unauthenticated visits share one `UNKNOWN` driver.
+An attempt without an idTag inherits one from an attempt on the same port within 2 minutes, so a failed plug-in followed by a successful authorized one is one authenticated visit. Every visit has at least one attempt. All anonymous visits share one `UNKNOWN` driver.
 
 ### successful visit
 
@@ -77,22 +77,24 @@ Not computed in the data yet: each troubled visit would be credited to exactly o
 | intervention     | signal                                                                                                                                                                                                           |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `try_again`      | successful attempt on the same port as the failed attempt                                                                                                                                                        |
-| `switch_charger` | successful attempt on a different charger or port at the same location; only observable in authenticated visits, since an unauthenticated driver who switches ports starts a new visit                           |
+| `switch_charger` | successful attempt on a different charger or port at the same location; only observable in authenticated visits, since an anonymous driver who switches ports starts a new visit                                 |
 | `call_support`   | CSMS-initiated action inside the visit window before the success: `RemoteStartTransaction` (1.6) / `RequestStartTransaction` (2.x), `Reset`, `UnlockConnector`, `ChangeAvailability`; or a linked support ticket |
 
 Precedence: if a support action happened between the last failure and the success, credit `call_support`, even if the success came on the same port.
 
 ### monthly_active_drivers (MAD)
 
-Distinct drivers with at least one visit in the month. A driver is an idTag, so only authenticated visits are counted per driver; unauthenticated visits all belong to the single `UNKNOWN` driver and are excluded.
+Drivers with at least one visit in the month. Authenticated drivers are distinct idTags. Anonymous visits have no identity (they all share the `UNKNOWN` driver), so each one counts as one driver.
 
-- `new_drivers`: first visit ever is this month
-- `retained_drivers`: visited this month and last month
-- `resurrected_drivers`: visited this month, not last month, but at some point before
+- `new_drivers`: idTags whose first visit ever is this month
+- `returning_drivers`: idTags that visited this month and whose first visit was before this month
+- `anonymous_drivers`: visits without an idTag this month
+
+`anonymous_drivers` is an upper bound: a person with two anonymous visits counts twice. A shift from authenticated to anonymous starts therefore raises MAD and lowers visits_per_driver with no change in real demand. Check the mix before reading either as a demand change.
 
 ### visits_per_driver
 
-Authenticated visits ÷ MAD.
+`total_visits` ÷ MAD. Anonymous drivers contribute exactly one visit each, so `MAD × visits_per_driver` equals `total_visits`.
 
 ### total_commissioned_minutes
 
@@ -144,7 +146,7 @@ Minutes not utilized ÷ minutes up. "Utilized" means a transaction is open on th
 | ------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | low availability, flat or falling MAD | **capacity-constrained**: drivers queue or give up            | availability by hour of week, idle-occupied time, visits_per_driver at the site |
 | high availability, growing MAD        | **siting or pricing problem**: ports are where drivers aren't | site-level visits vs nearby demand, price changes                               |
-| high availability, falling MAD        | **demand problem**                                            | driver cohorts (new/retained/resurrected), competitor openings, price           |
+| high availability, falling MAD        | **demand problem**                                            | driver cohorts (new/returning/anonymous), competitor openings, price            |
 | low uptime                            | **reliability problem**, which caps supply directly           | faults by charger model/firmware, connectivity                                  |
 
 Monthly availability can hide peak saturation. A site can be 80% available over the month and fully occupied every evening. When availability looks healthy but drivers are leaving, check availability by hour of week.
@@ -157,7 +159,7 @@ Monthly availability can hide peak saturation. A site can be 80% available over 
 - **uptime_ratio ↔ first_attempt_success_rate.** Uptime is status-based. A port that is neither faulted nor offline but fails charge attempts keeps uptime flat while first_attempt_success_rate drops. If first_attempt_success_rate falls with stable uptime, look for per-charger failure concentration.
 - **availability → switch_charger_rate.** Switching only works when a co-located port is free. Low availability suppresses this recovery path and turns would-be troubled successes into failures.
 - **load management → availability.** Splitting power across ports (`SetChargingProfile`) lengthens charge attempts, so ports stay utilized longer.
-- **failed visits → MAD.** Drivers whose visit failed are less likely to come back. A drop in success_rate shows up later as lower retained_drivers.
+- **failed visits → MAD.** Drivers whose visit failed are less likely to come back. A drop in success_rate shows up later as lower returning_drivers.
 - **first_attempt vs troubled.** If first_attempt_success_rate falls and troubled_success_rate rises by the same amount, success_rate is flat but friction is rising. Always report both.
 - **unobserved demand.** Drivers turned away from a full site produce no OCPP events, so observed demand under-counts true demand exactly when capacity binds.
 
@@ -175,23 +177,23 @@ Check these when the north star improves, to make sure it isn't being gamed:
 
 ## 7. semantic layer mapping
 
-| logical id                   | semantic layer metric        | notes                                                                                                                                                                                                                                                                                                 |
-| ---------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `total_successful_visits`    | `total_successful_visits`    | Equals `first_attempt_success` + `troubled_success`.                                                                                                                                                                                                                                                  |
-| `total_visits`               | `total_visits`               | Every visit has at least one charge attempt, so all visits are attempted visits.                                                                                                                                                                                                                      |
-| `success_rate`               | 1 − `failed_rate`            | No single metric. Equals `first_attempt_success_rate` + `troubled_success_rate`.                                                                                                                                                                                                                      |
-| `first_attempt_success_rate` | `first_attempt_success_rate` |                                                                                                                                                                                                                                                                                                       |
-| `troubled_success_rate`      | `troubled_success_rate`      |                                                                                                                                                                                                                                                                                                       |
-| `failed_rate`                | `failed_rate`                |                                                                                                                                                                                                                                                                                                       |
-| `try_again_rate`             | TODO                         | Needs first vs. last port of the visit; `fact_visits` has `first_port_id`/`last_port_id`, but only `first_charger_id`/`last_charger_id` are dimensions.                                                                                                                                               |
-| `switch_charger_rate`        | TODO                         | Partly observable as troubled visits with `first_charger_id` ≠ `last_charger_id`; misses port switches on the same charger.                                                                                                                                                                           |
-| `call_support_rate`          | TODO                         | No CSMS-initiated commands or support tickets in the semantic layer.                                                                                                                                                                                                                                  |
-| `monthly_active_drivers`     | TODO                         | No distinct-driver count over visits. `drivers_count`/`known_drivers_count` count the driver dimension, not active drivers in a period.                                                                                                                                                               |
-| `new_drivers`                | TODO                         | Approximated by `known_drivers_count` grouped by `drivers.first_seen_ts` month.                                                                                                                                                                                                                       |
-| `retained_drivers`           | TODO                         |                                                                                                                                                                                                                                                                                                       |
-| `resurrected_drivers`        | TODO                         |                                                                                                                                                                                                                                                                                                       |
-| `visits_per_driver`          | TODO                         | Depends on `monthly_active_drivers`.                                                                                                                                                                                                                                                                  |
-| `total_commissioned_minutes` | `total_commissioned_minutes` |                                                                                                                                                                                                                                                                                                       |
-| `uptime_ratio`               | `uptime_ratio`               | `total_uptime_minutes` ÷ `total_commissioned_minutes`, so `total_commissioned_minutes × uptime_ratio` = `total_uptime_minutes` exactly. Drill down with `total_downtime_minutes` (by port, charger, location, date) and `total_downtime_minutes_detailed` (by `downtime_type`, `reason`, error code). |
-| `availability`               | TODO                         | No utilization (open transaction minutes) in the semantic layer.                                                                                                                                                                                                                                      |
-| `free_port_minutes`          | TODO                         | Depends on `total_commissioned_minutes` and `availability`.                                                                                                                                                                                                                                           |
+| logical id                   | source                                         | notes                                                                                                                                                                                                                                                                                                 |
+| ---------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `total_successful_visits`    | semantic model \| `total_successful_visits`    | Equals `first_attempt_success` + `troubled_success`.                                                                                                                                                                                                                                                  |
+| `total_visits`               | semantic model \| `total_visits`               | Every visit has at least one charge attempt, so all visits are attempted visits.                                                                                                                                                                                                                      |
+| `success_rate`               | semantic model \| 1 − `failed_rate`            | No single metric. Equals `first_attempt_success_rate` + `troubled_success_rate`.                                                                                                                                                                                                                      |
+| `first_attempt_success_rate` | semantic model \| `first_attempt_success_rate` |                                                                                                                                                                                                                                                                                                       |
+| `troubled_success_rate`      | semantic model \| `troubled_success_rate`      |                                                                                                                                                                                                                                                                                                       |
+| `failed_rate`                | semantic model \| `failed_rate`                |                                                                                                                                                                                                                                                                                                       |
+| `try_again_rate`             | TODO                                           | Needs first vs. last port of the visit; `fact_visits` has `first_port_id`/`last_port_id`, but only `first_charger_id`/`last_charger_id` are dimensions.                                                                                                                                               |
+| `switch_charger_rate`        | TODO                                           | Partly observable as troubled visits with `first_charger_id` ≠ `last_charger_id`; misses port switches on the same charger.                                                                                                                                                                           |
+| `call_support_rate`          | TODO                                           | No CSMS-initiated commands or support tickets in the semantic layer.                                                                                                                                                                                                                                  |
+| `monthly_active_drivers`     | skill \| count-active-drivers                  | `new_drivers` + `returning_drivers` + `anonymous_drivers`. The semantic layer's `mad` differs: trailing 30 days and no anonymous drivers.                                                                                                                                                             |
+| `new_drivers`                | skill \| count-active-drivers                  | Distinct idTags with a visit in the period and `dim_drivers.first_seen_ts` in it.                                                                                                                                                                                                                     |
+| `returning_drivers`          | skill \| count-active-drivers                  | Distinct idTags with a visit in the period and `dim_drivers.first_seen_ts` before it.                                                                                                                                                                                                                 |
+| `anonymous_drivers`          | skill \| count-active-drivers                  | Approximate: one driver per visit without an idTag.                                                                                                                                                                                                                                                   |
+| `visits_per_driver`          | skill \| count-active-drivers                  | `total_visits` ÷ `monthly_active_drivers`.                                                                                                                                                                                                                                                            |
+| `total_commissioned_minutes` | semantic model \| `total_commissioned_minutes` |                                                                                                                                                                                                                                                                                                       |
+| `uptime_ratio`               | semantic model \| `uptime_ratio`               | `total_uptime_minutes` ÷ `total_commissioned_minutes`, so `total_commissioned_minutes × uptime_ratio` = `total_uptime_minutes` exactly. Drill down with `total_downtime_minutes` (by port, charger, location, date) and `total_downtime_minutes_detailed` (by `downtime_type`, `reason`, error code). |
+| `availability`               | TODO                                           | No utilization (open transaction minutes) in the semantic layer.                                                                                                                                                                                                                                      |
+| `free_port_minutes`          | TODO                                           | Depends on `total_commissioned_minutes` and `availability`.                                                                                                                                                                                                                                           |
