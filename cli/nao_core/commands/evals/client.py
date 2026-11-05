@@ -53,6 +53,16 @@ class EvalsClient:
 
         return _parse_answer(response.json())
 
+    def describe_environment(self) -> dict[str, Any]:
+        try:
+            response = self._http_client.get("/api/evals/environment", timeout=self._timeout)
+        except httpx.HTTPError as e:
+            raise AgentBackendError(str(e)) from e
+
+        if response.status_code != 200:
+            raise AgentBackendError(f"{response.status_code} {response.text}")
+        return response.json()
+
 
 def _parse_answer(data: dict) -> AgentAnswer:
     model = data.get("model") or {}

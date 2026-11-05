@@ -64,29 +64,32 @@ nao evals --experiment metrics-tree-001 --arm B --block 1 --repeats 3 --arm-mani
 
 ## 3. Dataset, context, data, and code versions
 
-The backend must report the context hash, since it reads its own project folder, which
-may not be the folder the CLI runs from (the demo runs in Docker).
+**Done (2026-11-05),** except the `--confirmatory` mode and the compare step, which come
+after arms and repetition.
 
-| Field              | How it is computed                                                                                                     | Why                                                                                                                               |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `dataset_sha256`   | Hash of the JSONL file, plus a hash per row                                                                            | Shows the cases didn't change                                                                                                     |
-| `context_sha256`   | Hash of sorted path and content hashes for the project, excluding `tests/` and outputs                                 | Shows only the treatment changed                                                                                                  |
-| `context_files`    | The per-file hashes                                                                                                    | Shows which file differs between arms                                                                                             |
-| `data_fingerprint` | Row count and a content checksum per `fact_*` and `dim_*` table, plus seed CSV hash                                    | Shows the data didn't change; hashing the DuckDB file itself is unreliable because its bytes can change without the data changing |
-| `kwwhat_commit`    | Commit and dirty flag of the dbt project                                                                               | Links the data to its models                                                                                                      |
-| `nao_commit`       | Commit and dirty flag, passed into the image as a build argument because `.git` isn't copied in; plus the image digest | Pins the agent and tools                                                                                                          |
-| Scorer versions    | Existing rubric hash, plus DeepEval metric class and version for the RAG metrics                                       | RAG metrics have no version today                                                                                                 |
-| Models             | Exact agent and judge model ids and settings, including temperature                                                    | The judge sets no temperature today                                                                                               |
-| Lockfile           | Hash of `cli/uv.lock`                                                                                                  | `pyproject.toml` allows `deepeval>=2.0`                                                                                           |
+The backend describes its own environment at `GET /api/evals/environment`
+(`services/eval-environment.service.ts`), because in Docker it reads `/app/kwwhat`, not the
+CLI's folder. The CLI fetches it before the first case and after the last, and saves both
+under `provenance` in the results file.
 
-Controls:
+| Field                             | How it is computed                                                                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dataset.sha256`, `dataset.rows`  | Hash of the JSONL file, and of each row by id, so a comparison can tell which case changed                                                                   |
+| `context.sha256`, `context.files` | Hash of every project file except `tests/` and hidden files, and each file's hash; covers `RULES.md`, skills, the tree, and synced `repos/` and `databases/` |
+| `data`                            | Row count and a checksum (sum of a hash of every row) for each table of each DuckDB database, through the same SQL path the agent uses                       |
+| `repos`                           | Commit and dirty flag of each linked repo with a local path, such as `/kwwhat`                                                                               |
+| `nao`                             | The `APP_COMMIT` build argument in Docker; outside Docker, the checkout's commit and dirty flag                                                              |
+| `packages`                        | Installed versions of `nao-core`, `deepeval`, `anthropic`, and `openai`                                                                                      |
+| `config.rag`                      | Each RAG metric's DeepEval class and threshold                                                                                                               |
+| `judge_settings` (per record)     | Temperature and max tokens; the Claude judge is now pinned to temperature 0                                                                                  |
+| `run_context.model_call_settings` | The agent's temperature, top-p, top-k, and max output tokens                                                                                                 |
 
-1. Compute all of this at the start of the run and again at the end. The run is marked
-   invalid if anything changed midway.
-2. Add `--confirmatory`, which refuses to start on a dirty tree, on a dataset whose hash
-   isn't in the preregistration, or without the arm manifest.
-3. Add a compare step that pairs two arms only if every field above matches, apart from
-   the context files the arm manifest says should differ. It reports the difference and stops otherwise.
+`environment_changed` lists any of `nao`, `context`, `repos`, or `data` that differed
+between the start and the end of the run, and the CLI warns that those results aren't
+comparable. A backend without the endpoint is recorded as `null`, and the run continues.
+
+Not covered: the Docker image digest, which the container can't see. Record it with the
+arm manifest in step 2.
 
 ---
 
@@ -142,7 +145,7 @@ cost isn't.
 
 1. Tool output, since it is the largest validity risk. Done.
 2. System prompt. Done.
-3. Version fields and the manifest.
+3. Version fields and the manifest. Done, except the compare step.
 4. Arm, repetition, block, and rejudge.
 5. Cost tracking and `--max-cost`.
 6. Compare step and `--confirmatory`.

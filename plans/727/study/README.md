@@ -26,5 +26,11 @@ and add this line to `chat-bi/Dockerfile`, after the existing `COPY` lines:
 COPY arm/ /app/kwwhat/
 ```
 
-Tag each arm's image separately and record its digest. Only `RULES.md` overlaps a file
+Build the nao base image from this branch with its commit, so every result records it:
+
+```bash
+docker build --build-arg APP_COMMIT="$(git rev-parse HEAD)$(git diff --quiet HEAD || echo -dirty)" -t nao:study .
+```
+
+Then point the demo's `FROM` line at `nao:study`. Tag each arm's image separately and record its digest. Only `RULES.md` overlaps a file
 the demo already copies; the overlay version replaces it.

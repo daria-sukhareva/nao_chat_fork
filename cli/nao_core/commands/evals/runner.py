@@ -18,8 +18,9 @@ from .case import DatasetValidationError, EvalCase, dataset_path_for, load_cases
 from .client import DEFAULT_TIMEOUT_SECONDS, AgentAnswer, AgentBackendError, AgentTimeoutError, EvalsClient
 from .completeness import COMPLETENESS_RUBRIC
 from .correctness import CORRECTNESS_RUBRIC
-from .judge import resolve_judge
-from .rag import build_rag_metrics
+from .judge import describe_judge_settings, resolve_judge
+from .provenance import changed_environment_parts, fingerprint_dataset, package_versions
+from .rag import build_rag_metrics, describe_rag_metrics
 from .rubric import GEvalRubric
 from .run_context import RunContext, describe_run_context, save_run_context_files
 from .tool_calls import build_retrieval_context, list_files_read
@@ -63,6 +64,7 @@ class EvalResult:
     raw_run_context: dict[str, Any] = field(default_factory=dict)
     agent_model: str | None = None
     judge_model: str | None = None
+    judge_settings: dict[str, Any] = field(default_factory=dict)
     passed: bool = False
     metrics: list[MetricResult] = field(default_factory=list)
     usage: dict[str, Any] | None = None
@@ -186,9 +188,13 @@ def evals(
 
     with http_client:
         client = EvalsClient(http_client, timeout=timeout)
+        environment_start = _describe_environment(client)
         results = [run_case(case, client, options) for case in cases]
+        environment_end = _describe_environment(client)
 
-    output_file = save_results(results, options, project_path / OUTPUTS_FOLDER)
+    provenance = _build_provenance(dataset_path_for(project_path), environment_start, environment_end)
+    output_file = save_results(results, options, project_path / OUTPUTS_FOLDER, provenance)
+    _warn_if_environment_changed(provenance)
     UI.print(f"[dim]Results saved to: {output_file}[/dim]\n")
 
     _print_summary(results)
@@ -213,6 +219,7 @@ def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions) -> EvalR
         return _fail_with_error(result, "context_error", message)
 
     result.judge_model = options.judge_model or answer.model
+    result.judge_settings = describe_judge_settings(result.judge_model)
 
     try:
         judge = resolve_judge(result.judge_model)
@@ -250,7 +257,9 @@ def measure_metric(name: str, metric: Any, test_case: Any, verbose: bool = False
     return MetricResult(name=name, score=score, threshold=threshold, passed=passed, reason=reason)
 
 
-def save_results(results: list[EvalResult], options: EvalOptions, output_dir: Path) -> Path:
+def save_results(
+    results: list[EvalResult], options: EvalOptions, output_dir: Path, provenance: dict[str, Any] | None = None
+) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     now = datetime.now()
     output_file = output_dir / f"evals_results_{now.strftime('%Y%m%d_%H%M%S')}.json"
@@ -261,11 +270,38 @@ def save_results(results: list[EvalResult], options: EvalOptions, output_dir: Pa
     data = {
         "timestamp": now.isoformat(),
         "config": _describe_config(options),
+        "provenance": provenance,
         "results": records,
         "summary": _summarize(results),
     }
     output_file.write_text(json.dumps(data, indent=2))
     return output_file
+
+
+def _describe_environment(client: EvalsClient) -> dict[str, Any] | None:
+    try:
+        return client.describe_environment()
+    except AgentBackendError as e:
+        UI.warn(f"Could not describe the backend environment: {e}")
+        return None
+
+
+def _build_provenance(
+    dataset_path: Path, environment_start: dict[str, Any] | None, environment_end: dict[str, Any] | None
+) -> dict[str, Any]:
+    return {
+        "dataset": fingerprint_dataset(dataset_path),
+        "packages": package_versions(),
+        "environment_start": environment_start,
+        "environment_end": environment_end,
+        "environment_changed": changed_environment_parts(environment_start, environment_end),
+    }
+
+
+def _warn_if_environment_changed(provenance: dict[str, Any]) -> None:
+    changed = provenance["environment_changed"]
+    if changed:
+        UI.warn(f"The environment changed during the run ({', '.join(changed)}); its results are not comparable.")
 
 
 def _parse_model_option(flag: str, value: str | None) -> ModelConfig | None:
@@ -356,6 +392,8 @@ def _describe_config(options: EvalOptions) -> dict[str, Any]:
         "judge_model": options.judge_model,
         "deepeval_version": _deepeval_version(),
     }
+    if "rag" in options.suites:
+        config["rag"] = describe_rag_metrics()
     for suite, rubric in REFERENCE_RUBRICS.items():
         if suite in options.suites:
             config[suite] = {"threshold": options.thresholds[suite], "rubric_version": rubric.version()}

@@ -21,6 +21,7 @@ class RunContext:
     memory_count: int | None = None
     tool_manifest_sha256: str | None = None
     tool_names: list[str] = field(default_factory=list)
+    model_call_settings: dict[str, Any] = field(default_factory=dict)
 
 
 def describe_run_context(raw: dict[str, Any]) -> RunContext:
@@ -35,6 +36,7 @@ def describe_run_context(raw: dict[str, Any]) -> RunContext:
         memory_count=raw.get("memory_count"),
         tool_manifest_sha256=_sha256(_canonical_json(tools)) if tools else None,
         tool_names=[tool["name"] for tool in tools],
+        model_call_settings=raw.get("call_settings") or {},
     )
 
 

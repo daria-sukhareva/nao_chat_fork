@@ -21,7 +21,13 @@ import {
 	UIMessageStreamWriter,
 } from 'ai';
 
-import { disableModelReasoning, fitThinkingBudget, getProviderMeta, ProviderModelResult } from '../agents/providers';
+import {
+	disableModelReasoning,
+	fitThinkingBudget,
+	getProviderMeta,
+	type ModelCallSettings,
+	ProviderModelResult,
+} from '../agents/providers';
 import { getSystemPromptOverride, hasNaoPromptPlaceholder, injectNaoPrompt } from '../agents/system-prompts';
 import { llmTelemetry } from '../agents/telemetry';
 import { getTools } from '../agents/tools';
@@ -108,6 +114,7 @@ export interface AgentRunContext {
 	systemPrompt: string;
 	memoryCount: number;
 	tools: AgentToolDescription[];
+	callSettings: ModelCallSettings;
 }
 
 export interface AgentToolDescription {
@@ -917,7 +924,12 @@ class AgentManager {
 				inputSchema: await getJsonSchema(agentTool),
 			})),
 		);
-		return { systemPrompt: this._systemPrompt, memoryCount: this._memoryCount, tools };
+		return {
+			systemPrompt: this._systemPrompt,
+			memoryCount: this._memoryCount,
+			tools,
+			callSettings: this._modelConfig.callSettings ?? {},
+		};
 	}
 
 	checkIsUserOwner(userId: string): boolean {

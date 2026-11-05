@@ -4,11 +4,39 @@ import { z } from 'zod/v4';
 import type { App } from '../app';
 import { noProjectMessage } from '../env';
 import { authMiddleware } from '../middleware/auth';
+import { retrieveProjectById } from '../queries/project.queries';
+import { describeEvalEnvironment } from '../services/eval-environment.service';
 import { TestAgentService, testAgentService } from '../services/test-agent.service';
 import { llmSelectedModelSchema } from '../types/llm';
 
 export const evalsRoutes = async (app: App) => {
 	app.addHook('preHandler', authMiddleware);
+
+	app.get('/environment', async (request, reply) => {
+		const projectId = request.project?.id;
+		if (!projectId) {
+			return reply.status(400).send({ error: noProjectMessage() });
+		}
+
+		const project = await retrieveProjectById(projectId);
+		if (!project.path) {
+			return reply.status(400).send({ error: 'The project has no local folder to describe.' });
+		}
+
+		const environment = await describeEvalEnvironment(project.path, {
+			projectFolder: project.path,
+			chatId: '',
+			userId: request.user.id,
+			projectId,
+			supportsCustomCharts: false,
+			agentSettings: null,
+			envVars: {},
+			azureAccessToken: null,
+			queryResults: new Map(),
+			generatedArtifacts: { charts: [], maps: [], stories: [] },
+		});
+		return reply.send(environment);
+	});
 
 	app.post(
 		'/chat',
@@ -48,6 +76,7 @@ export const evalsRoutes = async (app: App) => {
 						system_prompt: result.runContext.systemPrompt,
 						memory_count: result.runContext.memoryCount,
 						tools: result.runContext.tools,
+						call_settings: result.runContext.callSettings,
 					},
 				});
 			} catch (err) {

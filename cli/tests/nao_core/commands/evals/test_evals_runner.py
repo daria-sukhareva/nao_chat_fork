@@ -34,6 +34,16 @@ ANSWER = AgentAnswer(
 )
 
 
+ENVIRONMENT = {
+    "nao": {"version": "dev", "commit": "a" * 40, "dirty": False},
+    "context": {"sha256": "c" * 64, "files": [{"path": "RULES.md", "sha256": "r" * 64}]},
+    "repos": [{"name": "kwwhat", "commit": "b" * 40, "dirty": False}],
+    "data": [
+        {"databaseId": "duckdb_analytics", "tables": [{"table": "fact_visits", "rowCount": "85", "checksum": "1"}]}
+    ],
+}
+
+
 class FakeMetric:
     def __init__(self, score: float | None = None, error: Exception | None = None, threshold: float = 0.5):
         self.threshold = threshold
@@ -62,6 +72,7 @@ def make_client(answer=ANSWER, error: Exception | None = None):
     client = MagicMock()
     client.ask.side_effect = error
     client.ask.return_value = answer
+    client.describe_environment.return_value = ENVIRONMENT
     return client
 
 
@@ -266,3 +277,46 @@ def test_metrics_are_judged_on_the_saved_retrieval_context(fake_metrics):
     judged_test_case = metric.judged_test_cases[0]
     assert judged_test_case.retrieval_context == result.retrieval_context
     assert result.retrieval_context
+
+
+def test_evals_records_provenance_and_an_unchanged_environment(tmp_path, monkeypatch, fake_backend, fake_metrics):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(tmp_path, {"id": "q001", "input": "How many ports?", "expected_output": "4 ports."})
+    fake_metrics.return_value = [("Correctness", FakeMetric(score=0.9))]
+
+    evals()
+
+    data = json.loads(next((tmp_path / "tests" / "outputs").glob("evals_results_*.json")).read_text())
+    provenance = data["provenance"]
+    assert provenance["environment_start"] == ENVIRONMENT
+    assert provenance["environment_changed"] == []
+    assert list(provenance["dataset"]["rows"]) == ["q001"]
+    assert len(provenance["dataset"]["sha256"]) == 64
+    assert "deepeval" in provenance["packages"]
+    assert data["results"][0]["judge_settings"] == {"temperature": 0.0, "max_tokens": 4096}
+
+
+def test_evals_flags_an_environment_that_changed_during_the_run(tmp_path, monkeypatch, fake_backend, fake_metrics):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(tmp_path, {"id": "q001", "input": "How many ports?", "expected_output": "4 ports."})
+    fake_metrics.return_value = [("Correctness", FakeMetric(score=0.9))]
+    changed = {**ENVIRONMENT, "context": {"sha256": "d" * 64, "files": []}}
+    fake_backend.return_value.describe_environment.side_effect = [ENVIRONMENT, changed]
+
+    evals()
+
+    data = json.loads(next((tmp_path / "tests" / "outputs").glob("evals_results_*.json")).read_text())
+    assert data["provenance"]["environment_changed"] == ["context"]
+
+
+def test_evals_still_runs_when_the_environment_cannot_be_described(tmp_path, monkeypatch, fake_backend, fake_metrics):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(tmp_path, {"id": "q001", "input": "How many ports?", "expected_output": "4 ports."})
+    fake_metrics.return_value = [("Correctness", FakeMetric(score=0.9))]
+    fake_backend.return_value.describe_environment.side_effect = AgentBackendError("404 Not Found")
+
+    evals()
+
+    data = json.loads(next((tmp_path / "tests" / "outputs").glob("evals_results_*.json")).read_text())
+    assert data["provenance"]["environment_start"] is None
+    assert data["provenance"]["environment_changed"] == []

@@ -51,6 +51,12 @@ def test_tool_manifest_hash_changes_with_a_description():
     )
 
 
+def test_model_call_settings_are_recorded():
+    raw = {**make_raw(), "call_settings": {"temperature": 0.2, "maxOutputTokens": 16000}}
+
+    assert describe_run_context(raw).model_call_settings == {"temperature": 0.2, "maxOutputTokens": 16000}
+
+
 def test_missing_run_context_yields_empty_hashes():
     context = describe_run_context({})
 
