@@ -1,131 +1,221 @@
 # Eval Experiment Plan
 
-Roadmap for using `nao evals` to measure whether a context change improves the agent, for
-[getnao/nao#727](https://github.com/getnao/nao/issues/727).
+Plan for a public whitepaper on measuring context changes with `nao evals`, for
+[getnao/nao#727](https://github.com/getnao/nao/issues/727). Revised 2026-11-05. This is
+a map, not a contract: it goes stale when the agent, data, or context changes.
 
-Builds on the [Correctness plan](correctness_plan.md) and the
-[RAG triad plan](rag_triad_plan.MD). Both metric families already run **in tandem**:
-every eval case gets one agent answer, and all five metrics score that same answer.
+Builds on the [Correctness plan](https://github.com/getnao/nao/blob/4b02276f449ef35256cf9b04b06afcceb67b1d24/plans/727/correctness_plan.md)
+and the [RAG triad plan](https://github.com/getnao/nao/blob/4b02276f449ef35256cf9b04b06afcceb67b1d24/plans/727/rag_triad_plan.MD)
+from [PR #1092](https://github.com/getnao/nao/pull/1092). The PR has no maintainer reply
+to its design questions, so nothing here may imply that nao endorses this work.
 
-| Family          | Metrics                                            | Judges against                                       |
-| --------------- | -------------------------------------------------- | ---------------------------------------------------- |
-| RAG triad       | Faithfulness, ContextualRelevancy, AnswerRelevancy | retrieval context from tool calls, input             |
-| Reference-based | Correctness, Completeness                          | `expected_output` (Completeness also sees the input) |
-
----
-
-## Objective
-
-Measure whether a change to the project context makes the agent's answers better.
-The first experiment:
-
-1. **Baseline:** run the evals on the current context.
-2. **Treatment:** add a **metrics tree** to the context, change nothing else.
-3. **Compare:** per-metric score differences between the two runs, with uncertainty.
-
-The question is "is the metrics tree better, on which metrics, and by how much",
-not whether a single run passes.
-
-Scoring the same answer with both families shows where a change acts:
-
-- **RAG triad:** did the agent pull more relevant context and stay grounded in it?
-- **Reference-based:** did the final answer get closer to the expected one?
-
-A change can improve one family and not the other; both are reported.
+Tags: `Confirmed` (read from an artifact), `Assumed` (safe default, override it),
+`Needs decision`, `Not yet measurable`.
 
 ---
 
-## Order of Work
+## Claims
 
-**Dataset → scorers → experiment design.** Each step depends on the one before:
-scorers cannot be validated against unreliable references, and experiments cannot be
-interpreted with unvalidated scorers.
+The paper makes two claims, in dependency order. The second is uninterpretable without
+the first.
 
-### Phase 0: Make RAG scores reviewable
+- **C1, measurement validity:** these instruments detect a known context degradation
+  and stay quiet when nothing changed.
+- **C2, effect:** on this project, for an agent that already has a generic root cause
+  skill, adding the metrics tree, the `count-active-drivers` skill, and a rule pointing to
+  the tree changes the quality of root cause answers by a stated amount, with uncertainty.
 
-The results file stores answers and scores but not the retrieval context the RAG
-metrics were judged on, so Faithfulness and ContextualRelevancy cannot be reviewed or
-validated.
+**Construct** `Needs decision`: quality of root cause answers. The issue and PR define
+the broader construct as following configured context even when the number is right,
+so the paper must say which one each result speaks to.
 
-- Save `retrieval_context` per case in `evals_results_<timestamp>.json`.
+**Population** `Assumed`: single-turn questions from an EV network operator against the
+kwwhat demo project.
 
-**Exit:** every RAG score in a results file can be checked against exactly what the
-judge saw.
+- **H3, secondary hypothesis:** paired changes in the RAG triad track paired changes in
+  Correctness and Completeness. This tests the assumption behind the referenceless plan in
+  PR #1092; it is not taken as given.
 
-### Phase 1: Dataset (`braintrust-build-eval-dataset`)
-
-The dataset serves both families.
-
-- **References (Correctness, Completeness):** every `expected_output` matches the
-  current data snapshot. Numeric facts are traced to a deterministic SQL test in
-  `kwwhat/demo/chat-bi/tests/*.yml` and its latest `nao test` result.
-- **Provenance:** each case records where its reference came from and which data
-  snapshot it matches, so stale references are detectable (e.g. the plan's
-  4 decommissioned ports / 99.71% uptime were stale against current data: 2 / 99.87%).
-- **Context-dependent cases (RAG):** questions whose answer depends on configured
-  context (undefined metrics, terminology, `RULES.md` rules), not just number lookups.
-- **Headroom cases:** questions a metrics tree could plausibly improve (metric
-  relationships, drivers of a top-level metric, "why did X change"). Cases the
-  baseline already answers perfectly cannot show an improvement.
-- **Frozen before the baseline:** the dataset is versioned before the baseline run and
-  not edited between arms; any change invalidates the comparison.
-- **Optional expected context:** which context each case should use (semantic model,
-  `RULES.md`), enabling a later context-recall check.
-- **Unverified facts** are either verified via SQL or removed from references
-  (currently `q008`: "4 ports over 3 days", "ConnectorLockFailure on 1 port").
-
-**Exit:** reviewed, versioned dataset with provenance per case; coverage of lookup,
-context-dependent, and headroom cases.
-
-### Phase 2: Scorers (`braintrust-write-eval-scorer`, `braintrust-validate-eval-scorer`)
-
-All five metrics are validated, not only the reference-based ones.
-
-- Review the Correctness and Completeness rubrics (evaluation steps, handling of
-  refusals, clarifying questions, extra detail).
-- Treat `serialize_tool_result` as part of the RAG scorers: it limits context to
-  `read`, `execute_sql`, `grep` and truncates SQL results to 20 rows.
-- Collect human pass/fail labels on saved agent answers and measure judge agreement.
-- Calibrate every threshold; all are currently placeholders:
-
-    | Metric              | Current threshold |
-    | ------------------- | ----------------: |
-    | Faithfulness        |               0.7 |
-    | ContextualRelevancy |               0.5 |
-    | AnswerRelevancy     |               0.7 |
-    | Correctness         |               0.5 |
-    | Completeness        |               0.5 |
-
-- Measure run-to-run variance of judge scores on identical answers.
-
-**Exit:** each metric has a calibrated threshold, a known agreement rate with human
-labels, and documented blind spots.
-
-### Phase 3: Experiment design (`braintrust-design-eval-experiment`)
-
-- **Arms:** A = current context (baseline), B = current context + metrics tree.
-- **Held fixed:** cases, dataset version, data snapshot, chat model, judge model,
-  rubric versions, `nao` build.
-- **Paired design:** every case runs in both arms and is compared case by case.
-- **Repetitions:** several runs per case per arm, to separate agent and judge
-  variance from a real effect.
-- **Decided before running:** which metrics define "better", the smallest
-  improvement worth keeping the metrics tree for, and how per-case results are
-  combined.
-
-**Exit:** baseline and metrics-tree results compared with uncertainty, and a
-keep-or-drop decision on the metrics tree.
+**Non-claims:** other projects, other domains, real operator traffic (the seed data is
+synthetic and covers 14 days), multi-turn use, chart rendering, or any part of the treatment on
+its own. Exact numeric correctness stays with `nao test`.
 
 ---
 
-## Open Decisions
+## Arms
 
-- Where the [metrics tree](metrics_tree.md) lives in the context for the treatment
-  run (e.g. a section of `RULES.md`, or a separate document the agent reads).
-- Which metrics count as "better", and the minimum improvement that matters.
+| Arm | Context                                                                           | Purpose                                    |
+| --- | --------------------------------------------------------------------------------- | ------------------------------------------ |
+| A   | Current context + root cause skill                                                | Baseline                                   |
+| B   | Current context + root cause skill + metrics tree + `count-active-drivers` + rule | Treatment; the bundle is what C2 speaks to |
+| N   | A, run as a separate block                                                        | Null control: false-positive rate for C1   |
+| D   | A with known degradations (rules removed, a definition corrupted)                 | Positive control: sensitivity for C1       |
 
-- Where the canonical dataset lives: `example/tests/evals/` in the fork, the demo's
-  `chat-bi/tests/evals/`, or one copied from the other.
-- Whether provenance fields live in the JSONL rows (loader ignores unknown fields) or
-  in a separate datasheet.
-- Human labeling: who labels, and how many answers per metric.
+`plans/727/skills/root-cause-analysis.md` is shared by all arms and is the only root cause
+procedure; it was moved out of the tree with its domain and tree references removed. C2
+therefore measures what the tree's domain structure adds beyond a general method. It says nothing about adding the
+tree to a project without that skill. The skill is tuned on dev cases only, then frozen.
+
+`Confirmed`: there is no relevance filter. Every skill's name and description, and arm B's
+rule, are always in the system prompt. The tree and skill bodies enter only when the agent
+chooses to `read` them, and then in full. C2 therefore compares A with B as assigned,
+whether or not an answer read the tree, and the read rate is reported as a treatment check.
+
+`Confirmed`: the skill loader only finds `.md` files directly in `agent/skills/`
+(`services/skill.ts`), so the skill must ship as `agent/skills/count-active-drivers.md`,
+with its reference paths updated. The demo project has no `agent/` folder yet.
+
+**Rule text** `Assumed` draft, one line added to `RULES.md`:
+
+> For questions about why a metric changed or what drives it, read `docs/metrics_tree.md`
+> and use it as the structure for your analysis.
+
+The tree, both skills, the rule text, and the degradations are frozen and hashed before any run.
+
+---
+
+## Metric roles
+
+| Metric                        | Role                                                   | Used for                                                                                                               |
+| ----------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Correctness, root cause cases | Primary (same generic rubric as lookup cases)          | Decides C2, once its rubric and references pass validation                                                             |
+| Completeness                  | Key secondary and guardrail                            | Catches correct answers that became too thin                                                                           |
+| Correctness, lookup cases     | Guardrail                                              | The treatment must not break what already works                                                                        |
+| Quantification                | Secondary                                              | Do claims about size or change state a value, unit, and period? Not primary, because it can be gamed with more numbers |
+| Faithfulness (strict)         | Secondary; troubleshooting; tested as a proxy under H3 | Does the answer stay within what the agent saw?                                                                        |
+| ContextualRelevancy           | Troubleshooting; tested as a proxy under H3            | Did the agent pull focused context?                                                                                    |
+| AnswerRelevancy               | Troubleshooting; tested as a proxy under H3            | Did the answer stay on the question?                                                                                   |
+| Cost, latency, error rate     | Guardrails                                             | Limits are set in the preregistration                                                                                  |
+
+---
+
+## Threats to validity
+
+| Threat                                                                                                                                | Status      | Control                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| q015–q017 entered the dataset in the same commit as the tree (`9f0a7fff`), by the tree's author, so the cases may favor the treatment | `Confirmed` | All 12 current cases become dev only; the confirmatory set is authored independently of the tree                         |
+| q015–q017 compare a ~2.3-day week with a full week; an agent following the root cause skill's step 1 may be penalized for flagging it | `Confirmed` | Recheck the references; a correct completeness caveat must not lose points                                               |
+| ContextualRelevancy is coupled to the treatment: when the agent reads the tree, the whole ~20 KB file is scored as context            | `Assumed`   | Secondary diagnostic only; never the primary endpoint                                                                    |
+| Faithfulness is coupled to the treatment: the tree adds context that can support more claims, and B can also lose support (below)     | `Assumed`   | Secondary diagnostic only; report how often the tree was read                                                            |
+| Only `execute_sql`, `read`, and `grep` reach the judge, and SQL results are cut to 20 rows                                            | `Confirmed` | Capture all tool output in the record; state what the judge saw                                                          |
+| The judge defaults to the agent's model, and `judge.py` sets no temperature                                                           | `Confirmed` | Pinned judge from a different vendor; measure rejudging variance on identical answers                                    |
+| Rubric wording penalizes rule-following answers ("unsupported additions"; audit F2)                                                   | `Confirmed` | Separate fact, coverage, and rule-compliance criteria                                                                    |
+| One person wrote the tree, the cases, and the labels, and no second person is available                                               | `Confirmed` | Rule-generated cases, SQL-computed references, blinded re-rating, published labels, disclosure; reported as a limitation |
+| References go stale; the seed changed on 2026-11-03                                                                                   | `Confirmed` | Hash the data snapshot in every record; freeze before the baseline                                                       |
+| The root cause skill and the trap rules share an author, so absolute scores can be inflated by teaching to the test                   | `Confirmed` | Report differences between arms, not absolute scores; check headroom on dev; publish the skill                           |
+| Result depends on one synthetic project                                                                                               | `Confirmed` | State it in the claim; a second project would be a replication, not part of this study                                   |
+| Searching across metrics and subgroups                                                                                                | `Assumed`   | One preregistered primary endpoint; everything else labeled exploratory; multiplicity rule stated                        |
+
+---
+
+## Order of work
+
+Each phase consumes the previous phase's artifact. Exit criteria must be met before the
+next phase starts.
+
+### Phase 0: Instrumentation (`braintrust-design-eval-instrumentation`), next
+
+Detailed in the [instrumentation plan](instrumentation_plan.md).
+
+`Confirmed`: `retrieval_context` is saved, and `AgentRunResult` already holds every tool
+call. Missing, and impossible to add to a finished run:
+
+- arm label, repetition index, and block id;
+- hashes of the dataset, `RULES.md`, the tree, the semantic model, and the data snapshot;
+- `nao` commit, system prompt hash, and tool manifest;
+- all tool calls and untruncated results, separate from what the judge was shown;
+- a repeat option on `nao evals`, and rejudging of saved answers without rerunning the agent.
+
+**Exit:** one case (q016) reconstructed from its record alone, on both arms.
+
+### Phase 1: Objective and behavior spec (`braintrust-define-eval-objective`, `braintrust-write-agent-behavior-spec`)
+
+Settle the construct, the primary endpoint, and the expected behavior of a root cause
+answer, drawing on `RULES.md` and the root cause skill.
+
+**Exit:** the objective card and a versioned `BEHAVIOR.md`.
+
+### Phase 2: Criteria (`braintrust-elicit-eval-criteria`, `braintrust-map-eval-evidence`)
+
+Write generic score bands with anchored examples, and a guide for authoring case
+references, including traps such as a partial-period comparison. Map each construct to
+observable signals and gaming paths.
+
+**Exit:** score bands and a reference guide someone other than the author could apply.
+
+### Phase 3: Dataset (`braintrust-build-eval-dataset`, `braintrust-size-eval-dataset`)
+
+- Keep the current 12 cases as the dev set; recheck q001, q008, and q015–q018.
+- Generate the confirmatory set by a preregistered rule rather than by choosing cases:
+  for example, every metric and adjacent period pair above a stated change size, with
+  references computed by SQL. Keep the answers unseen until the confirmatory run.
+- Generate traps by rule too. Coverage is computed per period by SQL; where a period is
+  partial, the reference requires saying so and forbids reporting the raw change as a
+  finding. Measure headroom on dev, because the skill may already pass most traps.
+- Pilot on dev only to estimate agent and judge variance, then size the confirmatory
+  set and repetitions (at least 3 runs per case per arm).
+
+**Exit:** a frozen, hashed confirmatory set, a datasheet, and a sizing rationale with
+its assumptions.
+
+### Phase 4: Scorers and human reference (`braintrust-write-eval-scorer`, `braintrust-design-human-eval-review`, `braintrust-validate-eval-scorer`)
+
+- Keep one generic Correctness definition for all cases: `evaluation_steps` plus GEval's
+  `rubric` score bands. Include both in `GEvalRubric.version()`. Extra claims that don't
+  contradict the reference aren't penalized, because the judge can't see tool output.
+- Put what a case requires in its reference, as required claims and claims it must not
+  make, derived from the data and never from the tree. The rubric must not encode the tree,
+  or arm B would win by construction.
+- Run Faithfulness with `penalize_ambiguous_claims=True`, so "stays within the evidence"
+  covers unverifiable claims as well as contradicted ones. By default DeepEval counts
+  only contradictions against the answer. Check on dev runs that claims sourced from the
+  system prompt aren't wrongly penalized.
+- Report answers that pass Correctness but fail Faithfulness, since that is where invented
+  additions would show up.
+- Add a generic Quantification scorer and a separate rule-compliance scorer.
+- One rater, so report intra-rater reliability and call it that; it is not inter-rater
+  agreement. Rate a shuffled sample with arm labels and tool traces removed, then re-rate
+  it after a gap of at least two weeks.
+- Agreement with an LLM judge is scorer validation, not a second human rater.
+- Report scorer agreement with uncertainty, severity confusion, and blind spots.
+- Publish answers and labels so that others can re-rate them.
+- Calibrate thresholds here; every current threshold is a placeholder.
+
+**Exit:** a fitness verdict per scorer. A scorer that fails can only appear as exploratory.
+
+### Phase 5: Preregistration (`braintrust-design-eval-experiment`, `braintrust-define-eval-release-gate`)
+
+Commit and tag before any confirmatory run, ideally with an external timestamp:
+hypotheses, primary endpoint, minimum meaningful effect, arms, variables held fixed,
+randomized run order, exclusion and stopping rules, the analysis, and the rule for
+concluding improvement, no effect, or harm.
+
+**Exit:** a public tag that predates the first confirmatory result.
+
+### Phase 6: Confirmatory run and analysis (`braintrust-analyze-eval-experiment`)
+
+C1 is checked first using N and D. If the instruments fail C1, C2 is not reported as a
+finding. Analysis is paired by case, with uncertainty that respects cases and repeats.
+Every run is kept, including errors.
+
+**Exit:** analysis matching the preregistration, with deviations listed.
+
+### Phase 7: Whitepaper (`braintrust-report-eval-results`)
+
+Claims stay within the evidence. Include null or negative results, the search
+denominator, the single-author limitation in the title or abstract ("a preregistered
+single-author case study"), authorship disclosure, and a package to rerun it: code, data, frozen
+context, raw records, and pinned versions.
+
+**Out of scope:** production monitoring, because there is no production traffic.
+
+---
+
+## Open decisions
+
+1. **Rule text:** approve or change the draft above; its wording is part of the treatment.
+2. **Primary endpoint:** Correctness on root cause cases. Still open: the minimum
+   meaningful improvement and the guardrail limits.
+3. **Case generation rule:** which metrics, periods, and minimum change size.
+4. **Canonical dataset location and provenance format:** in the JSONL rows or a datasheet.
+5. **Platform:** local records are enough; Braintrust is optional.

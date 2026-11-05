@@ -1,6 +1,6 @@
 # metrics tree: successful charging visits
 
-This file describes how the north star metric for an EV charging network decomposes into its drivers. Use it to do root cause analysis: when a metric moves, traverse the tree top-down, quantify how much each child contributed, descend into the biggest contributor, and repeat until you reach a leaf you can segment and explain.
+This file describes how the north star metric for an EV charging network decomposes into its drivers. Use it as the structure for root cause analysis.
 
 Metric ids in `backticks` use the semantic layer's metric names where one exists. Ids without a semantic layer metric are logical names. The table at the end shows where each metric is calculated: the semantic model, a skill, or TODO if nothing calculates it yet.
 
@@ -32,7 +32,7 @@ failed_rate = 1 − success_rate                  [complement, always report alo
 | ------ | -------------- | ---------------------------------------------------------------------------------------- |
 | `×`    | multiplicative | log contributions: `Δln(Y) = Σ Δln(xᵢ)`; share of child i = `Δln(xᵢ) / Δln(Y)`           |
 | `+`    | additive       | absolute contributions: share of child i = `Δxᵢ / ΔY`                                    |
-| `vs`   | comparison     | not decomposed arithmetically; read the ratio to find the binding constraint (section 4) |
+| `vs`   | comparison     | not decomposed arithmetically; read the ratio to find the binding constraint (section 3) |
 
 Contributions under `×` and `+` should sum to the parent's change (within rounding). If they don't, the data has a definition mismatch. Flag it before going further.
 
@@ -119,26 +119,7 @@ Minutes not utilized ÷ minutes up. "Utilized" means a transaction is open on th
 
 ---
 
-## 3. root cause procedure
-
-1. **Confirm the change is real.** Before decomposing, check:
-    - Data completeness: late-arriving transactions, CSMS outages, missing StatusNotifications, an open month.
-    - Calendar: month length (compare per-day rates), holidays, seasonality (compare the same month last year), weather.
-    - Definitions: any change to visit grouping (the 30- and 2-minute windows), the 0.1 kWh success threshold or port inventory.
-2. **Split the north star.** Compute the log contributions of `total_visits` and `success_rate`.
-3. **Descend into the largest contributor** and decompose it with the rule for its edge type. Repeat until you reach a leaf.
-4. **Segment the leaf.** Useful dimensions: site, region, charger model, firmware version, connector type, power level, EV make/model, hour of week, site type (residential, workplace, public, highway), CSMS/network.
-5. **Separate mix from rate.** A segment can move the total by changing its share, not its rate. Example: newly deployed sites with low uptime drag down network uptime while every existing site stays flat. Report which one it is.
-6. **Check cross-branch couplings** (section 5) before concluding. Many leaf movements are caused by another branch.
-7. **Report** in this structure:
-    - path through the tree, with the contribution at each level
-    - the leaf and segment where the change concentrates
-    - the evidence (queries, OCPP signals)
-    - what is still unexplained, and your confidence
-
----
-
-## 4. reading demand vs supply
+## 3. reading demand vs supply
 
 `total_visits` is where demand meets capacity. Compare the two sides to find which constraint is binding at a site:
 
@@ -153,7 +134,7 @@ Monthly availability can hide peak saturation. A site can be 80% available over 
 
 ---
 
-## 5. cross-branch couplings
+## 4. cross-branch couplings
 
 - **availability → visits_per_driver.** Saturated sites lose visits, often with a lag of one or more months as drivers move to other networks.
 - **uptime_ratio ↔ first_attempt_success_rate.** Uptime is status-based. A port that is neither faulted nor offline but fails charge attempts keeps uptime flat while first_attempt_success_rate drops. If first_attempt_success_rate falls with stable uptime, look for per-charger failure concentration.
@@ -165,7 +146,7 @@ Monthly availability can hide peak saturation. A site can be 80% available over 
 
 ---
 
-## 6. guardrails
+## 5. guardrails
 
 Check these when the north star improves, to make sure it isn't being gamed:
 
@@ -175,7 +156,7 @@ Check these when the north star improves, to make sure it isn't being gamed:
 
 ---
 
-## 7. semantic layer mapping
+## 6. semantic layer mapping
 
 | logical id                   | source                                         | notes                                                                                                                                                                                                                                                                                                 |
 | ---------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
