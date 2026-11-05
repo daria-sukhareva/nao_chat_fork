@@ -14,6 +14,18 @@ Tags: `Confirmed` (read from an artifact), `Assumed` (safe default, override it)
 
 ---
 
+## Settled decisions (2026-11-05)
+
+- **Scope:** the code stays in the fork and is not proposed upstream.
+- **System under test:** `kwwhat/demo/chat-bi`, run in Docker on an image built from this branch.
+- **Agent model:** `anthropic:claude-sonnet-4-6`, pinned for the whole study.
+- **Judge model:** the same model as the agent. Self-preference bias is a stated limitation
+  in the whitepaper (see threats).
+- **Budget:** $200 for agent and judge calls across the whole study, pilot included.
+- **Rule text and tree path:** approved as drafted below.
+
+---
+
 ## Claims
 
 The paper makes two claims, in dependency order. The second is uninterpretable without
@@ -51,7 +63,7 @@ its own. Exact numeric correctness stays with `nao test`.
 | N   | A, run as a separate block                                                        | Null control: false-positive rate for C1   |
 | D   | A with known degradations (rules removed, a definition corrupted)                 | Positive control: sensitivity for C1       |
 
-`plans/727/skills/root-cause-analysis.md` is shared by all arms and is the only root cause
+`study/common/agent/skills/root-cause-analysis.md` is shared by all arms and is the only root cause
 procedure; it was moved out of the tree with its domain and tree references removed. C2
 therefore measures what the tree's domain structure adds beyond a general method. It says nothing about adding the
 tree to a project without that skill. The skill is tuned on dev cases only, then frozen.
@@ -70,6 +82,7 @@ with its reference paths updated. The demo project has no `agent/` folder yet.
 > For questions about why a metric changed or what drives it, read `docs/metrics_tree.md`
 > and use it as the structure for your analysis.
 
+Each arm's files are in [`study/`](study/README.md), and `study/build-arm.sh` assembles them.
 The tree, both skills, the rule text, and the degradations are frozen and hashed before any run.
 
 ---
@@ -91,20 +104,20 @@ The tree, both skills, the rule text, and the degradations are frozen and hashed
 
 ## Threats to validity
 
-| Threat                                                                                                                                | Status      | Control                                                                                                                  |
-| ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
-| q015–q017 entered the dataset in the same commit as the tree (`9f0a7fff`), by the tree's author, so the cases may favor the treatment | `Confirmed` | All 12 current cases become dev only; the confirmatory set is authored independently of the tree                         |
-| q015–q017 compare a ~2.3-day week with a full week; an agent following the root cause skill's step 1 may be penalized for flagging it | `Confirmed` | Recheck the references; a correct completeness caveat must not lose points                                               |
-| ContextualRelevancy is coupled to the treatment: when the agent reads the tree, the whole ~20 KB file is scored as context            | `Assumed`   | Secondary diagnostic only; never the primary endpoint                                                                    |
-| Faithfulness is coupled to the treatment: the tree adds context that can support more claims, and B can also lose support (below)     | `Assumed`   | Secondary diagnostic only; report how often the tree was read                                                            |
-| Only `execute_sql`, `read`, and `grep` reach the judge, and SQL results are cut to 20 rows                                            | `Confirmed` | Capture all tool output in the record; state what the judge saw                                                          |
-| The judge defaults to the agent's model, and `judge.py` sets no temperature                                                           | `Confirmed` | Pinned judge from a different vendor; measure rejudging variance on identical answers                                    |
-| Rubric wording penalizes rule-following answers ("unsupported additions"; audit F2)                                                   | `Confirmed` | Separate fact, coverage, and rule-compliance criteria                                                                    |
-| One person wrote the tree, the cases, and the labels, and no second person is available                                               | `Confirmed` | Rule-generated cases, SQL-computed references, blinded re-rating, published labels, disclosure; reported as a limitation |
-| References go stale; the seed changed on 2026-11-03                                                                                   | `Confirmed` | Hash the data snapshot in every record; freeze before the baseline                                                       |
-| The root cause skill and the trap rules share an author, so absolute scores can be inflated by teaching to the test                   | `Confirmed` | Report differences between arms, not absolute scores; check headroom on dev; publish the skill                           |
-| Result depends on one synthetic project                                                                                               | `Confirmed` | State it in the claim; a second project would be a replication, not part of this study                                   |
-| Searching across metrics and subgroups                                                                                                | `Assumed`   | One preregistered primary endpoint; everything else labeled exploratory; multiplicity rule stated                        |
+| Threat                                                                                                                                | Status      | Control                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| q015–q017 entered the dataset in the same commit as the tree (`9f0a7fff`), by the tree's author, so the cases may favor the treatment | `Confirmed` | All 12 current cases become dev only; the confirmatory set is authored independently of the tree                                                                                                                                              |
+| q015–q017 compare a ~2.3-day week with a full week; an agent following the root cause skill's step 1 may be penalized for flagging it | `Confirmed` | Recheck the references; a correct completeness caveat must not lose points                                                                                                                                                                    |
+| ContextualRelevancy is coupled to the treatment: when the agent reads the tree, the whole ~20 KB file is scored as context            | `Assumed`   | Secondary diagnostic only; never the primary endpoint                                                                                                                                                                                         |
+| Faithfulness is coupled to the treatment: the tree adds context that can support more claims, and B can also lose support (below)     | `Assumed`   | Secondary diagnostic only; report how often the tree was read                                                                                                                                                                                 |
+| Only `execute_sql`, `read`, and `grep` reach the judge, and SQL results are cut to 20 rows                                            | `Confirmed` | Capture all tool output in the record; state what the judge saw                                                                                                                                                                               |
+| The judge is the same model as the agent, so it may prefer its own answers; `judge.py` also sets no temperature                       | `Confirmed` | Accepted as a limitation and disclosed. Both arms' answers come from the same model, so the bias should mostly cancel in the A–B difference (`Assumed`); checked against human labels on dev; temperature pinned; rejudging variance measured |
+| Rubric wording penalizes rule-following answers ("unsupported additions"; audit F2)                                                   | `Confirmed` | Separate fact, coverage, and rule-compliance criteria                                                                                                                                                                                         |
+| One person wrote the tree, the cases, and the labels, and no second person is available                                               | `Confirmed` | Rule-generated cases, SQL-computed references, blinded re-rating, published labels, disclosure; reported as a limitation                                                                                                                      |
+| References go stale; the seed changed on 2026-11-03                                                                                   | `Confirmed` | Hash the data snapshot in every record; freeze before the baseline                                                                                                                                                                            |
+| The root cause skill and the trap rules share an author, so absolute scores can be inflated by teaching to the test                   | `Confirmed` | Report differences between arms, not absolute scores; check headroom on dev; publish the skill                                                                                                                                                |
+| Result depends on one synthetic project                                                                                               | `Confirmed` | State it in the claim; a second project would be a replication, not part of this study                                                                                                                                                        |
+| Searching across metrics and subgroups                                                                                                | `Assumed`   | One preregistered primary endpoint; everything else labeled exploratory; multiplicity rule stated                                                                                                                                             |
 
 ---
 
@@ -213,9 +226,7 @@ context, raw records, and pinned versions.
 
 ## Open decisions
 
-1. **Rule text:** approve or change the draft above; its wording is part of the treatment.
-2. **Primary endpoint:** Correctness on root cause cases. Still open: the minimum
+1. **Primary endpoint:** Correctness on root cause cases. Still open: the minimum
    meaningful improvement and the guardrail limits.
-3. **Case generation rule:** which metrics, periods, and minimum change size.
-4. **Canonical dataset location and provenance format:** in the JSONL rows or a datasheet.
-5. **Platform:** local records are enough; Braintrust is optional.
+2. **Case generation rule:** which metrics, periods, and minimum change size.
+3. **Canonical dataset location and provenance format:** kept in the fork while the study is designed, then copied to the demo; provenance in the JSONL rows or a datasheet.

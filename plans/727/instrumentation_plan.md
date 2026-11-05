@@ -16,8 +16,8 @@ system prompt override. It just isn't returned.
 
 1. Add `systemPrompt: this._systemPrompt` to `AgentRunResult` and return it from
    `generate()`. The field is additive, so other callers are unaffected.
-2. Return it as `system_prompt` from `/api/evals/chat`, behind an opt-in request field.
-   The route only requires login, so it shouldn't expose the prompt by default.
+2. Return it as `system_prompt` from `/api/evals/chat`. This stays in the fork, so no
+   opt-in flag is needed.
 3. Add `system_prompt` to `AgentAnswer` in `client.py`.
 4. Save each distinct prompt once as `prompts/<sha256>.txt` beside the results, and store
    the hash on each record.
@@ -67,17 +67,17 @@ nao evals --experiment metrics-tree-001 --arm B --block 1 --repeats 3 --arm-mani
 The backend must report the context hash, since it reads its own project folder, which
 may not be the folder the CLI runs from (the demo runs in Docker).
 
-| Field              | How it is computed                                                                     | Why                                                                                                                               |
-| ------------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `dataset_sha256`   | Hash of the JSONL file, plus a hash per row                                            | Shows the cases didn't change                                                                                                     |
-| `context_sha256`   | Hash of sorted path and content hashes for the project, excluding `tests/` and outputs | Shows only the treatment changed                                                                                                  |
-| `context_files`    | The per-file hashes                                                                    | Shows which file differs between arms                                                                                             |
-| `data_fingerprint` | Row count and a content checksum per `fact_*` and `dim_*` table, plus seed CSV hash    | Shows the data didn't change; hashing the DuckDB file itself is unreliable because its bytes can change without the data changing |
-| `kwwhat_commit`    | Commit and dirty flag of the dbt project                                               | Links the data to its models                                                                                                      |
-| `nao_commit`       | Commit and dirty flag, or image digest in Docker                                       | Pins the agent and tools                                                                                                          |
-| Scorer versions    | Existing rubric hash, plus DeepEval metric class and version for the RAG metrics       | RAG metrics have no version today                                                                                                 |
-| Models             | Exact agent and judge model ids and settings, including temperature                    | The judge sets no temperature today                                                                                               |
-| Lockfile           | Hash of `cli/uv.lock`                                                                  | `pyproject.toml` allows `deepeval>=2.0`                                                                                           |
+| Field              | How it is computed                                                                                                     | Why                                                                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `dataset_sha256`   | Hash of the JSONL file, plus a hash per row                                                                            | Shows the cases didn't change                                                                                                     |
+| `context_sha256`   | Hash of sorted path and content hashes for the project, excluding `tests/` and outputs                                 | Shows only the treatment changed                                                                                                  |
+| `context_files`    | The per-file hashes                                                                                                    | Shows which file differs between arms                                                                                             |
+| `data_fingerprint` | Row count and a content checksum per `fact_*` and `dim_*` table, plus seed CSV hash                                    | Shows the data didn't change; hashing the DuckDB file itself is unreliable because its bytes can change without the data changing |
+| `kwwhat_commit`    | Commit and dirty flag of the dbt project                                                                               | Links the data to its models                                                                                                      |
+| `nao_commit`       | Commit and dirty flag, passed into the image as a build argument because `.git` isn't copied in; plus the image digest | Pins the agent and tools                                                                                                          |
+| Scorer versions    | Existing rubric hash, plus DeepEval metric class and version for the RAG metrics                                       | RAG metrics have no version today                                                                                                 |
+| Models             | Exact agent and judge model ids and settings, including temperature                                                    | The judge sets no temperature today                                                                                               |
+| Lockfile           | Hash of `cli/uv.lock`                                                                                                  | `pyproject.toml` allows `deepeval>=2.0`                                                                                           |
 
 Controls:
 
@@ -123,14 +123,29 @@ new ones. No baseline exists yet, so nothing is lost.
 
 ---
 
+## 5. Cost
+
+The study has a $200 budget, but only the agent's cost is recorded today. The judge's
+cost isn't.
+
+1. Record the judge's token usage and cost per metric call, from the response in
+   `ClaudeJudge.generate`.
+2. Add `--max-cost`, which stops the run once agent and judge cost together reach the
+   limit. Cases already finished are saved, and the stop is recorded.
+3. Add a ledger file that sums cost across all runs of the experiment, including the pilot
+   and runs that errored.
+
+---
+
 ## Order and verification
 
 1. Tool output, since it is the largest validity risk.
 2. System prompt.
 3. Version fields and the manifest.
 4. Arm, repetition, block, and rejudge.
-5. Compare step and `--confirmatory`.
-6. Verify: run q016 on A and B and reconstruct both from their records; confirm a changed
+5. Cost tracking and `--max-cost`.
+6. Compare step and `--confirmatory`.
+7. Verify: run q016 on A and B and reconstruct both from their records; confirm a changed
    `RULES.md` makes the compare step refuse; confirm a mismatched `--arm` stops the run.
 
 Tests go in `cli/tests/nao_core/commands/evals/`. Finish with `make lint` for the CLI and

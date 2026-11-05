@@ -1,7 +1,7 @@
 # Metrics Tree: Successful Visits (original)
 
 Original, untrimmed tree. The version used for the experiment, limited to metrics
-defined in the semantic model, is [metrics_tree.md](metrics_tree.md).
+defined in the semantic model, is [metrics_tree.md](study/arm-b/docs/metrics_tree.md).
 
 ---
 

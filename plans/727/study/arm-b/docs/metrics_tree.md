@@ -32,7 +32,7 @@ failed_rate = 1 − success_rate                  [complement, always report alo
 | ------ | -------------- | ---------------------------------------------------------------------------------------- |
 | `×`    | multiplicative | log contributions: `Δln(Y) = Σ Δln(xᵢ)`; share of child i = `Δln(xᵢ) / Δln(Y)`           |
 | `+`    | additive       | absolute contributions: share of child i = `Δxᵢ / ΔY`                                    |
-| `vs`   | comparison     | not decomposed arithmetically; read the ratio to find the binding constraint (section 3) |
+| `vs`   | comparison     | not decomposed arithmetically; read the ratio to find the binding constraint (section 4) |
 
 Contributions under `×` and `+` should sum to the parent's change (within rounding). If they don't, the data has a definition mismatch. Flag it before going further.
 
@@ -119,7 +119,18 @@ Minutes not utilized ÷ minutes up. "Utilized" means a transaction is open on th
 
 ---
 
-## 3. reading demand vs supply
+## 3. domain checks
+
+Checks specific to EV charging, for confirming a change is real and for segmenting it.
+
+- **Data completeness:** late-arriving transactions, CSMS outages, missing StatusNotifications, an open month.
+- **Calendar:** month length (compare per-day rates), holidays, seasonality (compare the same month last year), weather.
+- **Definitions:** any change to visit grouping (the 30- and 2-minute windows), the 0.1 kWh success threshold, or port inventory.
+- **Segment dimensions:** site, region, charger model, firmware version, connector type, power level, EV make/model, hour of week, site type (residential, workplace, public, highway), CSMS/network.
+
+---
+
+## 4. reading demand vs supply
 
 `total_visits` is where demand meets capacity. Compare the two sides to find which constraint is binding at a site:
 
@@ -134,7 +145,7 @@ Monthly availability can hide peak saturation. A site can be 80% available over 
 
 ---
 
-## 4. cross-branch couplings
+## 5. cross-branch couplings
 
 - **availability → visits_per_driver.** Saturated sites lose visits, often with a lag of one or more months as drivers move to other networks.
 - **uptime_ratio ↔ first_attempt_success_rate.** Uptime is status-based. A port that is neither faulted nor offline but fails charge attempts keeps uptime flat while first_attempt_success_rate drops. If first_attempt_success_rate falls with stable uptime, look for per-charger failure concentration.
@@ -146,7 +157,7 @@ Monthly availability can hide peak saturation. A site can be 80% available over 
 
 ---
 
-## 5. guardrails
+## 6. guardrails
 
 Check these when the north star improves, to make sure it isn't being gamed:
 
@@ -156,7 +167,7 @@ Check these when the north star improves, to make sure it isn't being gamed:
 
 ---
 
-## 6. semantic layer mapping
+## 7. semantic layer mapping
 
 | logical id                   | source                                         | notes                                                                                                                                                                                                                                                                                                 |
 | ---------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

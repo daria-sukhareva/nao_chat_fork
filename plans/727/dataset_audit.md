@@ -1,7 +1,7 @@
 # Golden Dataset Audit
 
 Phase 1 of the [experiment plan](experiment_plan.md). Mode: **audit** of
-`example/tests/evals/golden_dataset.jsonl` (8 cases) plus a **draft** of proposed
+`example/tests/evals/golden_dataset.jsonl` (now `study/common/tests/evals/`) (8 cases) plus a **draft** of proposed
 additions. The dataset file itself is unchanged.
 
 Tags: `Confirmed` (read from an artifact), `Assumed` (safe default, override it),
@@ -143,7 +143,7 @@ default window is empty (`Needs decision`).
 
 **Applied:** metrics-tree cases q015–q017 (drop in successful visits, Oct 1–7 vs.
 Oct 8–14, 2025), with references computed directly from the demo database before
-any treatment run. See [metrics tree](metrics_tree.md).
+any treatment run. See [metrics tree](study/arm-b/docs/metrics_tree.md).
 
 ---
 

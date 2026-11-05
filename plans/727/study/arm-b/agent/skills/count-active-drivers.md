@@ -11,12 +11,12 @@ New and returning are distinct credentials. Anonymous is an approximation: anony
 
 ## What already exists (read before querying)
 
-| Location                                                         | What's in it                                       | Implication                                                                |
-| ---------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
-| `repos/kwwhat/models/semantic/semantic_models.yml`               | Governed metrics, including `total_visits`, `mad`. | Use `total_visits` and visit outcomes as defined. Don't recreate them.     |
-| `repos/kwwhat/models/marts/marts.yml`                            | Columns of `fact_visits`, `dim_drivers`.           | `first_seen_ts` is the driver's earliest visit end (needs kwwhat PR #192). |
-| [`references/active_drivers.sql`](references/active_drivers.sql) | DuckDB query for the full split.                   | Start from it. Change only the period bounds and any filters.              |
-| [`references/validation.md`](references/validation.md)           | Boundary cases and pre-report checks.              | Go through it before reporting.                                            |
+| Location                                                                                                                | What's in it                                       | Implication                                                                |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
+| `repos/kwwhat/models/semantic/semantic_models.yml`                                                                      | Governed metrics, including `total_visits`, `mad`. | Use `total_visits` and visit outcomes as defined. Don't recreate them.     |
+| `repos/kwwhat/models/marts/marts.yml`                                                                                   | Columns of `fact_visits`, `dim_drivers`.           | `first_seen_ts` is the driver's earliest visit end (needs kwwhat PR #192). |
+| [`agent/skills/count-active-drivers/references/active_drivers.sql`](count-active-drivers/references/active_drivers.sql) | DuckDB query for the full split.                   | Start from it. Change only the period bounds and any filters.              |
+| [`agent/skills/count-active-drivers/references/validation.md`](count-active-drivers/references/validation.md)           | Boundary cases and pre-report checks.              | Go through it before reporting.                                            |
 
 ## Definitions
 
@@ -44,7 +44,7 @@ Processing has a **35-minute SLA**. "Last two hours" literally means [clock − 
 
 ### Step 2 — Run the split
 
-Adapt `references/active_drivers.sql`. Apply a location or charger filter to the visits, but keep `first_seen_ts` network-wide: new means new to the network unless the user explicitly asks otherwise.
+Adapt `agent/skills/count-active-drivers/references/active_drivers.sql`. Apply a location or charger filter to the visits, but keep `first_seen_ts` network-wide: new means new to the network unless the user explicitly asks otherwise.
 
 ### Step 3 — State the history coverage
 
