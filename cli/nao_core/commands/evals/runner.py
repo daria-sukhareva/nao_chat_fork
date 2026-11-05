@@ -19,8 +19,9 @@ from .client import DEFAULT_TIMEOUT_SECONDS, AgentAnswer, AgentBackendError, Age
 from .completeness import COMPLETENESS_RUBRIC
 from .correctness import CORRECTNESS_RUBRIC
 from .judge import resolve_judge
-from .rag import build_rag_metrics, build_retrieval_context
+from .rag import build_rag_metrics
 from .rubric import GEvalRubric
+from .tool_calls import build_retrieval_context, list_files_read
 
 BACKEND_URL = os.getenv("NAO_EVAL_URL", os.getenv("BACKEND_URL", "http://localhost:5005"))
 OUTPUTS_FOLDER = "tests/outputs"
@@ -55,6 +56,8 @@ class EvalResult:
     expected_output: str | None
     actual_output: str | None = None
     retrieval_context: list[str] = field(default_factory=list)
+    context_read: list[str] = field(default_factory=list)
+    tool_calls: list[dict] = field(default_factory=list)
     agent_model: str | None = None
     judge_model: str | None = None
     passed: bool = False
@@ -317,7 +320,9 @@ def _build_test_case(result: EvalResult) -> Any:
 
 def _record_answer(result: EvalResult, answer: AgentAnswer) -> None:
     result.actual_output = answer.text
+    result.tool_calls = answer.tool_results
     result.retrieval_context = build_retrieval_context(answer.tool_results)
+    result.context_read = list_files_read(answer.tool_results)
     result.agent_model = answer.model
     result.usage = answer.usage
     result.cost = answer.cost

@@ -155,6 +155,8 @@ def test_save_results_records_versions_and_summary(tmp_path, fake_metrics):
     assert data["results"][0]["retrieval_context"] == [
         "[SQL result]\nColumns: decommissioned_ports\ndecommissioned_ports\n4"
     ]
+    assert data["results"][0]["tool_calls"] == ANSWER.tool_results
+    assert data["results"][0]["context_read"] == []
 
 
 def write_dataset(tmp_path, *rows: dict):

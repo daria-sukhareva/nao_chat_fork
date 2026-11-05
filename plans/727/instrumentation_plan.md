@@ -107,16 +107,17 @@ context become two separate fields.
 | `list`, `search`                                                                     | Yes             | No                 | Paths only, as PR #1092 argued                            |
 | Display and follow-up tools                                                          | Yes             | No                 | Not evidence                                              |
 
-Changes:
+**Done (2026-11-05):**
 
-1. Return all tool calls from the route, adding `toolCallId` and step order, and move
-   the judge's selection into the CLI next to `serialize_tool_result`.
-2. Raise the serializer from 20 to 40 rows. `Confirmed`: the agent sees 40
-   (`components/tool-outputs/execute-sql.tsx:7`), so a fact from rows 21–40 is currently
-   marked unsupported. Better still, share the row limit so the two can't drift.
-3. Add `context_read`: whether the tree and each skill were read in this answer. This is
-   the treatment check, computed from the record.
-4. Save `judge_context` on each record: the exact text the judge received.
+1. The route returns every tool call with its `toolCallId`, in step order.
+2. The judge's selection moved to `cli/nao_core/commands/evals/tool_calls.py`. Tools are
+   excluded by name, so a new tool, including any MCP tool, reaches the judge by default.
+   Calls that failed without output are skipped.
+3. Query results show the agent's 40 rows and note how many were hidden;
+   `read_query_result` keeps every row it fetched.
+4. Each record saves `tool_calls` (everything, untruncated), `retrieval_context` (the exact
+   text the judge received), and `context_read` (each file the agent read). Whether the
+   tree or a skill was read is computed from `context_read` at analysis time.
 
 The RAG scores change as a result, so the 16 older `evals_*.json` runs can't be pooled with
 new ones. No baseline exists yet, so nothing is lost.
@@ -139,7 +140,7 @@ cost isn't.
 
 ## Order and verification
 
-1. Tool output, since it is the largest validity risk.
+1. Tool output, since it is the largest validity risk. Done.
 2. System prompt.
 3. Version fields and the manifest.
 4. Arm, repetition, block, and rejudge.

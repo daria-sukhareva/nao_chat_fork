@@ -7,8 +7,6 @@ import { authMiddleware } from '../middleware/auth';
 import { TestAgentService, testAgentService } from '../services/test-agent.service';
 import { llmSelectedModelSchema } from '../types/llm';
 
-const CONTEXT_TOOLS = new Set(['execute_sql', 'read', 'grep']);
-
 export const evalsRoutes = async (app: App) => {
 	app.addHook('preHandler', authMiddleware);
 
@@ -35,9 +33,9 @@ export const evalsRoutes = async (app: App) => {
 					model as LlmSelectedModel | undefined,
 				);
 				const result = await testAgentService.runTest(projectId, input, resolvedModel);
-				const toolResults = TestAgentService.extractToolCalls(result)
-					.filter((tc) => CONTEXT_TOOLS.has(tc.toolName))
-					.map(({ toolName, args, result: output }) => ({ toolName, args, output }));
+				const toolResults = TestAgentService.extractToolCalls(result).map(
+					({ toolName, toolCallId, args, result: output }) => ({ toolName, toolCallId, args, output }),
+				);
 
 				return reply.send({
 					text: result.text,
