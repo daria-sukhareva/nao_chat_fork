@@ -91,6 +91,33 @@ comparable. A backend without the endpoint is recorded as `null`, and the run co
 Not covered: the Docker image digest, which the container can't see. Record it with the
 arm manifest in step 2.
 
+### Provenance per case
+
+The run-level hashes show that a dataset changed. Each row also records where its
+reference came from, so a stale or self-derived reference can be found. The loader ignores
+these fields, so they never affect scoring.
+
+| Field              | Meaning                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `source`           | How the reference was established: `sql_verified`, `sql_test`, `expert`, or `agent_derived` |
+| `label_provenance` | Who proposed the reference, who accepted it, and how and when it was checked                |
+| `data_fingerprint` | Row count and checksum of the table the reference was checked against                       |
+| `notes`            | Anything a reviewer needs to judge the reference, such as a confound                        |
+
+Example, q018 (2026-11-05):
+
+| Field              | Value                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`           | `sql_verified`                                                                                                                                                |
+| `label_provenance` | Diagnosis proposed by the agent in `evals_results_20261105_211639.json`, accepted by the author, and checked claim by claim with SQL on 2026-11-05            |
+| `data_fingerprint` | `fact_visits`: 139 rows, checksum `1300261096287823253527`                                                                                                    |
+| `notes`            | On Oct 4–5, charger and authentication split the visits identically; the charger explanation is preferred because every failure carries a hardware error code |
+
+When the data changes, a `data_fingerprint` that no longer matches the run's `data`
+fingerprint shows that the reference needs rechecking. A reference proposed by the agent
+counts as `sql_verified` only when every required claim was checked, and claims that weren't
+checked are left out of it.
+
 ---
 
 ## 4. Tool output
