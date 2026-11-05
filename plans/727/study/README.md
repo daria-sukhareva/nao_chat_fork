@@ -17,7 +17,8 @@ plans/727/study/build-arm.sh B ~/github/kwwhat/demo/chat-bi build/arm-b
 ```
 
 The output holds the demo's `RULES.md` with the arm's rule appended, every overlay file,
-and `MANIFEST.sha256`, a hash of each file.
+and, next to the output folder, `<output>.sha256` with a hash of each file. The hashes stay
+outside the project so the agent can't read them.
 
 To build an image for the arm, copy the output into the demo's build context as `arm/`
 and add this line to `chat-bi/Dockerfile`, after the existing `COPY` lines:

@@ -66,8 +66,11 @@ RUN if [ -n "$NAO_CLI_VERSION" ]; then \
         echo "Set nao-core version to $NAO_CLI_VERSION"; \
     fi
 
+# Constrain every dependency to uv.lock, so an upstream release (e.g. duckdb 2.0 dropping
+# fetch_arrow_table, which ibis still calls) cannot change what the image runs.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --system '.[all,evals]'
+    uv export --frozen --no-hashes --no-emit-project --extra all --extra evals -o /tmp/requirements.lock && \
+    uv pip install --system -c /tmp/requirements.lock '.[all,evals]'
 
 # =============================================================================
 # STAGE 5: Runtime image

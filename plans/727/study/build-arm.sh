@@ -25,6 +25,7 @@ esac
 
 [[ -f $demo_dir/RULES.md ]] || { echo "No RULES.md in $demo_dir" >&2; exit 1; }
 [[ ! -e $out_dir ]] || { echo "$out_dir already exists" >&2; exit 1; }
+[[ ! -e ${out_dir%/}.sha256 ]] || { echo "${out_dir%/}.sha256 already exists" >&2; exit 1; }
 
 mkdir -p "$out_dir"
 cp "$demo_dir/RULES.md" "$out_dir/RULES.md"
@@ -37,5 +38,6 @@ for overlay in "${overlays[@]}"; do
 	fi
 done
 
-(cd "$out_dir" && find . -type f ! -name MANIFEST.sha256 | LC_ALL=C sort | xargs shasum -a 256) >"$out_dir/MANIFEST.sha256"
-echo "Arm $arm assembled in $out_dir"
+manifest="${out_dir%/}.sha256"
+(cd "$out_dir" && find . -type f | LC_ALL=C sort | xargs shasum -a 256) >"$manifest"
+echo "Arm $arm assembled in $out_dir, file hashes in $manifest"
