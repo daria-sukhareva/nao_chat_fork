@@ -5,9 +5,13 @@ import type { App } from '../app';
 import { noProjectMessage } from '../env';
 import { authMiddleware } from '../middleware/auth';
 import { retrieveProjectById } from '../queries/project.queries';
+import { defaultAgentToolsExcluding } from '../services/agent';
 import { describeEvalEnvironment } from '../services/eval-environment.service';
 import { TestAgentService, testAgentService } from '../services/test-agent.service';
 import { llmSelectedModelSchema } from '../types/llm';
+
+/** Stories are saved against the chat, and eval runs use a temporary chat that is never persisted. */
+const EVAL_EXCLUDED_TOOLS = ['story'];
 
 export const evalsRoutes = async (app: App) => {
 	app.addHook('preHandler', authMiddleware);
@@ -60,7 +64,13 @@ export const evalsRoutes = async (app: App) => {
 					projectId,
 					model as LlmSelectedModel | undefined,
 				);
-				const result = await testAgentService.runTest(projectId, input, resolvedModel);
+				const result = await testAgentService.runTest(
+					projectId,
+					input,
+					resolvedModel,
+					undefined,
+					defaultAgentToolsExcluding(EVAL_EXCLUDED_TOOLS),
+				);
 				const toolResults = TestAgentService.extractToolCalls(result).map(
 					({ toolName, toolCallId, args, result: output }) => ({ toolName, toolCallId, args, output }),
 				);
