@@ -10,26 +10,26 @@ comparison between two runs refuses to pair them if anything except the arm diff
 
 ## 1. Capture the system prompt
 
-`Confirmed`: `AgentManager` already holds the final prompt in `_systemPrompt`
-(`services/agent.ts:602`), including `RULES.md`, skill names and descriptions, and the
-system prompt override. It just isn't returned.
+**Done (2026-11-05).** `generate()` now returns a `runContext` holding the final system
+prompt, the number of memories injected, and every tool's name, description, and input
+schema. `/api/evals/chat` returns it as `run_context`.
 
-1. Add `systemPrompt: this._systemPrompt` to `AgentRunResult` and return it from
-   `generate()`. The field is additive, so other callers are unaffected.
-2. Return it as `system_prompt` from `/api/evals/chat`. This stays in the fork, so no
-   opt-in flag is needed.
-3. Add `system_prompt` to `AgentAnswer` in `client.py`.
-4. Save each distinct prompt once as `prompts/<sha256>.txt` beside the results, and store
-   the hash on each record.
-5. Store two hashes, because the prompt contains today's date (`system-prompt.tsx:87`):
-    - `system_prompt_sha256`: the exact text;
-    - `system_prompt_stable_sha256`: the same text with the date line removed.
+Each record stores, under `run_context`:
 
-Also record, because they shape the run but aren't in the prompt text:
+| Field                         | Meaning                                                                          |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| `system_prompt_sha256`        | Hash of the exact prompt                                                         |
+| `system_prompt_stable_sha256` | Hash with the date replaced by `<date>`, so runs on different days compare equal |
+| `prompt_date`                 | The date the prompt gave the agent, e.g. `Wednesday, November 5, 2026 (UTC)`     |
+| `memory_count`                | Memories injected; any value above 0 fails the case as `context_error`, unjudged |
+| `tool_manifest_sha256`        | Hash of all tool names, descriptions, and schemas, independent of order          |
+| `tool_names`                  | The tools the agent had                                                          |
 
-- the date the run used, since "last 7 days" depends on it; run A and B interleaved within one day;
-- the memory count, which must be 0 for the `test` user; the run fails otherwise;
-- the tool manifest: tool names and a hash of their descriptions and input schemas.
+Each distinct prompt is saved once as `prompts/<sha256>.txt`, and each tool manifest as
+`tool_manifests/<sha256>.json`, next to the results file. A backend test pins the date
+line's format, because the stable hash depends on it.
+
+Still to do: interleave arms A and B within one day, which belongs to step 2.
 
 ---
 
@@ -141,7 +141,7 @@ cost isn't.
 ## Order and verification
 
 1. Tool output, since it is the largest validity risk. Done.
-2. System prompt.
+2. System prompt. Done.
 3. Version fields and the manifest.
 4. Arm, repetition, block, and rejudge.
 5. Cost tracking and `--max-cost`.

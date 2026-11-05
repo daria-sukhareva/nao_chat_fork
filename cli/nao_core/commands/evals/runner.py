@@ -21,6 +21,7 @@ from .correctness import CORRECTNESS_RUBRIC
 from .judge import resolve_judge
 from .rag import build_rag_metrics
 from .rubric import GEvalRubric
+from .run_context import RunContext, describe_run_context, save_run_context_files
 from .tool_calls import build_retrieval_context, list_files_read
 
 BACKEND_URL = os.getenv("NAO_EVAL_URL", os.getenv("BACKEND_URL", "http://localhost:5005"))
@@ -36,7 +37,7 @@ REFERENCE_RUBRICS: dict[ReferenceSuite, GEvalRubric] = {
     "completeness": COMPLETENESS_RUBRIC,
 }
 
-ErrorType = Literal["timeout", "backend_error", "metric_error"]
+ErrorType = Literal["timeout", "backend_error", "context_error", "metric_error"]
 
 
 @dataclass
@@ -58,6 +59,8 @@ class EvalResult:
     retrieval_context: list[str] = field(default_factory=list)
     context_read: list[str] = field(default_factory=list)
     tool_calls: list[dict] = field(default_factory=list)
+    run_context: RunContext = field(default_factory=RunContext)
+    raw_run_context: dict[str, Any] = field(default_factory=dict)
     agent_model: str | None = None
     judge_model: str | None = None
     passed: bool = False
@@ -205,6 +208,10 @@ def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions) -> EvalR
         return _fail_with_error(result, "backend_error", str(e))
 
     _record_answer(result, answer)
+    if result.run_context.memory_count:
+        message = f"{result.run_context.memory_count} user memories were injected into the system prompt"
+        return _fail_with_error(result, "context_error", message)
+
     result.judge_model = options.judge_model or answer.model
 
     try:
@@ -248,10 +255,13 @@ def save_results(results: list[EvalResult], options: EvalOptions, output_dir: Pa
     now = datetime.now()
     output_file = output_dir / f"evals_results_{now.strftime('%Y%m%d_%H%M%S')}.json"
 
+    records = [asdict(result) for result in results]
+    save_run_context_files([record.pop("raw_run_context") for record in records], output_dir)
+
     data = {
         "timestamp": now.isoformat(),
         "config": _describe_config(options),
-        "results": [asdict(result) for result in results],
+        "results": records,
         "summary": _summarize(results),
     }
     output_file.write_text(json.dumps(data, indent=2))
@@ -327,6 +337,8 @@ def _record_answer(result: EvalResult, answer: AgentAnswer) -> None:
     result.usage = answer.usage
     result.cost = answer.cost
     result.duration_ms = answer.duration_ms
+    result.raw_run_context = answer.run_context
+    result.run_context = describe_run_context(answer.run_context)
 
 
 def _fail_with_error(result: EvalResult, error_type: ErrorType, message: str) -> EvalResult:

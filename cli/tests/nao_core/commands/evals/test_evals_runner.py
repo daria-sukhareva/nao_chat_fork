@@ -26,6 +26,11 @@ ANSWER = AgentAnswer(
             "output": {"columns": ["decommissioned_ports"], "data": [{"decommissioned_ports": 4}]},
         }
     ],
+    run_context={
+        "system_prompt": "You are nao.\nToday's date is **Wednesday, November 5, 2026**.",
+        "memory_count": 0,
+        "tools": [{"name": "execute_sql", "description": "Run SQL.", "inputSchema": {"type": "object"}}],
+    },
 )
 
 
@@ -157,6 +162,20 @@ def test_save_results_records_versions_and_summary(tmp_path, fake_metrics):
     ]
     assert data["results"][0]["tool_calls"] == ANSWER.tool_results
     assert data["results"][0]["context_read"] == []
+    assert "raw_run_context" not in data["results"][0]
+    prompt_hash = data["results"][0]["run_context"]["system_prompt_sha256"]
+    assert (tmp_path / "prompts" / f"{prompt_hash}.txt").read_text() == ANSWER.run_context["system_prompt"]
+    assert data["results"][0]["run_context"]["prompt_date"] == "Wednesday, November 5, 2026"
+
+
+def test_injected_memories_fail_the_case_before_judging(fake_metrics):
+    answer = AgentAnswer(text="4 ports.", model="anthropic:claude-sonnet-4-6", run_context={"memory_count": 2})
+
+    result = run_case(CASE, make_client(answer=answer), make_options())
+
+    assert result.error_type == "context_error"
+    assert result.actual_output == "4 ports."
+    fake_metrics.assert_not_called()
 
 
 def write_dataset(tmp_path, *rows: dict):

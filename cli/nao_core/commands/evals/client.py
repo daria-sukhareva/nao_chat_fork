@@ -18,6 +18,7 @@ class AgentAnswer:
     usage: dict[str, Any] | None = None
     cost: dict[str, Any] | None = None
     duration_ms: int | None = None
+    run_context: dict[str, Any] = field(default_factory=dict)
 
 
 class AgentTimeoutError(Exception):
@@ -62,4 +63,5 @@ def _parse_answer(data: dict) -> AgentAnswer:
         usage=data.get("usage"),
         cost=data.get("cost"),
         duration_ms=data.get("duration_ms"),
+        run_context=data.get("run_context") or {},
     )

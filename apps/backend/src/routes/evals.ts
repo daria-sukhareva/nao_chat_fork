@@ -44,6 +44,11 @@ export const evalsRoutes = async (app: App) => {
 					usage: result.usage,
 					cost: result.cost,
 					duration_ms: result.durationMs,
+					run_context: {
+						system_prompt: result.runContext.systemPrompt,
+						memory_count: result.runContext.memoryCount,
+						tools: result.runContext.tools,
+					},
 				});
 			} catch (err) {
 				const message = err instanceof Error ? err.message : 'Unknown error';
