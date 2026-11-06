@@ -1,8 +1,9 @@
 import json
 import os
 import sys
+import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -14,6 +15,7 @@ from nao_core.auth import get_auth_session
 from nao_core.commands.test.runner import ModelConfig
 from nao_core.ui import UI
 
+from .arm import ArmManifest, ArmManifestError, find_arm_mismatches, load_arm_manifest
 from .case import DatasetValidationError, EvalCase, dataset_path_for, load_cases, select_cases
 from .client import DEFAULT_TIMEOUT_SECONDS, AgentAnswer, AgentBackendError, AgentTimeoutError, EvalsClient
 from .completeness import COMPLETENESS_RUBRIC
@@ -23,6 +25,7 @@ from .provenance import changed_environment_parts, fingerprint_dataset, package_
 from .rag import build_rag_metrics, describe_rag_metrics
 from .rubric import GEvalRubric
 from .run_context import RunContext, describe_run_context, save_run_context_files
+from .schedule import RunLabels, Trial, new_run_labels, schedule_trials
 from .tool_calls import build_retrieval_context, list_files_read
 
 BACKEND_URL = os.getenv("NAO_EVAL_URL", os.getenv("BACKEND_URL", "http://localhost:5005"))
@@ -56,6 +59,14 @@ class EvalResult:
     id: str
     input: str
     expected_output: str | None
+    run_id: str | None = None
+    experiment_id: str | None = None
+    arm: str | None = None
+    block: int | None = None
+    repetition: int = 1
+    position: int = 0
+    answer_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    started_at: str | None = None
     actual_output: str | None = None
     retrieval_context: list[str] = field(default_factory=list)
     context_read: list[str] = field(default_factory=list)
@@ -139,6 +150,33 @@ def evals(
         float,
         Parameter(name=["--timeout"], help="Maximum seconds to wait for each agent answer."),
     ] = DEFAULT_TIMEOUT_SECONDS,
+    experiment: Annotated[
+        str | None,
+        Parameter(
+            name=["--experiment"],
+            help="Experiment ID. Requires --arm-manifest and --block, and shuffles the trial order.",
+        ),
+    ] = None,
+    arm_manifest: Annotated[
+        Path | None,
+        Parameter(
+            name=["--arm-manifest"],
+            help="Manifest written by build-arm.sh. The run is labeled with its arm and stops if the served "
+            "context does not match it.",
+        ),
+    ] = None,
+    block: Annotated[
+        int | None,
+        Parameter(name=["--block"], help="Block number within the experiment."),
+    ] = None,
+    repeats: Annotated[
+        int,
+        Parameter(name=["--repeats"], help="Agent calls per case; each is judged and saved as its own record."),
+    ] = 1,
+    seed: Annotated[
+        int | None,
+        Parameter(name=["--seed"], help="Seed for the trial order. Drawn at random for experiment runs if omitted."),
+    ] = None,
     verbose: Annotated[
         bool,
         Parameter(name=["-v", "--verbose"], help="Print metric reasons alongside scores."),
@@ -153,6 +191,8 @@ def evals(
         nao evals --metrics completeness
         nao evals --metrics rag
         nao evals -s q001 --timeout 120
+        nao evals -s q018 --repeats 3
+        nao evals --experiment metrics-tree-001 --arm-manifest /kwwhat/demo/chat-bi/arm.json --block 1 --repeats 3
         nao evals -u user@example.com --password secret
         nao evals -v
     """
@@ -162,6 +202,14 @@ def evals(
         return
     if judge_model and _parse_model_option("--judge-model", judge_model) is None:
         return
+
+    if repeats < 1:
+        UI.error("--repeats must be at least 1")
+        sys.exit(1)
+    if experiment and (arm_manifest is None or block is None):
+        UI.error("--experiment requires --arm-manifest and --block")
+        sys.exit(1)
+    manifest = _load_arm_manifest(arm_manifest) if arm_manifest else None
 
     project_path = Path.cwd()
     cases = _load_selected_cases(
@@ -177,7 +225,9 @@ def evals(
         thresholds={"correctness": correctness_threshold, "completeness": completeness_threshold},
         verbose=verbose,
     )
-    _print_run_header(cases, options)
+    labels = new_run_labels(experiment, manifest.arm if manifest else None, block, repeats, seed)
+    trials = schedule_trials(cases, repeats, labels.seed)
+    _print_run_header(trials, options, labels)
 
     http_client = _build_authenticated_client(
         username or os.environ.get("NAO_USERNAME"),
@@ -189,11 +239,14 @@ def evals(
     with http_client:
         client = EvalsClient(http_client, timeout=timeout)
         environment_start = _describe_environment(client)
-        results = [run_case(case, client, options) for case in cases]
+        if manifest:
+            _stop_unless_arm_matches(manifest, environment_start, project_path)
+        results = [run_trial(trial, client, options, labels) for trial in trials]
         environment_end = _describe_environment(client)
 
     provenance = _build_provenance(dataset_path_for(project_path), environment_start, environment_end)
-    output_file = save_results(results, options, project_path / OUTPUTS_FOLDER, provenance)
+    run = _describe_run(labels, trials, manifest)
+    output_file = save_results(results, options, project_path / OUTPUTS_FOLDER, provenance, run)
     _warn_if_environment_changed(provenance)
     UI.print(f"[dim]Results saved to: {output_file}[/dim]\n")
 
@@ -202,9 +255,26 @@ def evals(
         sys.exit(1)
 
 
-def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions) -> EvalResult:
-    UI.print(f"[bold]Running:[/bold] {case.id} [dim]{case.input[:80]}[/dim]")
-    result = EvalResult(id=case.id, input=case.input, expected_output=case.expected_output)
+def run_trial(trial: Trial, client: EvalsClient, options: EvalOptions, labels: RunLabels) -> EvalResult:
+    result = EvalResult(
+        id=trial.case.id,
+        input=trial.case.input,
+        expected_output=trial.case.expected_output,
+        run_id=labels.run_id,
+        experiment_id=labels.experiment_id,
+        arm=labels.arm,
+        block=labels.block,
+        repetition=trial.repetition,
+        position=trial.position,
+    )
+    return run_case(trial.case, client, options, result)
+
+
+def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions, result: EvalResult | None = None) -> EvalResult:
+    result = result or EvalResult(id=case.id, input=case.input, expected_output=case.expected_output)
+    repetition = f" [dim](repetition {result.repetition})[/dim]" if result.repetition > 1 else ""
+    UI.print(f"[bold]Running:[/bold] {case.id}{repetition} [dim]{case.input[:80]}[/dim]")
+    result.started_at = datetime.now(timezone.utc).isoformat()
 
     try:
         answer = client.ask(case.input, options.model)
@@ -258,7 +328,11 @@ def measure_metric(name: str, metric: Any, test_case: Any, verbose: bool = False
 
 
 def save_results(
-    results: list[EvalResult], options: EvalOptions, output_dir: Path, provenance: dict[str, Any] | None = None
+    results: list[EvalResult],
+    options: EvalOptions,
+    output_dir: Path,
+    provenance: dict[str, Any] | None = None,
+    run: dict[str, Any] | None = None,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     now = datetime.now()
@@ -269,6 +343,7 @@ def save_results(
 
     data = {
         "timestamp": now.isoformat(),
+        "run": run,
         "config": _describe_config(options),
         "provenance": provenance,
         "results": records,
@@ -276,6 +351,33 @@ def save_results(
     }
     output_file.write_text(json.dumps(data, indent=2))
     return output_file
+
+
+def _load_arm_manifest(manifest_path: Path) -> ArmManifest:
+    try:
+        return load_arm_manifest(manifest_path)
+    except ArmManifestError as e:
+        UI.error(str(e))
+        sys.exit(1)
+
+
+def _stop_unless_arm_matches(manifest: ArmManifest, environment: dict[str, Any] | None, project_path: Path) -> None:
+    mismatches = find_arm_mismatches(manifest, environment, project_path)
+    if not mismatches:
+        return
+    UI.error(f"The served project is not arm {manifest.arm} as built in {manifest.path}:")
+    for mismatch in mismatches:
+        UI.print(f"  [red]•[/red] {mismatch}")
+    UI.print("[dim]Rebuild the demo image from the arm, or pass the manifest of the arm it was built from.[/dim]")
+    sys.exit(1)
+
+
+def _describe_run(labels: RunLabels, trials: list[Trial], manifest: ArmManifest | None) -> dict[str, Any]:
+    return {
+        **asdict(labels),
+        "order": [[trial.case.id, trial.repetition] for trial in trials],
+        "arm_manifest": asdict(manifest) if manifest else None,
+    }
 
 
 def _describe_environment(client: EvalsClient) -> dict[str, Any] | None:
@@ -418,8 +520,16 @@ def _summarize(results: list[EvalResult]) -> dict[str, int]:
     }
 
 
-def _print_run_header(cases: list[EvalCase], options: EvalOptions) -> None:
-    UI.info(f"\n🧪 Running nao evals ({len(cases)} record(s))...\n")
+def _print_run_header(trials: list[Trial], options: EvalOptions, labels: RunLabels) -> None:
+    UI.info(f"\n🧪 Running nao evals ({len(trials)} trial(s))...\n")
+    if labels.experiment_id:
+        UI.print(f"[dim]Experiment: {labels.experiment_id}, arm {labels.arm}, block {labels.block}[/dim]")
+    elif labels.arm:
+        UI.print(f"[dim]Arm: {labels.arm}[/dim]")
+    if labels.repeats > 1:
+        UI.print(f"[dim]Repeats: {labels.repeats}[/dim]")
+    if labels.seed is not None:
+        UI.print(f"[dim]Order seed: {labels.seed}[/dim]")
     UI.print(f"[dim]Metrics: {', '.join(options.suites)}[/dim]")
     if options.model:
         UI.print(f"[dim]Model: {options.model}[/dim]")

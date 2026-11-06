@@ -25,7 +25,8 @@ esac
 
 [[ -f $demo_dir/RULES.md ]] || { echo "No RULES.md in $demo_dir" >&2; exit 1; }
 [[ ! -e $out_dir ]] || { echo "$out_dir already exists" >&2; exit 1; }
-[[ ! -e ${out_dir%/}.sha256 ]] || { echo "${out_dir%/}.sha256 already exists" >&2; exit 1; }
+manifest="${out_dir%/}.json"
+[[ ! -e $manifest ]] || { echo "$manifest already exists" >&2; exit 1; }
 
 mkdir -p "$out_dir"
 cp "$demo_dir/RULES.md" "$out_dir/RULES.md"
@@ -38,6 +39,16 @@ for overlay in "${overlays[@]}"; do
 	fi
 done
 
-manifest="${out_dir%/}.sha256"
-(cd "$out_dir" && find . -type f | LC_ALL=C sort | xargs shasum -a 256) >"$manifest"
-echo "Arm $arm assembled in $out_dir, file hashes in $manifest"
+study_commit=$(git -C "$study_dir" rev-parse HEAD)
+git -C "$study_dir" diff --quiet HEAD -- . || study_commit="$study_commit-dirty"
+
+# The arm label and file hashes `nao evals --arm-manifest` checks the served project against.
+{
+	printf '{\n  "arm": "%s",\n  "study_commit": "%s",\n  "files": {\n' "$arm" "$study_commit"
+	(cd "$out_dir" && find . -type f | sed 's|^\./||' | LC_ALL=C sort) | while read -r file; do
+		printf '%s    "%s": "%s"' "${separator:-}" "$file" "$(shasum -a 256 "$out_dir/$file" | cut -d' ' -f1)"
+		separator=$',\n'
+	done
+	printf '\n  }\n}\n'
+} >"$manifest"
+echo "Arm $arm assembled in $out_dir, manifest in $manifest"

@@ -35,29 +35,40 @@ Still to do: interleave arms A and B within one day, which belongs to step 2.
 
 ## 2. Arm label, repetition, and block
 
+**Done (2026-11-06).**
+
 ```bash
-nao evals --experiment metrics-tree-001 --arm B --block 1 --repeats 3 --arm-manifest arms.yaml
+nao evals --experiment metrics-tree-001 --arm-manifest /kwwhat/demo/chat-bi/arm.json --block 1 --repeats 3
 ```
 
-1. Add `--experiment`, `--arm`, `--block`, and `--repeats`. Each repetition is a separate
-   agent call and a separate record; scores are never averaged in the file.
-2. Add to each record: `experiment_id`, `arm`, `block`, `case_id`, `repetition`,
-   `answer_id`, and `run_id`.
-3. Check the label instead of trusting it. `arms.yaml` maps each arm to its expected
-   context hash, and the run stops if the live project doesn't match:
-
-    ```yaml
-    A: { context_sha256: '...' }
-    B: { context_sha256: '...' }
-    ```
-
-4. Shuffle case order within each block using a recorded seed, so time and provider drift
-   don't line up with particular cases.
-5. Interleave arms by block (A, B, B, A), because one backend serves one project folder at a time.
-6. Add `nao evals rejudge <results.json> --judge-repeats 3`, which rescores saved answers
-   without calling the agent. Each score records `answer_id` and `judge_repetition`, which
-   separates agent variance from judge variance.
-7. Keep every record, including errors. Errors stay labeled and count against the arm's
+1. `--experiment`, `--arm-manifest`, `--block`, `--repeats`, and `--seed`. Each repetition is a
+   separate agent call and a separate record; scores are never averaged in the file.
+2. Each record has `run_id`, `experiment_id`, `arm`, `block`, `id` (the case), `repetition`,
+   `position` (its place in the run's order), `answer_id`, and `started_at`. The file's `run`
+   section repeats the labels and adds the seed, the full order, and the arm manifest.
+3. The label is checked, not trusted. There is no `--arm` flag: `build-arm.sh` writes
+   `arm.json` next to the arm, with the arm, the study commit, and each file's hash, and the
+   run takes its arm from there. Before the first agent call, every file in the manifest is
+   compared with the context the backend serves. The dataset is compared with the local
+   project instead, because the backend's fingerprint skips `tests/`. Any difference stops the run.
+   This replaces the `arms.yaml` sketched earlier, which would have needed each arm's context
+   hash copied in by hand after every rebuild.
+4. Experiment runs shuffle cases and repetitions together with a seed, so drift in the
+   provider's latency, load or serving during a block lands randomly on cases instead of always
+   on the last ones in the dataset. The seed is drawn at random unless `--seed` is passed, and it
+   is recorded either way. Unlabeled runs keep the dataset order. See the
+   [runbook](running_evals.md#why-the-order-is-shuffled).
+5. Arms are interleaved by block (A, B, B, A). That is a procedure, not code: one backend serves
+   one project folder at a time, so each block is one run against one built arm. See the
+   [runbook](running_evals.md#runs-that-count).
+6. `nao evals rejudge <results.json> --judge-repeats 3` rescores saved answers without calling
+   the agent. Each judgment records `answer_id` and `judge_repetition`, which separates agent
+   variance from judge variance. It writes a separate `rejudge_results_*.json` that points to the
+   source file by path and hash. Files from before answer IDs existed get an ID made from the
+   file hash and the record's position. With the judge at temperature 0, judge repetitions
+   measure only the provider's leftover nondeterminism, so a spread near zero is the expected
+   result, not a sign the command is broken.
+7. Every record is kept, including errors. Errors stay labeled and count against the arm's
    completion rate.
 
 ---

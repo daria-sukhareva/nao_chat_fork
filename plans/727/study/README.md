@@ -17,8 +17,9 @@ plans/727/study/build-arm.sh B ~/github/kwwhat/demo/chat-bi ~/github/kwwhat/demo
 ```
 
 The output holds the demo's `RULES.md` with the arm's rule appended and every overlay file.
-`<output>.sha256`, next to the output folder, has a hash of each file; it stays outside the
-project so the agent can't read it.
+`<output>.json`, next to the output folder, is the arm's manifest: the arm, the study commit,
+and a hash of each file. It stays outside the project so the agent can't read it.
+`nao evals --arm-manifest` checks the served project against it and labels the run with its arm.
 
 For the full sequence, from building the nao image to reading results, see
 [Running the evals](../running_evals.md).

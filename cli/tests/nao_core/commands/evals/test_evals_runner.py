@@ -320,3 +320,82 @@ def test_evals_still_runs_when_the_environment_cannot_be_described(tmp_path, mon
     data = json.loads(next((tmp_path / "tests" / "outputs").glob("evals_results_*.json")).read_text())
     assert data["provenance"]["environment_start"] is None
     assert data["provenance"]["environment_changed"] == []
+
+
+def write_arm_manifest(tmp_path, rules_sha: str = "r" * 64):
+    manifest_path = tmp_path / "arm.json"
+    manifest_path.write_text(json.dumps({"arm": "B", "study_commit": "abc", "files": {"RULES.md": rules_sha}}))
+    return manifest_path
+
+
+def read_results(tmp_path):
+    return json.loads(next((tmp_path / "tests" / "outputs").glob("evals_results_*.json")).read_text())
+
+
+def test_experiment_run_labels_every_repetition_as_its_own_record(tmp_path, monkeypatch, fake_backend, fake_metrics):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(
+        tmp_path,
+        {"id": "q001", "input": "a", "expected_output": "b"},
+        {"id": "q002", "input": "c", "expected_output": "d"},
+    )
+    fake_metrics.return_value = [("Correctness", FakeMetric(score=0.9))]
+
+    evals(experiment="metrics-tree-001", arm_manifest=write_arm_manifest(tmp_path), block=2, repeats=3, seed=11)
+
+    data = read_results(tmp_path)
+    records = data["results"]
+    assert fake_backend.return_value.ask.call_count == 6
+    assert sorted((record["id"], record["repetition"]) for record in records) == [
+        ("q001", 1),
+        ("q001", 2),
+        ("q001", 3),
+        ("q002", 1),
+        ("q002", 2),
+        ("q002", 3),
+    ]
+    assert [record["position"] for record in records] == list(range(6))
+    assert {(record["experiment_id"], record["arm"], record["block"]) for record in records} == {
+        ("metrics-tree-001", "B", 2)
+    }
+    assert len({record["answer_id"] for record in records}) == 6
+    assert {record["run_id"] for record in records} == {data["run"]["run_id"]}
+    assert all(record["started_at"] for record in records)
+    assert data["run"]["seed"] == 11
+    assert data["run"]["order"] == [[record["id"], record["repetition"]] for record in records]
+    assert data["run"]["arm_manifest"]["arm"] == "B"
+
+
+def test_a_served_project_that_is_not_the_labeled_arm_stops_the_run(tmp_path, monkeypatch, fake_backend):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(tmp_path, {"id": "q001", "input": "a", "expected_output": "b"})
+
+    with pytest.raises(SystemExit) as exc_info:
+        evals(arm_manifest=write_arm_manifest(tmp_path, rules_sha="x" * 64))
+
+    assert exc_info.value.code == 1
+    fake_backend.return_value.ask.assert_not_called()
+
+
+def test_experiment_without_an_arm_or_block_stops_before_any_call(tmp_path, monkeypatch, fake_backend):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(tmp_path, {"id": "q001", "input": "a", "expected_output": "b"})
+
+    with pytest.raises(SystemExit):
+        evals(experiment="metrics-tree-001", block=1)
+
+    fake_backend.assert_not_called()
+
+
+def test_unlabeled_run_keeps_the_dataset_order_and_null_labels(tmp_path, monkeypatch, fake_backend, fake_metrics):
+    monkeypatch.chdir(tmp_path)
+    write_dataset(tmp_path, {"id": "q001", "input": "a", "expected_output": "b"})
+    fake_metrics.return_value = [("Correctness", FakeMetric(score=0.9))]
+
+    evals()
+
+    data = read_results(tmp_path)
+    assert data["run"]["experiment_id"] is None
+    assert data["run"]["seed"] is None
+    assert data["results"][0]["arm"] is None
+    assert data["results"][0]["repetition"] == 1
