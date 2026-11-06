@@ -13,25 +13,12 @@ Arm N uses the same files as arm A. Arm D's degradations are not defined yet.
 ## Building an arm
 
 ```bash
-plans/727/study/build-arm.sh B ~/github/kwwhat/demo/chat-bi build/arm-b
+plans/727/study/build-arm.sh B ~/github/kwwhat/demo/chat-bi ~/github/kwwhat/demo/chat-bi/arm
 ```
 
-The output holds the demo's `RULES.md` with the arm's rule appended, every overlay file,
-and, next to the output folder, `<output>.sha256` with a hash of each file. The hashes stay
-outside the project so the agent can't read them.
+The output holds the demo's `RULES.md` with the arm's rule appended and every overlay file.
+`<output>.sha256`, next to the output folder, has a hash of each file; it stays outside the
+project so the agent can't read it.
 
-To build an image for the arm, copy the output into the demo's build context as `arm/`
-and add this line to `chat-bi/Dockerfile`, after the existing `COPY` lines:
-
-```dockerfile
-COPY arm/ /app/kwwhat/
-```
-
-Build the nao base image from this branch with its commit, so every result records it:
-
-```bash
-docker build --build-arg APP_COMMIT="$(git rev-parse HEAD)$(git diff --quiet HEAD || echo -dirty)" -t nao:study .
-```
-
-Then point the demo's `FROM` line at `nao:study`. Tag each arm's image separately and record its digest. Only `RULES.md` overlaps a file
-the demo already copies; the overlay version replaces it.
+For the full sequence, from building the nao image to reading results, see
+[Running the evals](../running_evals.md).
