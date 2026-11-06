@@ -3,9 +3,9 @@
 **Date:** 2026-11-06
 **Scope:** instrumentation step 2: arm labels, repetition, blocks, a shuffled order, and
 rejudging saved answers.
-**Status:** built and unit-tested (73 eval tests pass, lint clean), but not yet run against the
-live container. Not committed. Step 5 (cost), the compare step and `--confirmatory` are not
-started. No baseline has been run.
+**Status:** built, unit-tested (73 eval tests pass, lint clean) and committed (`a1206818`).
+One live check passed: q018, arm B, two repetitions (`evals_results_20261106_222427.json`).
+Step 5 (cost), the compare step and `--confirmatory` are not started. No baseline has been run.
 
 This follows the [2026-11-05 retrospective](retrospective_2026-11-05.md). The design lives in
 the [instrumentation plan](instrumentation_plan.md#2-arm-label-repetition-and-block) and the
@@ -162,6 +162,77 @@ doesn't spend agent calls from the $200 budget.
 
 ---
 
+## The first live run
+
+`evals_results_20261106_222427.json`: q018, arm B, `--repeats 2 --arm-manifest`, no
+`--experiment`.
+
+### Plumbing: correct
+
+- **Labels:** `arm: B` came from the manifest, and the check passed. The manifest's
+  `study_commit` (`a1206818`) is clean.
+- **Repetitions:** there are two records, `repetition` 1 and 2 at positions 0 and 1, with
+  distinct `answer_id`s and one `run_id`.
+- **Order:** `seed` is null and the order is the dataset order, as designed for a run without
+  `--experiment`.
+- **Environment:** the nao commit is `5f46a96`, with no `-dirty` suffix, and the environment
+  didn't change during the run. `story` was excluded and the memory count was 0. Both
+  repetitions had the same system prompt hash.
+- **One flag: kwwhat showed `dirty: True`.** The cause was the uncommitted `.gitignore` edit
+  (`arm.sha256` → `arm.json`) on `exp/metric_tree`.
+
+### What the agent did
+
+- **Both repetitions read the root cause skill and the metrics tree.** Repetition 2 also read
+  four `columns.md` files, so the table metadata reaches the agent.
+- **Both called `load_skill("root-cause-analysis")` first.** That call fails, because
+  `load_skill` serves only built-in skills. The agent then opened the file with `read`, as the
+  skills rule says. It costs one turn and does no harm.
+- **Instrumentation gap:** the failed call is recorded with no `output` and no error.
+  `extractToolCalls` collects only `toolResults`, and the AI SDK reports failed tool calls
+  separately, so a failed call looks the same as an empty result. Tool errors aren't a priority,
+  but recording the message in `test-agent.service.ts` would be a small fix.
+
+### Scores
+
+| Repetition | Correctness | Completeness | Faithfulness | ContextualRelevancy |
+| ---------- | ----------- | ------------ | ------------ | ------------------- |
+| 1          | **1.0**     | 1.0          | 1.0          | 0.65                |
+| 2          | **0.7**     | 0.9          | 1.0          | 0.60                |
+
+1. **Repetition 1 is the best q018 answer so far**, better than the 02:20 run on 2026-11-05.
+   It names the mix shift explicitly, gives both chargers' rates on both days, and says Oct 4
+   was the exception, not Oct 5.
+2. **Same arm, same case, a 0.3 difference.** This is the run-to-run variance repetitions are
+   for. Both answers are right about the cause. Repetition 2 doesn't mention CH-001 at all, and
+   it describes the drop as "random daily variation in how many drivers choose the broken port"
+   instead of a mix shift between two chargers with stable rates.
+3. **Correctness is penalizing an omission.** The judge's Correctness reason for repetition 2
+   is that it "omits" CH-001's 100% and the explicit mix-shift framing. Repetition 2 states
+   nothing false, and leaving facts out is what Completeness measures. Yet Completeness gave
+   0.9 while Correctness gave 0.7, the reverse of what you'd expect. The two metrics' reasons
+   are nearly the same text. So the rubrics don't separate "wrong" from "missing", and
+   Correctness is the primary metric. This is a Phase 4 rubric problem, and it would have
+   stayed hidden without two answers to the same case.
+4. **The reference has a weak spot.** Both judgments mention "Oct 1 to Oct 14". The answers
+   checked only Oct 1–5, and the judge called that a "minor discrepancy". An answer about
+   Oct 4–5 doesn't need to cover Oct 14, so the criterion is awkward. It fits the planned
+   tightening of q018's reference.
+5. **Faithfulness is 1.0 on both**, even though repetition 2 says 100% uptime is "ruling out a
+   hardware outage" and then calls the fault "a hardware/EVSE fault". As on 2026-11-05,
+   Faithfulness can't see reasoning errors.
+
+### Cost and time
+
+- **Agent cost:** about $0.25 per answer ($0.28 and $0.22), recorded in the file.
+- **Judge cost:** not recorded anywhere.
+- **Time:** each answer took about 85 seconds from the agent, but the trials started 5 minutes
+  apart. Judging takes about 3.5 minutes per answer, longer than the agent.
+
+The judge cost is the main unknown for the $200 budget, which is what step 5 is for.
+
+---
+
 ## Caveats
 
 - **The judge is pinned at temperature 0** (2026-11-05 retrospective, §8). Judge repetitions
@@ -170,7 +241,8 @@ doesn't spend agent calls from the $200 budget.
   isn't where the variance comes from.
 - **The study commit was `-dirty` in the manifest test,** because `build-arm.sh` itself was
   uncommitted. Arms built for runs that count should come from a clean commit.
-- **Nothing here has run against the live container yet.** The unit tests use a fake backend.
+- **One live run is a check, not evidence.** The scores below are two answers to one case, read
+  for what they reveal about the pipeline and the rubric, not as a result for arm B.
 
 ## Lessons
 
@@ -183,9 +255,11 @@ doesn't spend agent calls from the $200 budget.
 
 ## Still open
 
-- A live check: rebuild the arm and image, then run `-s q018 --repeats 2 --arm-manifest
-/kwwhat/demo/chat-bi/arm.json`, then `rejudge` the result.
-- Commit step 2 (fork) and the `.gitignore` change (kwwhat, `exp/metric_tree`).
+- Commit the kwwhat `.gitignore` change on `exp/metric_tree`, so kwwhat stops showing as dirty.
+- Rejudge `evals_results_20261106_222427.json` with `--judge-repeats 3`, to tell whether the
+  1.0 versus 0.7 gap comes from the two answers or from the judge.
+- Record the Correctness/Completeness overlap as a Phase 4 finding in the experiment plan.
+- Optionally, record failed tool calls with their error message.
 - Step 5: cost ledger and `--max-cost`.
 - The compare step and `--confirmatory`.
 - Arm D's degradations.
