@@ -278,6 +278,7 @@ The judge cost is the main unknown for the $200 budget, which is what step 5 is 
 - Rejudge `evals_results_20261106_222427.json` with `--judge-repeats 3`, to tell whether the
   1.0 versus 0.7 gap comes from the two answers or from the judge.
 - Record the Correctness/Completeness overlap as a Phase 4 finding in the experiment plan.
+  Done on 2026-11-07; see the [2026-11-07 retrospective](retrospective_2026-11-07.md).
 - Optionally, record failed tool calls with their error message.
 - Step 5: cost ledger and `--max-cost`.
 - The compare step and `--confirmatory`.

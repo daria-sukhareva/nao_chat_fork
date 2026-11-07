@@ -193,6 +193,9 @@ its assumptions.
 - Agreement with an LLM judge is scorer validation, not a second human rater.
 - Report scorer agreement with uncertainty, severity confusion, and blind spots.
 - Publish answers and labels so that others can re-rate them.
+- Separate Correctness from Completeness (open decision 4): Correctness currently checks that
+  required facts are present and uses the required framing, so it penalizes omissions and
+  wording as well as errors.
 - Calibrate thresholds here; every current threshold is a placeholder.
 
 **Exit:** a fitness verdict per scorer. A scorer that fails can only appear as exploratory.
@@ -231,3 +234,30 @@ context, raw records, and pinned versions.
    meaningful improvement and the guardrail limits.
 2. **Case generation rule:** which metrics, periods, and minimum change size.
 3. **Canonical dataset location and provenance format:** kept in the fork while the study is designed, then copied to the demo; provenance in the JSONL rows or a datasheet.
+4. **Correctness and Completeness overlap (found 2026-11-06).** In the first run with
+   repetitions (`evals_results_20261106_222427.json`, q018, arm B), repetition 2 stated
+   nothing false but left out CH-001's 100% success rate and the words "mix shift". It scored
+   Correctness 0.7 and Completeness 0.9, and the two judge reasons were nearly the same text.
+   The judge followed the rubric as written:
+    - Correctness step 2, "Verify that every required fact … is present", checks coverage,
+      which is Completeness's job.
+    - Correctness step 3 asks for "the required naming, terminology, and framing", so an answer
+      that describes the mechanism in other words loses points.
+    - Correctness step 4 penalizes "unsupported additions", which contradicts Phase 4's rule that
+      extra claims that don't contradict the reference aren't penalized.
+
+    Correctness is the primary endpoint, so as written it partly measures coverage and
+    wording, and its effect can't be read apart from Completeness. Options:
+    - **Separate the constructs (recommended).** Correctness scores only what the answer
+      claims: penalize claims that contradict the reference or the data, and any "Must not
+      claim" item; don't penalize omissions or wording. Completeness scores coverage of the
+      "Required" list. Report how often the two disagree as a check that they now measure
+      different things.
+    - **Keep both as they are** and report them as overlapping, with Completeness dropped as a
+      separate guardrail.
+    - **Merge them** into one reference-based score, and lose the split between wrong and
+      missing.
+
+    Whichever is chosen changes `rubric_version`, so it must be settled before any run that
+    counts. Saved answers can be rescored with `nao evals rejudge --metrics correctness`, so
+    no agent calls are needed to compare the old and new rubrics.
