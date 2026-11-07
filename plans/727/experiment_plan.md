@@ -23,6 +23,14 @@ Tags: `Confirmed` (read from an artifact), `Assumed` (safe default, override it)
   in the whitepaper (see threats).
 - **Budget:** $200 for agent and judge calls across the whole study, pilot included.
 - **Rule text and tree path:** approved as drafted below.
+- **Rule compliance is out of scope (2026-11-07).** Whether answers follow `RULES.md`
+  (terminology, percentages and pp, the glance table, fully qualified tables) is a different
+  construct from diagnostic quality, and needs its own eval. A synthetic check showed that no
+  judge metric in this study detects a rule violation: an answer with every "visit" replaced by
+  "session" scored the same as the original under both Correctness rubrics and Completeness. The
+  whitepaper must say that rule compliance wasn't measured, so it can't claim the tree leaves rule
+  following unchanged. Reading the tree is still checked, as a manipulation check, from
+  `context_read`.
 
 ---
 
@@ -112,7 +120,7 @@ The tree, both skills, the rule text, and the degradations are frozen and hashed
 | Faithfulness is coupled to the treatment: the tree adds context that can support more claims, and B can also lose support (below)                                                                                           | `Assumed`   | Secondary diagnostic only; report how often the tree was read                                                                                                                                                                                 |
 | Only `execute_sql`, `read`, and `grep` reach the judge, and SQL results are cut to 20 rows                                                                                                                                  | `Confirmed` | Capture all tool output in the record; state what the judge saw                                                                                                                                                                               |
 | The judge is the same model as the agent, so it may prefer its own answers; `judge.py` also sets no temperature                                                                                                             | `Confirmed` | Accepted as a limitation and disclosed. Both arms' answers come from the same model, so the bias should mostly cancel in the A–B difference (`Assumed`); checked against human labels on dev; temperature pinned; rejudging variance measured |
-| Rubric wording penalizes rule-following answers ("unsupported additions"; audit F2)                                                                                                                                         | `Confirmed` | Separate fact, coverage, and rule-compliance criteria                                                                                                                                                                                         |
+| Rubric wording penalizes rule-following answers ("unsupported additions"; audit F2); rule compliance itself is out of scope                                                                                                 | `Confirmed` | Separate fact and coverage criteria (open decision 4, done); rule compliance is left to its own eval and named as unmeasured in the whitepaper                                                                                                |
 | One person wrote the tree, the cases, and the labels, and no second person is available                                                                                                                                     | `Confirmed` | Rule-generated cases, SQL-computed references, blinded re-rating, published labels, disclosure; reported as a limitation                                                                                                                      |
 | References go stale; the seed changed on 2026-11-03                                                                                                                                                                         | `Confirmed` | Hash the data snapshot in every record; freeze before the baseline                                                                                                                                                                            |
 | The root cause skill and the trap rules share an author, so absolute scores can be inflated by teaching to the test                                                                                                         | `Confirmed` | Report differences between arms, not absolute scores; check headroom on dev; publish the skill                                                                                                                                                |
@@ -186,16 +194,16 @@ its assumptions.
   system prompt aren't wrongly penalized.
 - Report answers that pass Correctness but fail Faithfulness, since that is where invented
   additions would show up.
-- Add a generic Quantification scorer and a separate rule-compliance scorer.
+- Add a generic Quantification scorer. Rule compliance is out of scope (see settled decisions).
 - One rater, so report intra-rater reliability and call it that; it is not inter-rater
   agreement. Rate a shuffled sample with arm labels and tool traces removed, then re-rate
   it after a gap of at least two weeks.
 - Agreement with an LLM judge is scorer validation, not a second human rater.
 - Report scorer agreement with uncertainty, severity confusion, and blind spots.
 - Publish answers and labels so that others can re-rate them.
-- Separate Correctness from Completeness (open decision 4): Correctness currently checks that
-  required facts are present and uses the required framing, so it penalizes omissions and
-  wording as well as errors.
+- Separate Correctness from Completeness (open decision 4). Done 2026-11-07 as rubric
+  `0015f7a322a7`, and checked on five saved q018 answers. Still to do: tighten q018's "Must not
+  claim" item, and decide whether omissions leaking within the top bands needs a fix.
 - Calibrate thresholds here; every current threshold is a placeholder.
 
 **Exit:** a fitness verdict per scorer. A scorer that fails can only appear as exploratory.
@@ -224,7 +232,10 @@ denominator, the single-author limitation in the title or abstract ("a preregist
 single-author case study"), authorship disclosure, and a package to rerun it: code, data, frozen
 context, raw records, and pinned versions.
 
-**Out of scope:** production monitoring, because there is no production traffic.
+**Out of scope:**
+
+- Production monitoring, because there is no production traffic.
+- Rule compliance, which needs its own eval (see settled decisions).
 
 ---
 
@@ -257,6 +268,39 @@ context, raw records, and pinned versions.
       separate guardrail.
     - **Merge them** into one reference-based score, and lose the split between wrong and
       missing.
+
+    **Chosen 2026-11-07: separate the constructs.** Implemented as Correctness rubric
+    `0015f7a322a7`, with score bands, replacing `c8b36757a66f`: Correctness judges only what the
+    answer claims, with an explicit "Must not claim" check, and says outright not to penalize
+    omissions, wording, or claims the reference neither supports nor contradicts.
+
+    **Checked 2026-11-07 on five saved q018 answers,** three judge repetitions each, in two runs
+    (see the
+    [2026-11-07 retrospective](retrospective_2026-11-07.md#checking-the-new-rubric-against-the-judge)):
+
+    | Answer                                    | Old rubric | New rubric    |
+    | ----------------------------------------- | ---------- | ------------- |
+    | Wrong mechanism ("got worse overnight")   | 0.2        | 0.2, 0.2, 0.2 |
+    | Right mechanism, "the situation worsened" | 0.6        | 0.8, 0.7, 0.5 |
+    | Right, leaves out CH-001's 100%           | 0.7        | 0.8, 0.8, 0.8 |
+    | Right, leaves out CH-001 and "mix shift"  | 0.7        | 0.9, 0.9, 0.9 |
+    | Right and complete                        | 1.0        | 0.9, 0.9, 0.9 |
+    - Run 1 (the two answers from 2026-11-06 22:24): omissions and wording no longer cost a band.
+      The incomplete answer rose from 0.7 to 0.9, as predicted, and now differs from the
+      complete one only on Completeness.
+    - Run 2 (three earlier answers, including a known wrong one): the wrong diagnosis still
+      scores 0.2 every time, so the rubric discriminates rather than just being more lenient.
+
+    Remaining issues:
+    - **The borderline answer is unstable (0.5 to 0.8)** because q018's "Must not claim" item,
+      "That something new broke on Oct 5", overlaps the true statement that the situation got
+      worse. Tighten the item to what's false, along the lines of "That CH-002 or any charger got
+      worse on Oct 5", then rejudge that answer.
+    - **Omissions still nudge scores within the top bands** (0.8 versus 0.9 for the same gap),
+      and no answer reaches 10. That's within a band, not across bands. A possible fix is a 9–10
+      band that says omissions don't lower the score.
+    - **This is a design check, not validation.** It covers five answers to one case, scored by
+      the agent's own model. Agreement with human labels across cases is still Phase 4's job.
 
     Whichever is chosen changes `rubric_version`, so it must be settled before any run that
     counts. Saved answers can be rescored with `nao evals rejudge --metrics correctness`, so

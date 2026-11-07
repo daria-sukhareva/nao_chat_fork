@@ -52,3 +52,43 @@ def test_rubric_version_changes_with_the_steps():
 
     assert edited.version() != CORRECTNESS_RUBRIC.version()
     assert COMPLETENESS_RUBRIC.version() != CORRECTNESS_RUBRIC.version()
+
+
+def test_correctness_score_bands_cover_the_whole_scale_without_gaps():
+    bands = CORRECTNESS_RUBRIC.score_bands
+
+    assert bands[0].low == 0
+    assert bands[-1].high == 10
+    assert all(later.low == earlier.high + 1 for earlier, later in zip(bands, bands[1:]))
+
+
+def test_correctness_bands_reach_the_judge_prompt():
+    metric = CORRECTNESS_RUBRIC.build_metric(StubJudge())
+
+    assert [rubric.score_range for rubric in metric.rubric] == [(0, 2), (3, 5), (6, 8), (9, 10)]
+    assert metric.score_range == (0, 10)
+
+
+def test_completeness_has_no_bands_and_keeps_its_version():
+    metric = COMPLETENESS_RUBRIC.build_metric(StubJudge())
+
+    assert metric.rubric is None
+    assert COMPLETENESS_RUBRIC.version() == "c493b2deacb0"
+
+
+def test_correctness_judges_claims_not_coverage_or_wording():
+    steps = " ".join(CORRECTNESS_RUBRIC.evaluation_steps)
+
+    assert "Must not claim" in steps
+    assert "Do not penalize omissions" in steps
+    assert "Do not penalize wording" in steps
+    assert "is present" not in steps
+    assert "terminology, and framing are used" not in steps
+    assert "unsupported additions" not in steps
+
+
+def test_rubric_version_changes_with_the_score_bands():
+    edited = replace(CORRECTNESS_RUBRIC, score_bands=CORRECTNESS_RUBRIC.score_bands[:-1])
+
+    assert edited.version() != CORRECTNESS_RUBRIC.version()
+    assert CORRECTNESS_RUBRIC.version() != "c8b36757a66f"
