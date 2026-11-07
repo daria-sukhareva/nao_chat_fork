@@ -194,6 +194,48 @@ rows, the judge would be too noisy to rank the arms, and more agent repetitions 
 
 The scores above are made up to show the reading, not measured.
 
+#### What judge repetitions can and can't show
+
+The judge runs at temperature 0, so it always takes the most likely next token. If serving
+were exact, rejudging would give the same score every time. It isn't quite exact: requests are
+batched on shared hardware, floating-point sums depend on order, and when two tokens are nearly
+tied a tiny difference decides which wins. One flipped token early in the judge's reasoning can
+change its verdict. Judge repetitions measure that leftover nondeterminism, which is how close a
+verdict sits to a tie.
+
+Two things shape what you'll see:
+
+- **GEval scores move in steps of 0.1.** Our Claude judge returns no token probabilities, so
+  Correctness and Completeness are an integer from 0 to 10, divided by 10. Judge variance shows
+  up as occasional jumps of 0.1, not small continuous noise.
+- **The RAG metrics vary more.** Faithfulness and ContextualRelevancy first extract claims or
+  statements, then judge each one. One more or one fewer statement changes the ratio.
+
+| What you see                               | What it means                                                                                                         |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Same score every time                      | Expected. The judge is reproducible on this answer, which says nothing yet about whether it's right.                  |
+| Occasional 0.1 steps                       | The answer sits near a rubric boundary. Fine, as long as the steps are small next to the differences between answers. |
+| Spread as large as the gap between answers | The judge can't rank these answers. More agent repetitions won't help; the rubric needs work first.                   |
+
+A spread near zero shows the judge is reproducible, not that it is right. Repetition can't
+reveal:
+
+- **Consistent bias.** A judge that marks down omissions under Correctness does so every time:
+  zero spread, wrong construct. Only comparison with human labels finds it (Phase 4).
+- **Sensitivity to the rubric's wording.** That needs the rubric paraphrased and the answers
+  rescored.
+- **The choice of judge model.** The judge is the same model as the agent, a bias flagged for
+  the whitepaper.
+- **How confident the judge is.** At temperature 0 a 51% verdict and a 99% verdict look the
+  same.
+
+Rejudging at temperature 1 would show that last one, but it would measure a different
+instrument from the one that produced the scores. `rejudge` keeps the original judge settings
+for that reason.
+
+In the whitepaper, report this as judge reproducibility, a lower bound on judge noise, and
+report the judge's agreement with human labels separately as its accuracy.
+
 ## 6. Find the results
 
 `chat-bi/tests/outputs/` is mounted from the host, so results appear in

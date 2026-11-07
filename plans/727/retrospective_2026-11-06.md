@@ -236,12 +236,31 @@ The judge cost is the main unknown for the $200 budget, which is what step 5 is 
 ## Caveats
 
 - **The judge is pinned at temperature 0** (2026-11-05 retrospective, §8). Judge repetitions
-  therefore measure only the provider's leftover nondeterminism, and a spread near zero is the
-  expected result. It's still worth measuring, because the whitepaper needs to show the judge
-  isn't where the variance comes from.
+  therefore measure only the provider's leftover nondeterminism: batching and floating-point
+  order flip near-tied tokens, and one flip can change a verdict. A spread near zero is the
+  expected result. GEval scores move in steps of 0.1, because the Claude judge returns no token
+  probabilities. The multi-step RAG metrics will likely vary more.
+- **Reproducible is not right.** Repetition can't reveal a bias the judge has every time, such
+  as the Correctness rubric penalizing omissions in the first live run. Rejudging that answer
+  would very likely give 0.7 each time. Nor can it reveal sensitivity to the rubric's wording,
+  the effect of judging with the agent's own model, or how confident the judge is. The
+  whitepaper should report judge repetitions as reproducibility, a lower bound on judge noise,
+  and report agreement with human labels separately as accuracy. Rejudging at temperature 1
+  was rejected because it would measure a different instrument from the one that produced the
+  scores. See the
+  [runbook](running_evals.md#what-judge-repetitions-can-and-cant-show).
+
+    How to read a rejudge result:
+
+    | What you see                               | What it means                                                                                                         |
+    | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+    | Same score every time                      | Expected. The judge is reproducible on this answer, which says nothing yet about whether it's right.                  |
+    | Occasional 0.1 steps                       | The answer sits near a rubric boundary. Fine, as long as the steps are small next to the differences between answers. |
+    | Spread as large as the gap between answers | The judge can't rank these answers. More agent repetitions won't help; the rubric needs work first.                   |
+
 - **The study commit was `-dirty` in the manifest test,** because `build-arm.sh` itself was
   uncommitted. Arms built for runs that count should come from a clean commit.
-- **One live run is a check, not evidence.** The scores below are two answers to one case, read
+- **One live run is a check, not evidence.** The scores above are two answers to one case, read
   for what they reveal about the pipeline and the rubric, not as a result for arm B.
 
 ## Lessons
