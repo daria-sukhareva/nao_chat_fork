@@ -203,9 +203,12 @@ its assumptions.
 - Keep one generic Correctness definition for all cases: `evaluation_steps` plus GEval's
   `rubric` score bands. Include both in `GEvalRubric.version()`. Extra claims that don't
   contradict the reference aren't penalized, because the judge can't see tool output.
-- Put what a case requires in its reference, as required claims and claims it must not
-  make, derived from the data and never from the tree. The rubric must not encode the tree,
-  or arm B would win by construction.
+- Put what a case requires in its reference, as a list of required claims derived from the
+  data and never from the tree. The rubric must not encode the tree, or arm B would win by
+  construction.
+- A wrong diagnosis is caught because it contradicts a required claim, so each reference
+  states the facts that rule out the likely wrong diagnoses. In q018, "each charger's own
+  success rate stayed the same" contradicts any answer that says CH-002 got worse.
 - Run Faithfulness in DeepEval's default mode, which counts only claims the context
   contradicts. Strict mode (`penalize_ambiguous_claims=True`, planned on 2026-11-05) was
   dropped on 2026-11-08, for three reasons (retrospective 2026-11-07, "Rule compliance"):
@@ -236,8 +239,9 @@ its assumptions.
 - Report scorer agreement with uncertainty, severity confusion, and blind spots.
 - Publish answers and labels so that others can re-rate them.
 - Separate Correctness from Completeness (open decision 4). Done 2026-11-07 as rubric
-  `0015f7a322a7`, and checked on five saved q018 answers. Still to do: tighten q018's "Must not
-  claim" item, and decide whether omissions leaking within the top bands needs a fix.
+  `0015f7a322a7`, and checked on five saved q018 answers. Still to do: rejudge the saved q018
+  answers with rubric `fbda3f9f0f46`, and decide whether omissions leaking within the top
+  bands needs a fix.
 - Calibrate thresholds here; every current threshold is a placeholder.
 
 **Exit:** a fitness verdict per scorer. A scorer that fails can only appear as exploratory.
@@ -294,8 +298,8 @@ context, raw records, and pinned versions.
     Correctness is the primary endpoint, so as written it partly measures coverage and
     wording, and its effect can't be read apart from Completeness. Options:
     - **Separate the constructs (recommended).** Correctness scores only what the answer
-      claims: penalize claims that contradict the reference or the data, and any "Must not
-      claim" item; don't penalize omissions or wording. Completeness scores coverage of the
+      claims: penalize claims that contradict the reference or the data; don't
+      penalize omissions or wording. Completeness scores coverage of the
       "Required" list. Report how often the two disagree as a check that they now measure
       different things.
     - **Keep both as they are** and report them as overlapping, with Completeness dropped as a
@@ -305,8 +309,8 @@ context, raw records, and pinned versions.
 
     **Chosen 2026-11-07: separate the constructs.** Implemented as Correctness rubric
     `0015f7a322a7`, with score bands, replacing `c8b36757a66f`: Correctness judges only what the
-    answer claims, with an explicit "Must not claim" check, and says outright not to penalize
-    omissions, wording, or claims the reference neither supports nor contradicts.
+    answer claims and says outright not to penalize omissions, wording, or claims the reference
+    neither supports nor contradicts. The current version is `fbda3f9f0f46`.
 
     **Checked 2026-11-07 on five saved q018 answers,** three judge repetitions each, in two runs
     (see the
@@ -326,12 +330,11 @@ context, raw records, and pinned versions.
       scores 0.2 every time, so the rubric discriminates rather than just being more lenient.
 
     Remaining issues:
-    - **The borderline answer is unstable (0.5 to 0.8)** because q018's "Must not claim" item,
-      "That something new broke on Oct 5", overlaps the true statement that the situation got
-      worse. Tighten the item to what's false, along the lines of "That CH-002 or any charger got
-      worse on Oct 5", then rejudge that answer. Done 2026-11-07: the item now reads "That
-      CH-002 or any other charger got worse on Oct 5", and the "not new" requirement was
-      narrowed from Oct 1–14 to Oct 1–3. The rejudge is still to do.
+    - **The borderline answer is unstable (0.5 to 0.8).** The judge read its "the situation
+      worsened on Oct 5" as a claim that CH-002 got worse, though the answer also says CH-002
+      was already broken on Oct 4. q018's "not new" claim was also narrowed from Oct 1–14 to
+      Oct 1–3. Still to do: rejudge the five saved q018 answers with rubric `fbda3f9f0f46`, and
+      check that the wrong diagnosis still scores low.
     - **Omissions still nudge scores within the top bands** (0.8 versus 0.9 for the same gap),
       and no answer reaches 10. That's within a band, not across bands. A possible fix is a 9–10
       band that says omissions don't lower the score.

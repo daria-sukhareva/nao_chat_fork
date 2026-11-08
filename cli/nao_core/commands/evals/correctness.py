@@ -6,8 +6,6 @@ CORRECTNESS_RUBRIC = GEvalRubric(
         "List the factual claims the actual output makes: values, entities, dates, relationships, and causes.",
         "Compare each claim with the expected output for factual accuracy, and penalize every claim that "
         "contradicts it.",
-        "If the expected output lists claims the answer must not make (for example under 'Must not claim'), "
-        "heavily penalize an actual output that makes any of them, in any wording.",
         "Penalize details that are accurate on their own but misleading in context.",
         "Do not penalize omissions. A required element that is missing is judged by Completeness, not here.",
         "Do not penalize wording. A fact or mechanism stated in different terms from the expected output is correct.",
@@ -18,8 +16,8 @@ CORRECTNESS_RUBRIC = GEvalRubric(
         ScoreBand(
             0,
             2,
-            "The main conclusion contradicts the expected output, the output makes a claim it must not make, "
-            "or it makes no substantive claim about what the expected output addresses.",
+            "The main conclusion contradicts the expected output, or the output makes no substantive claim "
+            "about what the expected output addresses.",
         ),
         ScoreBand(
             3,

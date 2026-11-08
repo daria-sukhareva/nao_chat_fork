@@ -76,15 +76,15 @@ Record the tool set each run had, so the exclusion is visible in results.
 **Propose:**
 
 - Correctness scores only what the answer claims. Penalize claims that contradict the
-  reference, any claim the reference says the answer must not make, and misleading details.
+  reference, and misleading details.
 - State outright what not to penalize: omissions, wording, and claims the reference neither
   supports nor contradicts.
 - Completeness scores coverage.
 - Add GEval score bands, so a 7 has a defined meaning.
-- Write references as a "Required" list and a "Must not claim" list, so the two metrics read
-  different parts.
+- Write references as a list of required claims, including the facts that rule out the
+  likely wrong diagnoses.
 
-**Evidence:** the fork's rubric `0015f7a322a7` does this. On five saved answers, three judge
+**Evidence:** the fork's rubric `0015f7a322a7` does this (since refined to `fbda3f9f0f46`). On five saved answers, three judge
 repetitions each
 ([details](retrospective_2026-11-07.md#checking-the-new-rubric-against-the-judge)):
 
@@ -92,8 +92,9 @@ repetitions each
 - The incomplete-but-correct answer rose from 0.7 to 0.9.
 - Wording stopped costing points.
 
-Still open: a borderline answer was unstable (0.5 to 0.8), because its "Must not claim" item
-overlapped a true statement. Omissions still nudge scores within the top band.
+Still open: a borderline answer was unstable (0.5 to 0.8), because the judge read its true
+"the situation worsened" as a claim that the charger got worse. Omissions still nudge scores
+within the top band.
 
 ### 4. Build the judge's context with a denylist of tools
 

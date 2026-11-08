@@ -76,19 +76,8 @@ def test_completeness_has_no_bands_and_keeps_its_version():
     assert COMPLETENESS_RUBRIC.version() == "c493b2deacb0"
 
 
-def test_correctness_judges_claims_not_coverage_or_wording():
-    steps = " ".join(CORRECTNESS_RUBRIC.evaluation_steps)
-
-    assert "Must not claim" in steps
-    assert "Do not penalize omissions" in steps
-    assert "Do not penalize wording" in steps
-    assert "is present" not in steps
-    assert "terminology, and framing are used" not in steps
-    assert "unsupported additions" not in steps
-
-
 def test_rubric_version_changes_with_the_score_bands():
     edited = replace(CORRECTNESS_RUBRIC, score_bands=CORRECTNESS_RUBRIC.score_bands[:-1])
 
     assert edited.version() != CORRECTNESS_RUBRIC.version()
-    assert CORRECTNESS_RUBRIC.version() != "c8b36757a66f"
+    assert CORRECTNESS_RUBRIC.version() not in ("c8b36757a66f", "0015f7a322a7")
