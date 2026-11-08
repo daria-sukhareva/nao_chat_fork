@@ -99,8 +99,10 @@ docker exec -it "$(docker ps -qf name=chat-bi-run)" sh -c 'cd /app/kwwhat && nao
 - Drop `-s q018` to run every case.
 - `--repeats 2` asks each case twice. Every answer is judged and saved as its own record.
 - `--arm-manifest` labels the run with the arm and stops it before the first agent call if the
-  served project isn't that arm (see [Runs that count](#runs-that-count)). Without it the
-  run's `arm` is empty.
+  served project isn't that arm (see [Runs that count](#runs-that-count)): an arm file is
+  missing or different, or a file is served that the arm doesn't list. Files under
+  `databases/` and `repos/`, and `nao_config.yaml`, are the same for every arm and aren't
+  checked. Without the flag the run's `arm` is empty.
 - `-u` is the account you sign in with at http://localhost:5005. The password is prompted
   for, or read from `NAO_PASSWORD`.
 

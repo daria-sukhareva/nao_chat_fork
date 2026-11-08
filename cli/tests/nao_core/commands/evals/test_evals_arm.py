@@ -51,7 +51,14 @@ def test_matching_served_context_and_local_dataset_has_no_mismatches(tmp_path):
         write_manifest(tmp_path, {"RULES.md": RULES_SHA, "tests/evals/golden_dataset.jsonl": dataset_sha})
     )
 
-    assert find_arm_mismatches(manifest, environment(("RULES.md", RULES_SHA), ("docs/x.md", "x")), tmp_path) == []
+    served = environment(
+        ("RULES.md", RULES_SHA),
+        ("databases/type=duckdb/database=analytics/schema=MARTS/table=fact_visits/preview.md", "p"),
+        ("repos/kwwhat/models/marts/marts.yml", "m"),
+        ("nao_config.yaml", "n"),
+    )
+
+    assert find_arm_mismatches(manifest, served, tmp_path) == []
 
 
 def test_a_different_or_missing_file_is_a_mismatch(tmp_path):
@@ -73,6 +80,21 @@ def test_a_different_or_missing_file_is_a_mismatch(tmp_path):
         "RULES.md differs from the arm B build",
         "docs/metrics_tree.md is missing",
         "tests/evals/golden_dataset.jsonl differs from the arm B build",
+    ]
+
+
+def test_a_served_file_the_arm_does_not_list_is_a_mismatch(tmp_path):
+    manifest = load_arm_manifest(write_manifest(tmp_path, {"RULES.md": RULES_SHA}, arm="A"))
+    served = environment(
+        ("RULES.md", RULES_SHA),
+        ("docs/metrics_tree.md", "t"),
+        ("agent/skills/count-active-drivers.md", "s"),
+        ("databases/type=duckdb/database=analytics/schema=MARTS/table=fact_visits/columns.md", "c"),
+    )
+
+    assert find_arm_mismatches(manifest, served, tmp_path) == [
+        "agent/skills/count-active-drivers.md is served but is not part of arm A",
+        "docs/metrics_tree.md is served but is not part of arm A",
     ]
 
 
