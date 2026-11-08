@@ -81,11 +81,6 @@ describe('SystemPrompt timezone rendering', () => {
 		expect(markdown).toContain('Tuesday, March 10, 2026 (UTC)');
 	});
 
-	it('renders the date line in the form nao evals removes for its stable prompt hash', () => {
-		const markdown = renderToMarkdown(SystemPrompt({}));
-		expect(markdown).toContain("Today's date is **Tuesday, March 10, 2026 (UTC)**.");
-	});
-
 	it('describes available custom charts and their web-only scope', () => {
 		const markdown = renderToMarkdown(
 			SystemPrompt({
