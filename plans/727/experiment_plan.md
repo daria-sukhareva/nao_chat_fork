@@ -138,6 +138,7 @@ The tree, both skills, the rule text, and the degradations are frozen and hashed
 | The RAG judge sees every tool result except the tools in `NON_EVIDENCE_TOOLS` (`tool_calls.py`), with SQL results cut to the 40 rows the agent sees and `read_query_result` in full. The system prompt, including `RULES.md`, is not in it   | `Confirmed` | Capture all tool output in the record; state what the judge saw; a claim backed only by the system prompt counts as unsupported                                                                                                               |
 | The judge is the same model as the agent, so it may prefer its own answers; `judge.py` also sets no temperature                                                                                                                              | `Confirmed` | Accepted as a limitation and disclosed. Both arms' answers come from the same model, so the bias should mostly cancel in the A–B difference (`Assumed`); checked against human labels on dev; temperature pinned; rejudging variance measured |
 | Rubric wording penalizes rule-following answers ("unsupported additions"; audit F2); rule compliance itself is out of scope                                                                                                                  | `Confirmed` | Separate fact and coverage criteria (open decision 4, done); rule compliance is left to its own eval and named as unmeasured in the whitepaper                                                                                                |
+| Correctness penalizes omissions by 0.1 to 0.2 although its rubric says not to (measured 2026-11-08), so an arm that writes shorter answers also loses some Correctness                                                                       | `Confirmed` | Disclosed as a limitation with the measured size; Completeness reported alongside Correctness, so a drop in both can be read as coverage                                                                                                      |
 | One person wrote the tree, the cases, and the labels, and no second person is available                                                                                                                                                      | `Confirmed` | Rule-generated cases, SQL-computed references, blinded re-rating, published labels, disclosure; reported as a limitation                                                                                                                      |
 | References go stale; the seed changed on 2026-11-03                                                                                                                                                                                          | `Confirmed` | Hash the data snapshot in every record; freeze before the baseline                                                                                                                                                                            |
 | The root cause skill and the trap rules share an author, so absolute scores can be inflated by teaching to the test                                                                                                                          | `Confirmed` | Report differences between arms, not absolute scores; check headroom on dev; publish the skill                                                                                                                                                |
@@ -239,9 +240,9 @@ its assumptions.
 - Report scorer agreement with uncertainty, severity confusion, and blind spots.
 - Publish answers and labels so that others can re-rate them.
 - Separate Correctness from Completeness (open decision 4). Done 2026-11-07 as rubric
-  `0015f7a322a7`, and checked on five saved q018 answers. Still to do: rejudge the saved q018
-  answers with rubric `fbda3f9f0f46`, and decide whether omissions leaking within the top
-  bands needs a fix.
+  `0015f7a322a7`, and checked on five saved q018 answers. Rechecked 2026-11-08 with rubric
+  `fbda3f9f0f46`: omissions still leak into Correctness, and this is left as a known
+  limitation (see open decision 4, "Remaining issues").
 - Calibrate thresholds here; every current threshold is a placeholder.
 
 **Exit:** a fitness verdict per scorer. A scorer that fails can only appear as exploratory.
@@ -330,14 +331,27 @@ context, raw records, and pinned versions.
       scores 0.2 every time, so the rubric discriminates rather than just being more lenient.
 
     Remaining issues:
-    - **The borderline answer is unstable (0.5 to 0.8).** The judge read its "the situation
-      worsened on Oct 5" as a claim that CH-002 got worse, though the answer also says CH-002
-      was already broken on Oct 4. q018's "not new" claim was also narrowed from Oct 1–14 to
-      Oct 1–3. Still to do: rejudge the five saved q018 answers with rubric `fbda3f9f0f46`, and
-      check that the wrong diagnosis still scores low.
-    - **Omissions still nudge scores within the top bands** (0.8 versus 0.9 for the same gap),
-      and no answer reaches 10. That's within a band, not across bands. A possible fix is a 9–10
-      band that says omissions don't lower the score.
+    - **The borderline answer is resolved.** With rubric `fbda3f9f0f46` and the
+      natural-language q018 reference (2026-11-08), it scores 0.7 three times out of three, and
+      the wrong diagnosis scores 0.3 to 0.4 (`synthetic/rejudge_results_20261108_160620.json`).
+    - **Omissions leak into Correctness; left as a known limitation (2026-11-08).** The rubric
+      says not to penalize omissions, and the judge says so in its reasons, then deducts
+      anyway. Measured by deleting the sentences that carry a required claim from the complete
+      answer, adding nothing (`synthetic/q018_prose_reference.json`):
+
+        | Version of the complete answer | Correctness   | Completeness  |
+        | ------------------------------ | ------------- | ------------- |
+        | Unchanged                      | 1.0, 1.0, 1.0 | 1.0, 1.0, 1.0 |
+        | Without CH-001's 100%          | 0.8, 0.7, 0.9 | 0.8, 0.7, 0.7 |
+        | Without "not new"              | 0.9, 0.9, 0.9 | 0.8, 0.8, 0.8 |
+        | Without both                   | 0.8, 0.8, 0.8 | 0.6, 0.7, 0.7 |
+
+        An omission costs 0.1 to 0.2 of Correctness on top of its Completeness penalty. The
+        reference's format isn't the cause: the same test with a "Required:" list gave the same
+        leak. The leak is smaller than the gap between right and wrong answers (0.7 or more
+        against 0.3 to 0.4), so the ranking holds. Possible fixes, not taken: steps that go only
+        through the answer's own claims, or structured yes/no scoring (DeepEval `DAGMetric`).
+
     - **This is a design check, not validation.** It covers five answers to one case, scored by
       the agent's own model. Agreement with human labels across cases is still Phase 4's job.
 
