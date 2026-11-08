@@ -208,8 +208,18 @@ The original plan:
 4. Arm, repetition, block, and rejudge. Done.
 5. Cost tracking and `--max-cost`. Done.
 6. Compare step and `--confirmatory`. Done.
-7. Not done yet. Verify: run q016 on A and B and reconstruct both from their records; confirm a changed
+7. Done (2026-11-07), with the A/B run reported rather than reviewed (see the
+   [retrospective](retrospective_2026-11-07.md#live-check-does---arm-manifest-stop-a-run-on-the-wrong-arm)).
+   Verify: run q016 on A and B and reconstruct both from their records; confirm a changed
    `RULES.md` makes the compare step refuse; confirm a mismatched `--arm` stops the run.
+    - A mismatched arm stops the run: done. Arm A's manifest against a served B stopped before
+      the first agent call. The check missed files the manifest doesn't list; fixed in
+      `20d1638b`.
+    - A changed `RULES.md` makes compare refuse: done. An unlabeled run with an edited
+      `RULES.md` was first accepted; fixed in `b5b96776`. Two clean B runs pass.
+    - Not in the original list: `--max-cost` stops a run between trials: done.
+    - Run a case on A and B and reconstruct both from their records: reported done; the results
+      files haven't been reviewed here.
 
 Tests go in `cli/tests/nao_core/commands/evals/`. Finish with `make lint` for the CLI and
 `npm run lint` for the backend.

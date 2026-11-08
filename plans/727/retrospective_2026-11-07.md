@@ -462,6 +462,80 @@ before any agent call, so it cost nothing. The dataset isn't reported because th
 A's manifest held the same old dataset (`28b383b95ca2`). It doesn't show that the new q018
 reference was served, and it wasn't.
 
+## Live check: does `compare` accept a matched pair and refuse a changed one?
+
+These are checks 5a and 5b, run in the same container as check 4. They still used the old q018
+reference, because arm B hadn't been rebuilt, but that doesn't affect what they test.
+
+**5a: two B runs (`024822` and `030000`, q018 with 2 repeats each), compared: passed.**
+
+```
+evals_results_20261108_030000.json: experiment None, arm B, block None
+evals_results_20261108_024822.json: experiment None, arm B, block None
+✓ 2 runs held everything fixed except the arm.
+```
+
+Both runs had the same nao commit (`8938426c`), context (`f35231563912`) and dataset
+(`28b383b95ca2`), and neither changed during the run. No preview note appeared, because
+`nao sync` ran once for both runs. Correctness was 1.0, 1.0 and 0.9, 1.0. The 0.9 was the judge
+marking down "Oct 1–7 rather than Oct 1–14", the criterion that `8938426c` removes. The success
+message is a fixed string, and it says "except the arm" even when the arm didn't vary.
+
+**5b: a changed `RULES.md`: first accepted, then fixed.** A test line was appended to
+`/app/kwwhat/RULES.md` in the container. With `--arm-manifest`, the run stopped because
+`RULES.md` differed. Without the flag, it ran (`031312`), and its `RULES.md` and context hashes
+differed from `024822`'s. Yet `compare` passed:
+
+```
+evals_results_20261108_024822.json: experiment None, arm B, block None
+evals_results_20261108_031312.json: experiment None, arm None, block None
+✓ 2 runs held everything fixed except the arm.
+```
+
+`compare` treated `B` and `None` as two different arms. Different arms may differ in their arms'
+files, and B's manifest lists `RULES.md`, so the edit was accepted as part of arm B. Any run made
+without `--arm-manifest` could have been paired this way, with any change to an arm file.
+
+**Fix (`b5b96776`).** A run with no arm label is a problem, because nothing vouches for its
+context. After rebuilding `nao:study`:
+
+```
+✗ These runs can't be paired (1 problem(s)):
+  • evals_results_20261108_031312.json: no arm label, so its context can't be checked against an arm (run with --arm-manifest)
+```
+
+The branch for identical labels was checked offline, on a copy of `031312` labeled arm B with
+`024822`'s manifest. It was refused for both reasons: "same arm B, but RULES.md differs" and
+"same arm B, but the system prompt differs".
+
+## Live check: does `--max-cost` stop a run?
+
+`033339`: q018 with 2 repeats and `--max-cost 0.1`, below the cost of one trial.
+
+```
+Cost: $0.55 (agent $0.22, judge $0.33)
+Stopped after 1 of 2 trial(s): max_cost.
+✓ All 1 eval(s) passed
+```
+
+The first trial ran and the second didn't. The file records `trials_run: 1` and
+`stopped: {"reason": "max_cost", "spent_usd": 0.5458, "max_usd": 0.1}`, and so does the
+ledger line. The overshoot, $0.55 against a $0.10 cap, is the one trial that was already
+running. That's by design: the limit is checked between trials. A one-trial run can therefore
+never be stopped, which is why an earlier one-trial run under `--max-cost 1` finished at $0.53.
+The final "✓ All 1 eval(s) passed" is misleading after a stop. It counts only the trials that
+ran, even though the run exits 1.
+
+## Live check: the new q018 reference is served
+
+After arm B was rebuilt from `b5b96776` (dataset `2fb954ac8e71`), a clean B smoke run was
+reported fine. Its results file hasn't been reviewed here.
+
+## Live check: an A run paired with a B run
+
+A q018 run on arm A, compared with the clean B run, was reported to pass. Its results files
+haven't been reviewed here.
+
 ## Order of work
 
 The new rubric was drafted only after the rejudge finished, so the old rubric's reproducibility
@@ -493,6 +567,11 @@ show it.
 - **A check that passes is only as strong as the reason it passed.** The wrong-arm run stopped on
   the first try, but only because `RULES.md` happened to differ. Reading which files it reported,
   not just that it stopped, is what exposed that it couldn't see files the manifest doesn't list.
+- **Test a refusal with the change it should refuse, through every path.** `compare` had unit
+  tests for same-arm and different-arm pairs. Nobody had asked what an unlabeled run counts as.
+- **Rebuilding the image doesn't rebuild the arm.** The dataset lives in the arm, so the q018
+  change reached the agent only after `build-arm.sh` ran again. Check the hash in `arm.json`
+  after every rebuild.
 
 ## Still open
 
@@ -502,8 +581,10 @@ show it.
   `8938426c`. Still to do: rejudge the borderline `20261106_020913` answer against the new
   reference, which has to be swapped into a copy of its results file, to see whether its spread
   narrows.
-- The rest of Phase 0's live check: `compare` accepting a matched pair and refusing a changed
-  one (check 5), and optionally an A run compared with B.
+- Review the A/B pairing run's results files. It was reported to pass but hasn't been checked
+  here: the only expected differences are the arm's files.
+- Two misleading messages: `compare` says "except the arm" for runs of the same arm, and a run
+  stopped by `--max-cost` ends with "✓ All N eval(s) passed".
 - Whether omissions leaking within the top bands needs a fix, for example a 9–10 band that says
   omissions don't lower the score.
 - Validate Faithfulness against human labels, or record it as exploratory only. Its errors on
