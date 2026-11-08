@@ -20,6 +20,7 @@ from .case import DatasetValidationError, EvalCase, dataset_path_for, load_cases
 from .client import DEFAULT_TIMEOUT_SECONDS, AgentAnswer, AgentBackendError, AgentTimeoutError, EvalsClient
 from .completeness import COMPLETENESS_RUBRIC
 from .correctness import CORRECTNESS_RUBRIC
+from .cost import CostLimit, JudgeCost, Spend, append_ledger, judge_cost, snapshot_usage, sum_judge_costs
 from .judge import describe_judge_settings, resolve_judge
 from .provenance import changed_environment_parts, fingerprint_dataset, package_versions
 from .rag import build_rag_metrics, describe_rag_metrics
@@ -52,6 +53,7 @@ class MetricResult:
     passed: bool
     reason: str | None
     error: str | None = None
+    judge_cost: JudgeCost | None = None
 
 
 @dataclass
@@ -80,6 +82,7 @@ class EvalResult:
     metrics: list[MetricResult] = field(default_factory=list)
     usage: dict[str, Any] | None = None
     cost: dict[str, Any] | None = None
+    judge_cost: JudgeCost | None = None
     duration_ms: int | None = None
     error_type: ErrorType | None = None
     error: str | None = None
@@ -177,6 +180,14 @@ def evals(
         int | None,
         Parameter(name=["--seed"], help="Seed for the trial order. Drawn at random for experiment runs if omitted."),
     ] = None,
+    max_cost: Annotated[
+        float | None,
+        Parameter(
+            name=["--max-cost"],
+            help="Stop before the next trial once agent and judge cost reach this many US dollars. "
+            "Finished trials are saved.",
+        ),
+    ] = None,
     verbose: Annotated[
         bool,
         Parameter(name=["-v", "--verbose"], help="Print metric reasons alongside scores."),
@@ -192,6 +203,7 @@ def evals(
         nao evals --metrics rag
         nao evals -s q001 --timeout 120
         nao evals -s q018 --repeats 3
+        nao evals --repeats 3 --max-cost 5
         nao evals --experiment metrics-tree-001 --arm-manifest /kwwhat/demo/chat-bi/arm.json --block 1 --repeats 3
         nao evals -u user@example.com --password secret
         nao evals -v
@@ -205,6 +217,9 @@ def evals(
 
     if repeats < 1:
         UI.error("--repeats must be at least 1")
+        sys.exit(1)
+    if max_cost is not None and max_cost <= 0:
+        UI.error("--max-cost must be greater than 0")
         sys.exit(1)
     if experiment and (arm_manifest is None or block is None):
         UI.error("--experiment requires --arm-manifest and --block")
@@ -241,18 +256,41 @@ def evals(
         environment_start = _describe_environment(client)
         if manifest:
             _stop_unless_arm_matches(manifest, environment_start, project_path)
-        results = [run_trial(trial, client, options, labels) for trial in trials]
+        spend, limit = Spend(), CostLimit(max_cost)
+        results = run_trials(trials, client, options, labels, spend, limit)
         environment_end = _describe_environment(client)
 
     provenance = _build_provenance(dataset_path_for(project_path), environment_start, environment_end)
-    run = _describe_run(labels, trials, manifest)
-    output_file = save_results(results, options, project_path / OUTPUTS_FOLDER, provenance, run)
+    run = {**_describe_run(labels, trials, manifest), **_describe_spend(spend, limit, len(results))}
+    outputs_dir = project_path / OUTPUTS_FOLDER
+    output_file = save_results(results, options, outputs_dir, provenance, run)
+    append_ledger(outputs_dir, _ledger_entry("evals", output_file, labels, run, results))
     _warn_if_environment_changed(provenance)
+    _report_spend(spend, limit, len(results), len(trials))
     UI.print(f"[dim]Results saved to: {output_file}[/dim]\n")
 
     _print_summary(results)
-    if any(not result.passed for result in results):
+    if limit.stopped or any(not result.passed for result in results):
         sys.exit(1)
+
+
+def run_trials(
+    trials: list[Trial], client: EvalsClient, options: EvalOptions, labels: RunLabels, spend: Spend, limit: CostLimit
+) -> list[EvalResult]:
+    """Runs trials until done, over the cost limit, or interrupted; whatever finished is returned to be saved."""
+    results: list[EvalResult] = []
+    try:
+        for trial in trials:
+            if limit.should_stop(spend):
+                break
+            result = run_trial(trial, client, options, labels)
+            results.append(result)
+            spend.add_agent(result.cost)
+            for metric in result.metrics:
+                spend.add_judge(metric.judge_cost)
+    except KeyboardInterrupt:
+        limit.stopped = {"reason": "interrupted", "spent_usd": round(spend.total_usd, 6)}
+    return results
 
 
 def run_trial(trial: Trial, client: EvalsClient, options: EvalOptions, labels: RunLabels) -> EvalResult:
@@ -298,7 +336,8 @@ def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions, result: 
         return _fail_with_error(result, "metric_error", f"Could not build judge metrics: {e}")
 
     test_case = _build_test_case(result)
-    result.metrics = [measure_metric(name, metric, test_case, options.verbose) for name, metric in named_metrics]
+    result.metrics = [measure_metric(name, metric, test_case, options.verbose, judge) for name, metric in named_metrics]
+    result.judge_cost = sum_judge_costs([metric.judge_cost for metric in result.metrics])
 
     if any(metric.error for metric in result.metrics):
         result.error_type = "metric_error"
@@ -307,13 +346,22 @@ def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions, result: 
     return result
 
 
-def measure_metric(name: str, metric: Any, test_case: Any, verbose: bool = False) -> MetricResult:
+def measure_metric(name: str, metric: Any, test_case: Any, verbose: bool = False, judge: Any = None) -> MetricResult:
     threshold = metric.threshold
+    usage_before = snapshot_usage(judge)
     try:
         metric.measure(test_case)
     except Exception as e:
         UI.print(f"  [red]![/red] {name}: [red]error[/red] [dim]{e}[/dim]")
-        return MetricResult(name=name, score=None, threshold=threshold, passed=False, reason=None, error=str(e))
+        return MetricResult(
+            name=name,
+            score=None,
+            threshold=threshold,
+            passed=False,
+            reason=None,
+            error=str(e),
+            judge_cost=judge_cost(judge, metric, usage_before),
+        )
 
     score = round(metric.score, 4) if metric.score is not None else None
     passed = score is not None and score >= threshold
@@ -324,7 +372,14 @@ def measure_metric(name: str, metric: Any, test_case: Any, verbose: bool = False
     if verbose and reason:
         UI.print(f"    [dim]{reason}[/dim]")
 
-    return MetricResult(name=name, score=score, threshold=threshold, passed=passed, reason=reason)
+    return MetricResult(
+        name=name,
+        score=score,
+        threshold=threshold,
+        passed=passed,
+        reason=reason,
+        judge_cost=judge_cost(judge, metric, usage_before),
+    )
 
 
 def save_results(
@@ -378,6 +433,39 @@ def _describe_run(labels: RunLabels, trials: list[Trial], manifest: ArmManifest 
         "order": [[trial.case.id, trial.repetition] for trial in trials],
         "arm_manifest": asdict(manifest) if manifest else None,
     }
+
+
+def _describe_spend(spend: Spend, limit: CostLimit, trials_run: int) -> dict[str, Any]:
+    return {"cost": spend.describe(), "max_cost_usd": limit.max_usd, "trials_run": trials_run, "stopped": limit.stopped}
+
+
+def _ledger_entry(
+    command: str, output_file: Path, labels: RunLabels, run: dict[str, Any], results: list[EvalResult]
+) -> dict[str, Any]:
+    return {
+        "command": command,
+        "results_file": output_file.name,
+        "run_id": labels.run_id,
+        "experiment_id": labels.experiment_id,
+        "arm": labels.arm,
+        "block": labels.block,
+        "trials_planned": len(run["order"]),
+        "trials_run": run["trials_run"],
+        "errored": sum(1 for result in results if result.error_type),
+        **run["cost"],
+        "stopped": run["stopped"],
+    }
+
+
+def _report_spend(spend: Spend, limit: CostLimit, trials_run: int, trials_planned: int) -> None:
+    UI.print(f"[dim]Cost: ${spend.total_usd:.2f} (agent ${spend.agent_usd:.2f}, judge ${spend.judge_usd:.2f})[/dim]")
+    if spend.agent_cost_unknown or spend.judge_cost_unknown:
+        UI.warn(
+            f"Cost is incomplete: {spend.agent_cost_unknown} agent call(s) and "
+            f"{spend.judge_cost_unknown} judge metric(s) reported no cost."
+        )
+    if limit.stopped:
+        UI.warn(f"Stopped after {trials_run} of {trials_planned} trial(s): {limit.stopped['reason']}.")
 
 
 def _describe_environment(client: EvalsClient) -> dict[str, Any] | None:

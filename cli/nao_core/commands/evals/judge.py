@@ -2,6 +2,8 @@ from typing import Any
 
 from nao_core.commands.test.runner import ModelConfig
 
+from .cost import TokenUsage
+
 CLAUDE_JUDGE_TEMPERATURE = 0.0
 CLAUDE_JUDGE_MAX_TOKENS = 4096
 
@@ -29,6 +31,10 @@ def _build_claude_judge(model_id: str) -> Any:
     from deepeval.models import DeepEvalBaseLLM
 
     class ClaudeJudge(DeepEvalBaseLLM):
+        def __init__(self):
+            self.usage = TokenUsage()
+            super().__init__(model_id)
+
         def load_model(self):
             return anthropic.Anthropic()
 
@@ -39,6 +45,7 @@ def _build_claude_judge(model_id: str) -> Any:
                 temperature=CLAUDE_JUDGE_TEMPERATURE,
                 messages=[{"role": "user", "content": prompt}],
             )
+            self.usage.add(response.usage.input_tokens, response.usage.output_tokens)
             return response.content[0].text
 
         async def a_generate(self, prompt: str) -> str:

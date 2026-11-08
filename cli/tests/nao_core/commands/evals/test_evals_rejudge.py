@@ -52,6 +52,12 @@ def read_judgments(tmp_path):
     return json.loads(next(tmp_path.glob("rejudge_results_*.json")).read_text())
 
 
+@pytest.fixture(autouse=True)
+def project_folder(tmp_path, monkeypatch):
+    """rejudge writes the cost ledger under the current project's tests/outputs."""
+    monkeypatch.chdir(tmp_path)
+
+
 @pytest.fixture
 def built_metrics():
     created = []

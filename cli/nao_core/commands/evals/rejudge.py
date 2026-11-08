@@ -10,9 +10,11 @@ from cyclopts import Parameter
 
 from nao_core.ui import UI
 
+from .cost import CostLimit, JudgeCost, Spend, append_ledger, sum_judge_costs
 from .judge import describe_judge_settings, resolve_judge
 from .runner import (
     ALL_SUITES,
+    OUTPUTS_FOLDER,
     REFERENCE_RUBRICS,
     EvalOptions,
     EvalResult,
@@ -38,6 +40,7 @@ class Judgment:
     judge_model: str
     judge_settings: dict[str, Any]
     metrics: list[MetricResult] = field(default_factory=list)
+    judge_cost: JudgeCost | None = None
     error: str | None = None
 
 
@@ -59,6 +62,14 @@ def rejudge(
         list[MetricSuite] | None,
         Parameter(name=["--metrics"], help="Metric suites to rescore. Defaults to the suites of the original run."),
     ] = None,
+    max_cost: Annotated[
+        float | None,
+        Parameter(
+            name=["--max-cost"],
+            help="Stop before the next judgment once judge cost reaches this many US dollars. "
+            "Finished judgments are saved.",
+        ),
+    ] = None,
     verbose: Annotated[
         bool,
         Parameter(name=["-v", "--verbose"], help="Print metric reasons alongside scores."),
@@ -72,6 +83,9 @@ def rejudge(
     """
     if judge_repeats < 1:
         UI.error("--judge-repeats must be at least 1")
+        sys.exit(1)
+    if max_cost is not None and max_cost <= 0:
+        UI.error("--max-cost must be greater than 0")
         sys.exit(1)
 
     source = _load_results(results_file)
@@ -91,16 +105,42 @@ def rejudge(
     if skipped:
         UI.print(f"[dim]Skipping {len(skipped)} answer(s) the agent did not produce.[/dim]\n")
 
-    judgments = [
-        judge_answer(record, answer_id, judge_repetition, options)
+    planned = [
+        (answer_id, record, judge_repetition)
         for answer_id, record in judgeable
         for judge_repetition in range(1, judge_repeats + 1)
     ]
+    spend, limit = Spend(), CostLimit(max_cost)
+    judgments = judge_planned(planned, options, spend, limit)
 
-    output_file = _save_judgments(results_file, source, options, judge_repeats, judgments, skipped)
+    run = {"cost": spend.describe(), "max_cost_usd": max_cost, "stopped": limit.stopped}
+    output_file = _save_judgments(results_file, source, options, judge_repeats, judgments, skipped, run)
+    append_ledger(Path.cwd() / OUTPUTS_FOLDER, _ledger_entry(output_file, source, run, len(planned), judgments))
+    UI.print(f"[dim]Judge cost: ${spend.judge_usd:.2f}[/dim]")
+    if limit.stopped:
+        UI.warn(f"Stopped after {len(judgments)} of {len(planned)} judgment(s): {limit.stopped['reason']}.")
     UI.print(f"[dim]Judgments saved to: {output_file}[/dim]\n")
-    if any(judgment.error or any(metric.error for metric in judgment.metrics) for judgment in judgments):
+    failed = any(judgment.error or any(metric.error for metric in judgment.metrics) for judgment in judgments)
+    if limit.stopped or failed:
         sys.exit(1)
+
+
+def judge_planned(
+    planned: list[tuple[str, dict[str, Any], int]], options: EvalOptions, spend: Spend, limit: CostLimit
+) -> list[Judgment]:
+    """Judges until done, over the cost limit, or interrupted; whatever finished is returned to be saved."""
+    judgments: list[Judgment] = []
+    try:
+        for answer_id, record, judge_repetition in planned:
+            if limit.should_stop(spend):
+                break
+            judgment = judge_answer(record, answer_id, judge_repetition, options)
+            judgments.append(judgment)
+            for metric in judgment.metrics:
+                spend.add_judge(metric.judge_cost)
+    except KeyboardInterrupt:
+        limit.stopped = {"reason": "interrupted", "spent_usd": round(spend.total_usd, 6)}
+    return judgments
 
 
 def judge_answer(record: dict[str, Any], answer_id: str, judge_repetition: int, options: EvalOptions) -> Judgment:
@@ -120,14 +160,18 @@ def judge_answer(record: dict[str, Any], answer_id: str, judge_repetition: int, 
         judge_settings=describe_judge_settings(model),
     )
     try:
-        named_metrics = _build_metrics(resolve_judge(model or ""), options)
+        judge = resolve_judge(model or "")
+        named_metrics = _build_metrics(judge, options)
     except Exception as e:
         judgment.error = f"Could not build judge metrics: {e}"
         UI.print(f"  [red]![/red] metric_error: [dim]{judgment.error}[/dim]\n")
         return judgment
 
     test_case = _build_test_case(_saved_answer(record))
-    judgment.metrics = [measure_metric(name, metric, test_case, options.verbose) for name, metric in named_metrics]
+    judgment.metrics = [
+        measure_metric(name, metric, test_case, options.verbose, judge) for name, metric in named_metrics
+    ]
+    judgment.judge_cost = sum_judge_costs([metric.judge_cost for metric in judgment.metrics])
     UI.print("")
     return judgment
 
@@ -192,6 +236,7 @@ def _save_judgments(
     judge_repeats: int,
     judgments: list[Judgment],
     skipped: list[dict[str, Any]],
+    run: dict[str, Any] | None = None,
 ) -> Path:
     now = datetime.now()
     output_file = results_file.parent / f"rejudge_results_{now.strftime('%Y%m%d_%H%M%S')}.json"
@@ -203,8 +248,28 @@ def _save_judgments(
             "run": source["data"].get("run"),
         },
         "config": {**_describe_config(options), "judge_repeats": judge_repeats},
+        "run": run,
         "judgments": [asdict(judgment) for judgment in judgments],
         "skipped": skipped,
     }
     output_file.write_text(json.dumps(data, indent=2))
     return output_file
+
+
+def _ledger_entry(
+    output_file: Path, source: dict[str, Any], run: dict[str, Any], planned: int, judgments: list[Judgment]
+) -> dict[str, Any]:
+    source_run = source["data"].get("run") or {}
+    return {
+        "command": "rejudge",
+        "results_file": output_file.name,
+        "run_id": source_run.get("run_id"),
+        "experiment_id": source_run.get("experiment_id"),
+        "arm": source_run.get("arm"),
+        "block": source_run.get("block"),
+        "trials_planned": planned,
+        "trials_run": len(judgments),
+        "errored": sum(1 for judgment in judgments if judgment.error),
+        **run["cost"],
+        "stopped": run["stopped"],
+    }

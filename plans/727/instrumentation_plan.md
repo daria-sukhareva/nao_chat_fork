@@ -167,8 +167,26 @@ new ones. No baseline exists yet, so nothing is lost.
 
 ## 5. Cost
 
-The study has a $200 budget, but only the agent's cost is recorded today. The judge's
-cost isn't.
+**Done (2026-11-07).** See the [runbook](running_evals.md#cost).
+
+The study has a $200 budget. Before this step, only the agent's cost was recorded.
+
+How it was built:
+
+- `ClaudeJudge` counts the tokens of every call. Each metric's tokens are the difference before
+  and after it runs, priced from `JUDGE_PRICES` in `cost.py`. That table copies nao's
+  `costPerM` from `apps/backend/src/agents/provider-meta.ts`, and a test fails if the two drift.
+  DeepEval's built-in judges report their own `evaluation_cost`, which is used instead.
+- `--max-cost` on `nao evals` and `nao evals rejudge` checks before each trial, so the trial in
+  flight can overshoot. An unpriced judge stops a capped run. A timeout's unknown agent cost is
+  counted but doesn't.
+- The ledger is `tests/outputs/cost_ledger.jsonl` in the project, shared by both commands, so
+  rejudges of files in subfolders such as `synthetic/` count too. `nao evals cost` sums it per
+  experiment against a budget.
+- Not covered: cost spent before this step (all of 2026-11-05 to 2026-11-07), and the agent
+  cost of trials that time out.
+
+The original plan:
 
 1. Record the judge's token usage and cost per metric call, from the response in
    `ClaudeJudge.generate`.

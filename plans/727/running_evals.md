@@ -236,6 +236,46 @@ for that reason.
 In the whitepaper, report this as judge reproducibility, a lower bound on judge noise, and
 report the judge's agreement with human labels separately as its accuracy.
 
+### Cost
+
+Every run records what it spent, and the study's $200 budget covers agent and judge calls
+together.
+
+- **Per record:** the agent's cost (`cost`, from nao's backend), and the judge's tokens and cost
+  for each metric (`metrics[].judge_cost`) and in total (`judge_cost`).
+- **Per run:** `run.cost` has the agent, judge and total cost in US dollars, and how many agent
+  calls or judge metrics reported no cost.
+- **Across runs:** each `nao evals` and `nao evals rejudge` appends one line to
+  `tests/outputs/cost_ledger.jsonl`, including runs where cases errored.
+
+Cap a run with `--max-cost`, in US dollars, on either command:
+
+```bash
+docker exec -it "$(docker ps -qf name=chat-bi-run)" sh -c 'cd /app/kwwhat && nao evals \
+  --experiment metrics-tree-001 --arm-manifest /kwwhat/demo/chat-bi/arm.json --block 1 --repeats 3 \
+  --max-cost 20 -u <your nao login>'
+```
+
+- The check runs before each trial, so the trial in flight can overshoot the limit by its own
+  cost (about $0.25 for the agent, plus the judge).
+- Finished trials are saved, and the file's `run.stopped` says why the run ended early. The
+  command then exits with an error, because the run is incomplete.
+- Ctrl-C also saves what's finished, with `run.stopped.reason` set to `interrupted`.
+- A judge model with no known price stops a capped run, because the limit can't be enforced.
+  Only `claude-sonnet-4-6` is priced, from nao's own price table.
+- A trial that times out returns no agent cost. It's counted in `agent_cost_unknown`, but it
+  doesn't stop the run.
+
+See what the experiment has spent so far:
+
+```bash
+docker exec -it "$(docker ps -qf name=chat-bi-run)" sh -c 'cd /app/kwwhat && nao evals cost \
+  --experiment metrics-tree-001 --budget 200'
+```
+
+Without `--experiment`, it lists every experiment, with unlabeled runs grouped as
+"(no experiment)".
+
 ## 6. Find the results
 
 `chat-bi/tests/outputs/` is mounted from the host, so results appear in
@@ -247,13 +287,14 @@ report the judge's agreement with human labels separately as its accuracy.
 | `rejudge_results_<timestamp>.json` | New scores for the answers in one results file, per judge repetition |
 | `prompts/<sha256>.txt`             | Each distinct system prompt, referred to by hash                     |
 | `tool_manifests/<sha256>.json`     | Each distinct tool set, referred to by hash                          |
+| `cost_ledger.jsonl`                | One line per run, with its agent, judge and total cost               |
 
 ## Before trusting a result
 
 Check these in the results file:
 
 - `run.arm` and `run.block` are the arm and block you meant to run.
-
+- `run.stopped` is null, so the run wasn't cut short by `--max-cost` or Ctrl-C.
 - `provenance.environment_changed` is empty.
 - `provenance.environment_start.nao.commit` is the commit you built, without `-dirty` for runs
   that count.
