@@ -52,12 +52,27 @@ so the paper must say which one each result speaks to.
 **Population** `Assumed`: single-turn questions from an EV network operator against the
 kwwhat demo project.
 
-- **H3, exploratory:** paired changes in the RAG triad track paired changes in Correctness
-  and Completeness. This tests the assumption behind the referenceless plan in PR #1092; it
-  is not taken as given. It is analyzed and reported, but not preregistered as a test and not
-  counted in the multiplicity rule, so a result can suggest a follow-up study but can't
-  support a claim. Its metrics vary within an answer as much as between answers (retrospective
-  2026-11-07), so a confirmatory test would need several judge repetitions per answer.
+### Hypotheses
+
+Every comparison is paired by case. Effect sizes, margins, the false-positive bound, and the
+multiplicity rule are set in the preregistration (Phase 5); none is fixed yet.
+
+| ID  | Hypothesis                                                                                         | Comparison     | Metric                                             | Type                  |
+| --- | -------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- | --------------------- |
+| C1  | The instruments stay quiet when nothing changed and detect a known degradation                     | N vs A, D vs A | Correctness, Completeness                          | Confirmatory          |
+| C2  | Adding the tree bundle changes root cause answer quality by at least the minimum meaningful effect | B vs A         | Correctness, root cause cases                      | Confirmatory, primary |
+| H3  | Paired changes in the RAG triad track paired changes in Correctness and Completeness               | B vs A, D vs A | Faithfulness, ContextualRelevancy, AnswerRelevancy | Exploratory           |
+
+C1 is tested first: if it fails, C2 is not reported as a finding (Phase 6). C2 is two-sided,
+so a drop would be reported too. C2 also reports its guardrails (Completeness and lookup
+Correctness must not regress beyond their margins; cost, latency, and error rate must stay
+within limits) and how often B's agent read the tree, from `context_read`.
+
+**H3 is exploratory.** It tests the assumption behind the referenceless plan in PR #1092,
+rather than taking it as given. It is analyzed and reported, but not preregistered as a test
+and not counted in the multiplicity rule, so a result can suggest a follow-up study but can't
+support a claim. Its metrics vary within an answer as much as between answers (retrospective
+2026-11-07), so a confirmatory test would need several judge repetitions per answer.
 
 **Non-claims:** other projects, other domains, real operator traffic (the seed data is
 synthetic and covers 14 days), multi-turn use, chart rendering, or any part of the treatment on
