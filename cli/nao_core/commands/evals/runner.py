@@ -19,6 +19,7 @@ from .arm import ArmManifest, ArmManifestError, find_arm_mismatches, load_arm_ma
 from .case import DatasetValidationError, EvalCase, dataset_path_for, load_cases, select_cases
 from .client import DEFAULT_TIMEOUT_SECONDS, AgentAnswer, AgentBackendError, AgentTimeoutError, EvalsClient
 from .completeness import COMPLETENESS_RUBRIC
+from .confirmatory import problems_after_run, problems_before_run, problems_with_environment
 from .correctness import CORRECTNESS_RUBRIC
 from .cost import CostLimit, JudgeCost, Spend, append_ledger, judge_cost, snapshot_usage, sum_judge_costs
 from .judge import describe_judge_settings, resolve_judge
@@ -180,6 +181,14 @@ def evals(
         int | None,
         Parameter(name=["--seed"], help="Seed for the trial order. Drawn at random for experiment runs if omitted."),
     ] = None,
+    confirmatory: Annotated[
+        bool,
+        Parameter(
+            name=["--confirmatory"],
+            help="A run that counts: refuses to start from a dirty build or without full labels, and is marked "
+            "invalid if anything changes during it or it stops early.",
+        ),
+    ] = False,
     max_cost: Annotated[
         float | None,
         Parameter(
@@ -204,6 +213,7 @@ def evals(
         nao evals -s q001 --timeout 120
         nao evals -s q018 --repeats 3
         nao evals --repeats 3 --max-cost 5
+        nao evals --experiment metrics-tree-001 --arm-manifest arm.json --block 1 --repeats 3 --confirmatory
         nao evals --experiment metrics-tree-001 --arm-manifest /kwwhat/demo/chat-bi/arm.json --block 1 --repeats 3
         nao evals -u user@example.com --password secret
         nao evals -v
@@ -225,6 +235,8 @@ def evals(
         UI.error("--experiment requires --arm-manifest and --block")
         sys.exit(1)
     manifest = _load_arm_manifest(arm_manifest) if arm_manifest else None
+    if confirmatory:
+        _stop_if_unfit_to_count(problems_before_run(experiment, manifest, block, select))
 
     project_path = Path.cwd()
     cases = _load_selected_cases(
@@ -232,6 +244,7 @@ def evals(
     )
     if not cases:
         return
+    dataset_at_load = fingerprint_dataset(dataset_path_for(project_path))
 
     options = EvalOptions(
         suites=suites,
@@ -256,12 +269,15 @@ def evals(
         environment_start = _describe_environment(client)
         if manifest:
             _stop_unless_arm_matches(manifest, environment_start, project_path)
+        if confirmatory:
+            _stop_if_unfit_to_count(problems_with_environment(environment_start))
         spend, limit = Spend(), CostLimit(max_cost)
         results = run_trials(trials, client, options, labels, spend, limit)
         environment_end = _describe_environment(client)
 
-    provenance = _build_provenance(dataset_path_for(project_path), environment_start, environment_end)
+    provenance = _build_provenance(dataset_at_load, dataset_path_for(project_path), environment_start, environment_end)
     run = {**_describe_run(labels, trials, manifest), **_describe_spend(spend, limit, len(results))}
+    run["confirmatory"] = _judge_confirmatory(provenance, limit.stopped) if confirmatory else None
     outputs_dir = project_path / OUTPUTS_FOLDER
     output_file = save_results(results, options, outputs_dir, provenance, run)
     append_ledger(outputs_dir, _ledger_entry("evals", output_file, labels, run, results))
@@ -270,7 +286,8 @@ def evals(
     UI.print(f"[dim]Results saved to: {output_file}[/dim]\n")
 
     _print_summary(results)
-    if limit.stopped or any(not result.passed for result in results):
+    invalid_confirmatory = run["confirmatory"] is not None and not run["confirmatory"]["valid"]
+    if invalid_confirmatory or limit.stopped or any(not result.passed for result in results):
         sys.exit(1)
 
 
@@ -435,6 +452,22 @@ def _describe_run(labels: RunLabels, trials: list[Trial], manifest: ArmManifest 
     }
 
 
+def _stop_if_unfit_to_count(problems: list[str]) -> None:
+    if not problems:
+        return
+    UI.error("This run can't count as confirmatory:")
+    for problem in problems:
+        UI.print(f"  [red]•[/red] {problem}")
+    sys.exit(1)
+
+
+def _judge_confirmatory(provenance: dict[str, Any], stopped: dict[str, Any] | None) -> dict[str, Any]:
+    problems = problems_after_run(provenance, stopped)
+    if problems:
+        UI.warn(f"This run is not a valid confirmatory run: {'; '.join(problems)}.")
+    return {"valid": not problems, "problems": problems}
+
+
 def _describe_spend(spend: Spend, limit: CostLimit, trials_run: int) -> dict[str, Any]:
     return {"cost": spend.describe(), "max_cost_usd": limit.max_usd, "trials_run": trials_run, "stopped": limit.stopped}
 
@@ -477,14 +510,22 @@ def _describe_environment(client: EvalsClient) -> dict[str, Any] | None:
 
 
 def _build_provenance(
-    dataset_path: Path, environment_start: dict[str, Any] | None, environment_end: dict[str, Any] | None
+    dataset_at_load: dict[str, Any],
+    dataset_path: Path,
+    environment_start: dict[str, Any] | None,
+    environment_end: dict[str, Any] | None,
 ) -> dict[str, Any]:
+    """The dataset is fingerprinted when its cases are loaded, and again at the end to catch an edit mid-run."""
+    dataset_changed = fingerprint_dataset(dataset_path)["sha256"] != dataset_at_load["sha256"]
     return {
-        "dataset": fingerprint_dataset(dataset_path),
+        "dataset": dataset_at_load,
         "packages": package_versions(),
         "environment_start": environment_start,
         "environment_end": environment_end,
-        "environment_changed": changed_environment_parts(environment_start, environment_end),
+        "environment_changed": [
+            *(["dataset"] if dataset_changed else []),
+            *changed_environment_parts(environment_start, environment_end),
+        ],
     }
 
 
