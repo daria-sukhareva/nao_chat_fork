@@ -203,9 +203,9 @@ its assumptions.
 - Keep one generic Correctness definition for all cases: `evaluation_steps` plus GEval's
   `rubric` score bands. Include both in `GEvalRubric.version()`. Extra claims that don't
   contradict the reference aren't penalized, because the judge can't see tool output.
-- Put what a case requires in its reference, as a list of required claims derived from the
-  data and never from the tree. The rubric must not encode the tree, or arm B would win by
-  construction.
+- Write each reference as a short natural-language answer that states every required claim,
+  derived from the data and never from the tree. The rubric must not encode the tree, or arm B
+  would win by construction.
 - A wrong diagnosis is caught because it contradicts a required claim, so each reference
   states the facts that rule out the likely wrong diagnoses. In q018, "each charger's own
   success rate stayed the same" contradicts any answer that says CH-002 got worse.

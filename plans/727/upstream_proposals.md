@@ -81,10 +81,11 @@ Record the tool set each run had, so the exclusion is visible in results.
   supports nor contradicts.
 - Completeness scores coverage.
 - Add GEval score bands, so a 7 has a defined meaning.
-- Write references as a list of required claims, including the facts that rule out the
-  likely wrong diagnoses.
+- Write references as short natural-language answers that state every required claim,
+  including the facts that rule out the likely wrong diagnoses.
 
-**Evidence:** the fork's rubric `0015f7a322a7` does this (since refined to `fbda3f9f0f46`). On five saved answers, three judge
+**Evidence:** the fork's rubric `0015f7a322a7` does this (since refined to `fbda3f9f0f46`). On
+five saved answers, three judge
 repetitions each
 ([details](retrospective_2026-11-07.md#checking-the-new-rubric-against-the-judge)):
 
