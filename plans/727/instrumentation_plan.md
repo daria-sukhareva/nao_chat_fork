@@ -75,8 +75,11 @@ nao evals --experiment metrics-tree-001 --arm-manifest /kwwhat/demo/chat-bi/arm.
 
 ## 3. Dataset, context, data, and code versions
 
-**Done (2026-11-05),** except the `--confirmatory` mode and the compare step, which come
-after arms and repetition.
+**Done (2026-11-05). `--confirmatory` and the compare step done 2026-11-07;** see the
+[runbook](running_evals.md#confirmatory-runs). The dataset is now fingerprinted when the cases
+are loaded, and again at the end, so `environment_changed` includes `dataset` when it's edited
+mid-run. `compare` tolerates, and reports, a `preview.md` that differs while the data
+checksums match, because `nao sync` samples previews without `ORDER BY`.
 
 The backend describes its own environment at `GET /api/evals/environment`
 (`services/eval-environment.service.ts`), because in Docker it reads `/app/kwwhat`, not the
@@ -201,11 +204,11 @@ The original plan:
 
 1. Tool output, since it is the largest validity risk. Done.
 2. System prompt. Done.
-3. Version fields and the manifest. Done, except the compare step.
-4. Arm, repetition, block, and rejudge.
-5. Cost tracking and `--max-cost`.
-6. Compare step and `--confirmatory`.
-7. Verify: run q016 on A and B and reconstruct both from their records; confirm a changed
+3. Version fields and the manifest. Done.
+4. Arm, repetition, block, and rejudge. Done.
+5. Cost tracking and `--max-cost`. Done.
+6. Compare step and `--confirmatory`. Done.
+7. Not done yet. Verify: run q016 on A and B and reconstruct both from their records; confirm a changed
    `RULES.md` makes the compare step refuse; confirm a mismatched `--arm` stops the run.
 
 Tests go in `cli/tests/nao_core/commands/evals/`. Finish with `make lint` for the CLI and

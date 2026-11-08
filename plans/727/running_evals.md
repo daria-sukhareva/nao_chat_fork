@@ -148,6 +148,60 @@ plotting score against position.
 
 Shuffling works within a block. Drift between blocks is what alternating the arms is for.
 
+### Confirmatory runs
+
+Add `--confirmatory` to a labeled run once the study is preregistered:
+
+```bash
+docker exec -it "$(docker ps -qf name=chat-bi-run)" sh -c 'cd /app/kwwhat && nao evals \
+  --experiment metrics-tree-001 --arm-manifest /kwwhat/demo/chat-bi/arm.json --block 1 --repeats 3 \
+  --max-cost 20 --confirmatory -u <your nao login>'
+```
+
+It refuses to start, before any agent call, if:
+
+- `--experiment`, `--arm-manifest` or `--block` is missing;
+- `-s` is given, because a confirmatory run uses the whole dataset;
+- the arm was built from an uncommitted study (`study_commit` ends in `-dirty`);
+- the nao build, or a linked repo such as kwwhat, isn't a clean commit;
+- the backend can't describe its environment.
+
+After the run, `run.confirmatory` records whether it's valid. It's invalid, and the command
+exits with an error, if anything in `provenance.environment_changed` changed during the run, or
+if the run stopped early because of `--max-cost` or Ctrl-C. The dataset now counts as part of
+the environment: it's fingerprinted when the cases are loaded and again at the end, so an edit
+mid-run shows up as `dataset`.
+
+### Checking runs before pairing them
+
+Before pairing or pooling runs, for example the blocks of A and B, check that they held
+everything fixed except the arm:
+
+```bash
+cd ~/github/kwwhat/demo/chat-bi/tests/outputs
+nao evals compare evals_results_<block1>.json evals_results_<block2>.json ... --confirmatory
+```
+
+It exits with an error, listing each problem, if:
+
+- **Something that must be fixed differs between any two runs:** the experiment, the nao
+  commit, the dataset, the data checksums, the linked repos' commits, package versions, the
+  metric configuration and rubric versions, the agent model and its settings, the tool
+  manifest, or the judge model and its settings.
+- **Two runs of the same arm differ** in any project file or in the system prompt.
+- **Two runs of different arms differ** in a file that isn't one of either arm's manifest
+  files. An edit to the demo's `RULES.md` between builds also changes the kwwhat commit, so
+  it's caught too.
+- **A run changed during itself,** stopped early, has a value that varies between its records,
+  or shares a block number with another run.
+- With `--confirmatory`, a run isn't a valid confirmatory run.
+
+One difference is tolerated but always reported: a table's `preview.md` may differ when the
+data checksums are identical. `nao sync` writes previews with `LIMIT 10` and no `ORDER BY`, and
+the demo syncs on every container start, so different containers can show the agent different
+sample rows of the same data. The whitepaper reports this as an uncontrolled difference (see the
+experiment plan's threats).
+
 ### Rescoring saved answers
 
 `nao evals rejudge` scores the answers in a results file again without calling the agent:
@@ -295,6 +349,7 @@ Check these in the results file:
 
 - `run.arm` and `run.block` are the arm and block you meant to run.
 - `run.stopped` is null, so the run wasn't cut short by `--max-cost` or Ctrl-C.
+- For runs that count, `run.confirmatory.valid` is true.
 - `provenance.environment_changed` is empty.
 - `provenance.environment_start.nao.commit` is the commit you built, without `-dirty` for runs
   that count.
@@ -304,3 +359,4 @@ Check these in the results file:
 ## Switching arms
 
 Repeat steps 3 and 4 with the other arm. The nao image and the data volume stay as they are.
+Then check the new run against the earlier ones with `nao evals compare`.
