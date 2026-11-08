@@ -143,9 +143,10 @@ answer could break.
   Correctness, which compares against the reference.
 - Use deterministic checks where a rule allows it, such as a word match for banned terms.
 
-Adding the rules to Faithfulness's context alone probably isn't enough: Faithfulness checks the
-answer's claims against facts, and a rule like "never say session" isn't a fact a claim can
-contradict. A test of that is pending.
+Faithfulness without the rules didn't catch it either, in default or strict mode. Adding the
+rules to Faithfulness's context is untested, and probably isn't enough on its own: Faithfulness
+checks the answer's claims against facts, and a rule like "never say session" isn't a fact a
+claim can contradict.
 
 ### 6. State Faithfulness's limits
 
@@ -157,7 +158,11 @@ contradict. A test of that is pending.
 - In long contexts with repeated values, the judge also matched numbers to the wrong dates,
   and marked a correct answer down.
 - DeepEval's default counts only contradictions. Strict mode (`penalize_ambiguous_claims`)
-  also counts claims the context doesn't support.
+  also counts claims the context doesn't support. On the best answer so far it scored 0.57 to
+  0.70, below the 0.7 threshold. It caught real overgeneralizations ("all week" when only two
+  days were queried), but two of three reasons also called the correct conclusion a
+  contradiction.
 
-**Propose:** present Faithfulness as a grounding check, not a correctness check. Consider strict
-mode, and validate it against human labels before using it as a gate.
+**Propose:** present Faithfulness as a grounding check, not a correctness check. Don't adopt
+strict mode without validating it against human labels, and don't gate on either mode until
+then.

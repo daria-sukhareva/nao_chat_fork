@@ -346,8 +346,39 @@ enforced the rule.
 - The only "session" in that context is in kwwhat's own dbt docs (`marts.yml`).
 - Faithfulness checks claims against facts, and a rule is not a fact.
 
-Results are pending. The test also found that the plan's strict Faithfulness
-(`penalize_ambiguous_claims=True`, decided on 2026-11-05) was never built into `rag.py`.
+It didn't catch it. Strict mode was swapped into the container's `rag.py` for the test and
+restored afterwards. Because strict mode might lower scores for reasons unrelated to "session",
+the unmodified answer was scored in strict mode too, as a control:
+
+| Answer                | Default Faithfulness | Strict Faithfulness |
+| --------------------- | -------------------- | ------------------- |
+| Control: the original | 1.0, 1.0, 1.0, 0.91  | 0.57, 0.70, 0.65    |
+| Light: 1 "session"    | 0.96, 1.0, 0.96      | 0.57, 0.58, 0.63    |
+| Heavy: 14 "session"s  | 0.96, 1.0, 0.96      | 0.65, 0.68, 0.68    |
+
+- **Default Faithfulness doesn't see the word.** The fakes score in the control's range.
+- **Strict mode's drop has nothing to do with "session".** The unmodified control falls just as
+  far, and the light fake scored lower than the heavy one.
+
+**What strict mode penalizes,** from the control's reasons:
+
+- **Generalizing beyond what was queried.** "Failing 100% of its visits all week" and "all
+  visits at LOC-001 across all dates", when the context confirms only Oct 4 and 5. That's a fair
+  catch.
+- **Domain explanation.** "The connector lock mechanism is unable to engage" is not stated in
+  the context. That's arguably fair, too.
+- **The correct conclusion, called a contradiction.** Two of three reasons say the mix-shift
+  framing "contradicts" the context, because CH-002 was failing on both days. That's the judge
+  misreading the diagnosis. The answer says the failure isn't new, and the context agrees.
+
+So strict mode fails the best answer so far at the current 0.7 threshold (0.57 to 0.70). It
+does so partly for real overgeneralizations and partly by misjudging the conclusion. The
+plan's strict Faithfulness (`penalize_ambiguous_claims=True`, decided on 2026-11-05) was never
+built into `rag.py`. This result means it shouldn't be, as planned, without validation: a
+metric that marks the correct diagnosis as contradicted can't be a secondary endpoint on root
+cause cases. Files: `rejudge_results_20261107_232843.json` (default) and `_235054` (strict) for
+the fakes, and `rejudge_results_20261108_000233.json` (strict) for the control, all in
+`synthetic/`.
 
 **Considered: giving the judge the system prompt.** Rejected, for four reasons:
 
