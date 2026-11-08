@@ -107,6 +107,16 @@ def test_two_blocks_of_the_same_arm_must_have_identical_context_and_prompt(tmp_p
     assert "a1.json and a2.json: same arm A, but the system prompt differs" in found
 
 
+def test_a_run_without_an_arm_label_is_refused_even_when_its_change_is_in_an_arm_file(tmp_path):
+    unlabeled = arm_b(
+        tmp_path, "b2", block=3, context_overrides={"RULES.md": "edited"}, run__arm=None, run__arm_manifest=None
+    )
+
+    found = problems(arm_b(tmp_path), unlabeled)
+
+    assert found == ["b2.json: no arm label, so its context can't be checked against an arm (run with --arm-manifest)"]
+
+
 def test_anything_held_fixed_that_differs_is_refused(tmp_path):
     found = problems(arm_a(tmp_path), arm_b(tmp_path, provenance__packages={"deepeval": "4.3.0"}))
 

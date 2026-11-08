@@ -6,8 +6,10 @@ back to the rubrics; the first live rejudge; and a new Correctness rubric.
 **Status:** the rejudge of `evals_results_20261106_222427.json` finished
 (`rejudge_results_20261107_222943.json`). The new Correctness rubric (`0015f7a322a7`, replacing
 `c8b36757a66f`) is implemented, unit-tested (78 eval tests pass, lint clean), and checked
-against the judge on five saved q018 answers. It isn't committed. Completeness is unchanged
-(`c493b2deacb0`).
+against the judge on five saved q018 answers. It has since been committed and is running in
+`nao:study`. Completeness is unchanged (`c493b2deacb0`). The live check of `--arm-manifest`
+found and fixed a gap (see
+[Live check](#live-check-does---arm-manifest-stop-a-run-on-the-wrong-arm)).
 
 This follows the [2026-11-06 retrospective](retrospective_2026-11-06.md), whose first live run
 found the overlap.
@@ -398,6 +400,68 @@ banned terms, and table and introspection checks over the recorded SQL. The expe
 records it under settled decisions and out of scope. The whitepaper has to say that rule
 compliance wasn't measured, so it can't claim the tree leaves rule following unchanged.
 
+## Live check: does `--arm-manifest` stop a run on the wrong arm?
+
+This is check 4 of Phase 0's live check (verification item 7 of the instrumentation plan). It
+ran after `nao:study` and the demo were rebuilt from the eval code (`f0c0554c`) with arm B
+served. A smoke run on B (`evals_results_20261108_020527.json`, q018 with 2 repeats) confirmed
+the new image first:
+
+- the arm manifest matched;
+- the Correctness rubric was `0015f7a322a7`;
+- the nao and study commits were clean;
+- cost was recorded: $0.46 for the agent and $0.71 for the judge.
+
+**Setup.** Arm A was built into a scratch directory outside the repos, so they stayed clean, and
+its manifest was copied into the running B container:
+
+```bash
+~/github/nao_chat_fork/plans/727/study/build-arm.sh A ~/github/kwwhat/demo/chat-bi /tmp/armA
+docker cp /tmp/armA.json "$(docker ps -qf name=chat-bi-run)":/tmp/armA.json
+nao evals -s q018 --arm-manifest /tmp/armA.json   # inside the container
+```
+
+**First attempt: the run stopped, but for a weak reason.**
+
+```
+✗ The served project is not arm A as built in /tmp/armA.json:
+  • RULES.md differs from the arm A build
+Rebuild the demo image from the arm, or pass the manifest of the arm it was built from.
+```
+
+The run stopped before the first agent call, which is the behavior the check exists for. But
+only `RULES.md` was reported. B serves four files A's manifest doesn't list: the metrics tree
+and the three `count-active-drivers` files. The check only confirmed that each file in the
+manifest was served with the right hash. It never asked whether something was served that the
+manifest doesn't list. It caught this image only because B also appends a rule to `RULES.md`.
+
+That matters because the tree leaking into A is the confound that would hide the effect the
+study is measuring. Take an arm-A image that still serves `docs/metrics_tree.md`, from a stale
+build or because the tree later lands in the kwwhat repo. If its `RULES.md` matched, it would
+have passed as A.
+
+**Fix (`20d1638b`).** The check now also reports every served file the manifest doesn't list.
+It skips what every arm shares: files under `databases/` and `repos/`, and `nao_config.yaml`.
+
+**Second attempt, after rebuilding `nao:study` from `8938426c` and the demo.** Both arms were
+assembled before the q018 change. B was built at 20:46 and arm A's manifest at 21:10, while the
+change was committed at 21:16.
+
+```
+✗ The served project is not arm A as built in /tmp/armA.json:
+  • RULES.md differs from the arm A build
+  • agent/skills/count-active-drivers.md is served but is not part of arm A
+  • agent/skills/count-active-drivers/references/active_drivers.sql is served but is not part of arm A
+  • agent/skills/count-active-drivers/references/validation.md is served but is not part of arm A
+  • docs/metrics_tree.md is served but is not part of arm A
+Rebuild the demo image from the arm, or pass the manifest of the arm it was built from.
+```
+
+The output is what was expected: the four B-only files are named, and the run still stopped
+before any agent call, so it cost nothing. The dataset isn't reported because the image and
+A's manifest held the same old dataset (`28b383b95ca2`). It doesn't show that the new q018
+reference was served, and it wasn't.
+
 ## Order of work
 
 The new rubric was drafted only after the rejudge finished, so the old rubric's reproducibility
@@ -426,13 +490,20 @@ show it.
 - **A "Must not claim" item has to forbid only what's false.** "Something new broke" overlaps
   with the true statement that the situation got worse, and the judge's spread of 0.5 to 0.8
   came from that overlap.
+- **A check that passes is only as strong as the reason it passed.** The wrong-arm run stopped on
+  the first try, but only because `RULES.md` happened to differ. Reading which files it reported,
+  not just that it stopped, is what exposed that it couldn't see files the manifest doesn't list.
 
 ## Still open
 
-- Commit the new rubric, then rebuild `nao:study` and the demo so runs use it.
-- Tighten q018's "Must not claim" item to what's false, along the lines of "That CH-002 or any
-  charger got worse on Oct 5". Drop or rephrase the "Oct 1 to Oct 14" requirement. Then
-  rejudge the borderline `20261106_020913` answer to see whether its spread narrows.
+- ~~Commit the new rubric, then rebuild `nao:study` and the demo so runs use it.~~ Done; the B
+  smoke run used `0015f7a322a7`.
+- ~~Tighten q018's "Must not claim" item~~ and the "Oct 1 to Oct 14" requirement: done in
+  `8938426c`. Still to do: rejudge the borderline `20261106_020913` answer against the new
+  reference, which has to be swapped into a copy of its results file, to see whether its spread
+  narrows.
+- The rest of Phase 0's live check: `compare` accepting a matched pair and refusing a changed
+  one (check 5), and optionally an A run compared with B.
 - Whether omissions leaking within the top bands needs a fix, for example a 9–10 band that says
   omissions don't lower the score.
 - Validate Faithfulness against human labels, or record it as exploratory only. Its errors on
@@ -440,10 +511,9 @@ show it.
 - Rewrite the other 11 references in the "Required / Must not claim" format, so the new
   Correctness step applies to them.
 - Whether Completeness needs score bands too.
-- Step 5: cost ledger and `--max-cost`. The judge's cost is still not recorded.
-- The compare step and `--confirmatory`.
+- ~~Step 5: cost ledger and `--max-cost`.~~ Done; the smoke run recorded both costs.
+- ~~The compare step and `--confirmatory`.~~ Implemented; compare is checked live in check 5.
 - Arm D's degradations.
 - Rechecking q015–q017 (the "18% drop" premise is 11.9 pp in the data).
-- Whether to tighten q018's reference, including the awkward "Oct 1 to Oct 14" criterion.
 - `persist_docs`.
 - Optionally, record failed tool calls with their error message.

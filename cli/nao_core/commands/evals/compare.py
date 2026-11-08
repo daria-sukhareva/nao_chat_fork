@@ -140,6 +140,10 @@ def _problems_within_runs(runs: list[RunSummary], require_confirmatory: bool) ->
     problems = []
     for run in runs:
         name = Path(run.path).name
+        if not run.arm:
+            problems.append(
+                f"{name}: no arm label, so its context can't be checked against an arm (run with --arm-manifest)"
+            )
         if run.environment_changed:
             problems.append(f"{name}: the environment changed during the run ({', '.join(run.environment_changed)})")
         if run.stopped:
