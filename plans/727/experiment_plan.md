@@ -52,9 +52,12 @@ so the paper must say which one each result speaks to.
 **Population** `Assumed`: single-turn questions from an EV network operator against the
 kwwhat demo project.
 
-- **H3, secondary hypothesis:** paired changes in the RAG triad track paired changes in
-  Correctness and Completeness. This tests the assumption behind the referenceless plan in
-  PR #1092; it is not taken as given.
+- **H3, exploratory:** paired changes in the RAG triad track paired changes in Correctness
+  and Completeness. This tests the assumption behind the referenceless plan in PR #1092; it
+  is not taken as given. It is analyzed and reported, but not preregistered as a test and not
+  counted in the multiplicity rule, so a result can suggest a follow-up study but can't
+  support a claim. Its metrics vary within an answer as much as between answers (retrospective
+  2026-11-07), so a confirmatory test would need several judge repetitions per answer.
 
 **Non-claims:** other projects, other domains, real operator traffic (the seed data is
 synthetic and covers 14 days), multi-turn use, chart rendering, or any part of the treatment on
@@ -97,16 +100,15 @@ The tree, both skills, the rule text, and the degradations are frozen and hashed
 
 ## Metric roles
 
-| Metric                        | Role                                                   | Used for                                                                                                               |
-| ----------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Correctness, root cause cases | Primary (same generic rubric as lookup cases)          | Decides C2, once its rubric and references pass validation                                                             |
-| Completeness                  | Key secondary and guardrail                            | Catches correct answers that became too thin                                                                           |
-| Correctness, lookup cases     | Guardrail                                              | The treatment must not break what already works                                                                        |
-| Quantification                | Secondary                                              | Do claims about size or change state a value, unit, and period? Not primary, because it can be gamed with more numbers |
-| Faithfulness (strict)         | Secondary; troubleshooting; tested as a proxy under H3 | Does the answer stay within what the agent saw?                                                                        |
-| ContextualRelevancy           | Troubleshooting; tested as a proxy under H3            | Did the agent pull focused context?                                                                                    |
-| AnswerRelevancy               | Troubleshooting; tested as a proxy under H3            | Did the answer stay on the question?                                                                                   |
-| Cost, latency, error rate     | Guardrails                                             | Limits are set in the preregistration                                                                                  |
+| Metric                        | Role                                          | Used for                                                                                                          |
+| ----------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Correctness, root cause cases | Primary (same generic rubric as lookup cases) | Decides C2, once its rubric and references pass validation                                                        |
+| Completeness                  | Guardrail                                     | B must not lose coverage of what the reference requires; the non-inferiority margin is set in the preregistration |
+| Correctness, lookup cases     | Guardrail                                     | The treatment must not break what already works                                                                   |
+| Faithfulness                  | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the answer go beyond or against what the agent saw?                                  |
+| ContextualRelevancy           | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the agent pull the wrong or unfocused evidence?                                      |
+| AnswerRelevancy               | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the answer address a different question?                                             |
+| Cost, latency, error rate     | Guardrails                                    | Limits are set in the preregistration                                                                             |
 
 ---
 
@@ -116,9 +118,9 @@ The tree, both skills, the rule text, and the degradations are frozen and hashed
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | q015–q017 entered the dataset in the same commit as the tree (`9f0a7fff`), by the tree's author, so the cases may favor the treatment                                                                                                        | `Confirmed` | All 12 current cases become dev only; the confirmatory set is authored independently of the tree                                                                                                                                              |
 | q015–q017 compare a ~2.3-day week with a full week; an agent following the root cause skill's step 1 may be penalized for flagging it                                                                                                        | `Confirmed` | Recheck the references; a correct completeness caveat must not lose points                                                                                                                                                                    |
-| ContextualRelevancy is coupled to the treatment: when the agent reads the tree, the whole ~20 KB file is scored as context                                                                                                                   | `Assumed`   | Secondary diagnostic only; never the primary endpoint                                                                                                                                                                                         |
-| Faithfulness is coupled to the treatment: the tree adds context that can support more claims, and B can also lose support (below)                                                                                                            | `Assumed`   | Secondary diagnostic only; report how often the tree was read                                                                                                                                                                                 |
-| Only `execute_sql`, `read`, and `grep` reach the judge, and SQL results are cut to 20 rows                                                                                                                                                   | `Confirmed` | Capture all tool output in the record; state what the judge saw                                                                                                                                                                               |
+| ContextualRelevancy is coupled to the treatment: when the agent reads the tree, the whole ~20 KB file is scored as context                                                                                                                   | `Assumed`   | Troubleshooting only; never an endpoint                                                                                                                                                                                                       |
+| Faithfulness is coupled to the treatment: the tree adds context that can support more claims, and B can also lose support (below)                                                                                                            | `Assumed`   | Troubleshooting only; never an endpoint; report how often the tree was read                                                                                                                                                                   |
+| The RAG judge sees every tool result except the tools in `NON_EVIDENCE_TOOLS` (`tool_calls.py`), with SQL results cut to the 40 rows the agent sees and `read_query_result` in full. The system prompt, including `RULES.md`, is not in it   | `Confirmed` | Capture all tool output in the record; state what the judge saw; a claim backed only by the system prompt counts as unsupported                                                                                                               |
 | The judge is the same model as the agent, so it may prefer its own answers; `judge.py` also sets no temperature                                                                                                                              | `Confirmed` | Accepted as a limitation and disclosed. Both arms' answers come from the same model, so the bias should mostly cancel in the A–B difference (`Assumed`); checked against human labels on dev; temperature pinned; rejudging variance measured |
 | Rubric wording penalizes rule-following answers ("unsupported additions"; audit F2); rule compliance itself is out of scope                                                                                                                  | `Confirmed` | Separate fact and coverage criteria (open decision 4, done); rule compliance is left to its own eval and named as unmeasured in the whitepaper                                                                                                |
 | One person wrote the tree, the cases, and the labels, and no second person is available                                                                                                                                                      | `Confirmed` | Rule-generated cases, SQL-computed references, blinded re-rating, published labels, disclosure; reported as a limitation                                                                                                                      |
@@ -189,13 +191,29 @@ its assumptions.
 - Put what a case requires in its reference, as required claims and claims it must not
   make, derived from the data and never from the tree. The rubric must not encode the tree,
   or arm B would win by construction.
-- Run Faithfulness with `penalize_ambiguous_claims=True`, so "stays within the evidence"
-  covers unverifiable claims as well as contradicted ones. By default DeepEval counts
-  only contradictions against the answer. Check on dev runs that claims sourced from the
-  system prompt aren't wrongly penalized.
+- Run Faithfulness in DeepEval's default mode, which counts only claims the context
+  contradicts. Strict mode (`penalize_ambiguous_claims=True`, planned on 2026-11-05) was
+  dropped on 2026-11-08, for three reasons (retrospective 2026-11-07, "Rule compliance"):
+    - It failed the best q018 answer so far, at 0.57 to 0.70 against a 0.7 threshold, and two
+      of its three reasons called the correct conclusion a contradiction.
+    - Its one fair catch, generalizing beyond the queried days, is also visible in default
+      mode's reasons.
+    - Its drop was the same on an unmodified answer as on the rule-breaking fakes it was
+      tested with, so it didn't detect what it was tested for.
+- The RAG triad (Faithfulness, ContextualRelevancy, AnswerRelevancy) is for troubleshooting:
+  it splits a low Correctness score into wrong evidence, an ungrounded answer, or an answer to
+  a different question. If all three are fine, good evidence was read wrongly, which only
+  Correctness can catch. Its scores are not endpoints and not compared between arms in the
+  claim, so they need no human-label validation. When one is used to explain a failure, read
+  its per-claim reasons and check them against the context: the Faithfulness judge misread
+  dates in long contexts with repeated values (retrospective 2026-11-07).
 - Report answers that pass Correctness but fail Faithfulness, since that is where invented
   additions would show up.
-- Add a generic Quantification scorer. Rule compliance is out of scope (see settled decisions).
+- No Quantification scorer (planned 2026-11-05, dropped 2026-11-08). The references' required
+  claims carry the values, so a vague or missing value already loses Completeness and a wrong
+  one loses Correctness. A separate scorer would measure the same thing a third time, add a
+  comparison to the multiplicity rule, reward longer answers, and need its own validation.
+- Rule compliance is out of scope (see settled decisions).
 - One rater, so report intra-rater reliability and call it that; it is not inter-rater
   agreement. Rate a shuffled sample with arm labels and tool traces removed, then re-rate
   it after a gap of at least two weeks.
