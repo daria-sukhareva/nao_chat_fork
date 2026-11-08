@@ -43,7 +43,6 @@ import { brandingRoutes } from './routes/branding';
 import { chartRoutes } from './routes/chart';
 import { deployRoutes } from './routes/deploy';
 import { embedStoryDownloadRoutes } from './routes/embed-story-download';
-import { evalsRoutes } from './routes/evals';
 import { githubRoutes } from './routes/github';
 import { gitlabRoutes } from './routes/gitlab';
 import { imageRoutes } from './routes/image';
@@ -182,10 +181,6 @@ app.register(analyticsRoutes, {
 
 app.register(testRoutes, {
 	prefix: '/api/test',
-});
-
-app.register(evalsRoutes, {
-	prefix: '/api/evals',
 });
 
 app.register(chartRoutes, {
