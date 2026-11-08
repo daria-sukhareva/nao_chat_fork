@@ -141,6 +141,8 @@ The tree, both skills, the rule text, and the degradations are frozen and hashed
 | Correctness penalizes omissions by 0.1 to 0.2 although its rubric says not to (measured 2026-11-08), so an arm that writes shorter answers also loses some Correctness                                                                       | `Confirmed` | Disclosed as a limitation with the measured size; Completeness reported alongside Correctness, so a drop in both can be read as coverage                                                                                                      |
 | One person wrote the tree, the cases, and the labels, and no second person is available                                                                                                                                                      | `Confirmed` | Rule-generated cases, SQL-computed references, blinded re-rating, published labels, disclosure; reported as a limitation                                                                                                                      |
 | References go stale; the seed changed on 2026-11-03                                                                                                                                                                                          | `Confirmed` | Hash the data snapshot in every record; freeze before the baseline                                                                                                                                                                            |
+| The warehouse changes with the build date: `int_charger_commissioned_daily.sql` uses the current date, so `fact_uptime_daily` grows daily and open-ended uptime drifts (99.87% to 99.91% for q005's old "full history")                      | `Confirmed` | A fixed `as_of` date in the seed extension; fixed date ranges in every question; fingerprints on every table a reference uses, filtered when the table grows                                                                                  |
+| The current seed holds about one phenomenon, so its cases aren't independent                                                                                                                                                                 | `Confirmed` | Extend the seed with independent root cause types before generating the confirmatory set (Phase 3)                                                                                                                                            |
 | The root cause skill and the trap rules share an author, so absolute scores can be inflated by teaching to the test                                                                                                                          | `Confirmed` | Report differences between arms, not absolute scores; check headroom on dev; publish the skill                                                                                                                                                |
 | The published demo gave the agent no table metadata: its three-part include patterns matched nothing, and with two-part patterns nao's DuckDB sync failed because catalog `analytics` and schema `ANALYTICS` were ambiguous                  | `Confirmed` | Resolved by renaming the dbt schema to `MARTS` (demo profiles, `nao_config.yaml`, `RULES.md`, SQL tests, `active_drivers.sql`), identically in every arm. The paper describes the renamed setup, not the published demo                       |
 | Arms can show the agent different table previews: `nao sync` writes `preview.md` with `LIMIT 10` and no `ORDER BY`, and the demo syncs on every container start (found 2026-11-07: 8 previews differed between two runs with identical data) | `Confirmed` | `nao evals compare` tolerates and reports it only when the data checksums match; the whitepaper states it as an uncontrolled difference in example rows                                                                                       |
@@ -186,13 +188,46 @@ observable signals and gaming paths.
 
 ### Phase 3: Dataset (`braintrust-build-eval-dataset`, `braintrust-size-eval-dataset`)
 
-- Keep the current 12 cases as the dev set; recheck q001, q008, and q015–q018.
+- Keep the current 12 cases as the dev set. All 12 were rechecked by SQL against the current
+  seed on 2026-11-08 and carry `source`, `label_provenance`, and `data_fingerprint`
+  (retrospective 2026-11-08). They were written from questions the agent failed, so they can't
+  support a claim.
+- **The current seed holds about one phenomenon** (`Confirmed`, 2026-11-08): 139 visits over
+  14 days, one location, two chargers. CH-002 fails every visit with ConnectorLockFailure,
+  CH-001 succeeds on every visit, and every change in the success rate is a mix shift between
+  them. A set generated from it would be one case asked many ways, with an effective sample near
+  one. Root cause types, from the data model's own breakdown (visits, attempts, errors; uptime,
+  offline, faulted), not from the tree:
+
+    | #   | Root cause type                                   | In the current seed?                   |
+    | --- | ------------------------------------------------- | -------------------------------------- |
+    | 1   | Persistent port fault plus a mix shift            | Yes, throughout (q015–q018)            |
+    | 2   | Offline outage (NoHeartbeat) lowering uptime      | Yes: 1,080 minutes, 4 ports, 3 days    |
+    | 3   | Fault onset: a charger's own success rate falls   | No: CH-002 is broken from day one      |
+    | 4   | Driver or auth-side failures                      | No: auth is confounded with charger    |
+    | 5   | Demand change, reliability unchanged              | No: about 10 visits every day          |
+    | 6   | Partial period or incomplete data (trap)          | Yes: the week of Oct 13                |
+    | 7   | No real change, noise on small numbers (negative) | Yes: daily rates of 0–40% on 10 visits |
+    | 8   | False premise in the question (negative)          | Can be built                           |
+    | 9   | Undefined metric, ask or refuse (negative)        | Yes: q002                              |
+
+- **Decided 2026-11-08: extend the seed** with scenarios for types 3–5, generated by rule from
+  a source independent of the tree, such as the OCPP 1.6 error and status taxonomy in
+  `dim_error_codes`. Real operator traffic is already a non-claim, so synthetic scenarios don't
+  weaken the paper. Constraints:
+    - Add new locations, chargers, or periods, and leave LOC-001 between Oct 1 and Oct 14, 2025
+      untouched, so the dev references stay valid.
+    - Replace the current date in `int_charger_commissioned_daily.sql` with a fixed `as_of` date.
+      Today `fact_uptime_daily` grows by a row per port per day, so open-ended uptime drifts and the
+      run-level data checksum differs between days.
+    - Re-verify every dev reference and fingerprint after the extension.
 - Generate the confirmatory set by a preregistered rule rather than by choosing cases:
   for example, every metric and adjacent period pair above a stated change size, with
-  references computed by SQL. Keep the answers unseen until the confirmatory run.
+  references computed by SQL. Every question has a fixed date range. Keep the answers unseen
+  until the confirmatory run.
 - Generate traps by rule too. Coverage is computed per period by SQL; where a period is
-  partial, the reference requires saying so and forbids reporting the raw change as a
-  finding. Measure headroom on dev, because the skill may already pass most traps.
+  partial, the reference says so and that the raw change can't be read as a trend. Measure
+  headroom on dev, because the skill may already pass most traps.
 - Pilot on dev only to estimate agent and judge variance, then size the confirmatory
   set and repetitions (at least 3 runs per case per arm).
 
