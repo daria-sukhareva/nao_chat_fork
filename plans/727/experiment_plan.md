@@ -296,7 +296,9 @@ context, raw records, and pinned versions.
     - **The borderline answer is unstable (0.5 to 0.8)** because q018's "Must not claim" item,
       "That something new broke on Oct 5", overlaps the true statement that the situation got
       worse. Tighten the item to what's false, along the lines of "That CH-002 or any charger got
-      worse on Oct 5", then rejudge that answer.
+      worse on Oct 5", then rejudge that answer. Done 2026-11-07: the item now reads "That
+      CH-002 or any other charger got worse on Oct 5", and the "not new" requirement was
+      narrowed from Oct 1–14 to Oct 1–3. The rejudge is still to do.
     - **Omissions still nudge scores within the top bands** (0.8 versus 0.9 for the same gap),
       and no answer reaches 10. That's within a band, not across bands. A possible fix is a 9–10
       band that says omissions don't lower the score.
