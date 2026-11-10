@@ -95,9 +95,12 @@ Rubric `fbda3f9f0f46`, reference as a "Required:" list:
 The wrong-mechanism answer rose into the 3–5 band. Its reasons identify the error exactly
 ("escalating fault frequency" contradicts "each charger's own success rate stayed the same"), and
 3–5 is the band for "a central cause is wrong" while the main conclusion (CH-002,
-ConnectorLockFailure) is right. The old 0.2 came from the "Must not claim" cap. The ranking holds,
-but the placeholder pass threshold of 0.5 now passes this wrong answer; it must be at least 0.6 if
-a pass rate is reported.
+ConnectorLockFailure) is right. The old 0.2 came from the "Must not claim" cap. The ranking holds.
+With this list reference, the placeholder pass threshold of 0.5 passes the wrong answer in two of
+three judgments (a score equal to the threshold passes). With the prose reference that replaced it,
+the wrong answer scored 0.4, 0.3, 0.3 and fails, while the lowest right answer scored 0.7 (see "The
+omission leak"). So 0.5 separates them on q018, but with a margin of 0.2 on either side, measured
+on one case.
 
 ### The reference as a natural-language answer
 
@@ -233,7 +236,8 @@ daily (q005, q006). References drafted with Claude say so.
   date in `int_charger_commissioned_daily.sql`.
 - Then Phase 3: the generation rule and reference guide, the pilot on dev, and sizing
   (`braintrust-size-eval-dataset`).
-- The Correctness pass threshold (0.5) passes the wrong-mechanism answer; calibrate in Phase 4.
+- The Correctness pass threshold (0.5) separates the wrong-mechanism answer from the right ones on
+  q018 by only 0.2 on either side; calibrate it in Phase 4 on more cases.
 - Arm D's degradations.
 - Review the A/B pairing run's results files (from 2026-11-07).
 - Two misleading messages: `compare` says "except the arm" for runs of the same arm, and a run
