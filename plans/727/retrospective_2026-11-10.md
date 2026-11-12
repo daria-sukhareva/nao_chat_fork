@@ -5,8 +5,8 @@
 new root-cause type into the demo seed (a fault on the working charger); rebuilding the pipeline;
 checking the chat agent's answer against the data; and adding q019 to the dev set.
 **Status:** The seed edits are committed in kwwhat (`265bb5b`, `ef12587`) and loaded into Snowflake
-RAW and the demo DuckDB. q019 is appended to `golden_dataset.jsonl` (uncommitted). The other dev
-references are stale and not yet re-verified.
+RAW and the demo DuckDB. q019 is appended to `golden_dataset.jsonl`, and the seven dev
+references the injection affected were re-verified and updated on 2026-11-11.
 
 This follows the [2026-11-08 retrospective](retrospective_2026-11-08.md).
 
@@ -114,16 +114,34 @@ nothing faulted.
 - The question wording was chosen to fit the reference's "Yes."; the question actually asked of the
   chat wasn't recorded.
 
-### What the injection broke
+### What the injection broke, and the re-verification
 
 The fault was injected into LOC-001 between Oct 1 and Oct 14, 2025, against the plan's constraint
 for extending the seed. CH-001 is now 35 of 38, not 38 of 38.
 
-| Case       | Why it's stale                                               |
-| ---------- | ------------------------------------------------------------ |
-| q001       | States CH-001 succeeded on all 38 of its visits              |
-| q015–q018  | State CH-001's 100% or 38/38; old `fact_visits` checksum     |
-| q006       | Failed charge attempt rate (102 of 141) has likely changed   |
+A fingerprint check showed that only `fact_visits` and `fact_charge_attempts` changed. q004, q005,
+q007 and q008 rely only on unchanged tables and stay valid as they are; q002 has no data. The other
+seven were re-verified claim by claim by SQL on 2026-11-11:
+
+| Case | Result                                                                                                                   |
+| ---- | ------------------------------------------------------------------------------------------------------------------------ |
+| q001 | CH-001 "succeeded on all 38 of its visits" became 35 of 38; still the only working charger                               |
+| q003 | Holds: the new failures are single-attempt failed visits, not troubled successes. Fingerprints only                      |
+| q006 | Failed charge attempts 102 → 105 of 141 (72.34% → 74.47%); uptime unchanged at 98.64%                                    |
+| q015 | Week of Oct 6: 31.9% → 27.5% (19 of 69). Added that CH-001's recovery partly offset the drop                             |
+| q016 | Holds. Fingerprint only                                                                                                  |
+| q017 | 31.9% → 27.5%; "each charger's own success rate was unchanged" was false (CH-001 rose from 86% to 100%) and was replaced |
+| q018 | Holds: Oct 1–5 is untouched. Fingerprint only                                                                            |
+
+**The premise of q015–q017 changed.** The week-over-week drop is now 7.5pp (27.5% → 20.0%), not
+12pp. The questions were changed to "7.5pp" so the premise stays true and the cases keep testing the
+partial week and the mix shift, rather than becoming false-premise cases, a type q001 already
+covers. Each row's notes record the change.
+
+---------- | ------------------------------------------------------------ |
+| q001 | States CH-001 succeeded on all 38 of its visits |
+| q015–q018 | State CH-001's 100% or 38/38; old `fact_visits` checksum |
+| q006 | Failed charge attempt rate (102 of 141) has likely changed |
 | q002, q003 | Old `fact_visits` checksum; q003's claim is expected to hold |
 
 ---
@@ -143,7 +161,6 @@ for extending the seed. CH-001 is now 35 of 38, not 38 of 38.
 
 ## Still open
 
-- Re-verify q001, q002, q003, q006 and q015–q018 by SQL, and update their fingerprints.
 - File the kwwhat issue for a fault reported after a stop not being attached to the charge
   attempt, if wanted. (Whether a one-port fault counts as downtime is resolved: it doesn't.)
 - Record the question asked of the chat for q019, or confirm the chosen wording.
