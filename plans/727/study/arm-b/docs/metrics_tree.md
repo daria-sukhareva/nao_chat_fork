@@ -98,7 +98,7 @@ Drivers with at least one visit in the month. Authenticated drivers are distinct
 
 ### total_commissioned_minutes
 
-Sum over ports of the minutes each port was commissioned during the month. A port commissioned mid-month contributes only its commissioned minutes.
+Sum over ports of the minutes each port was commissioned during the month. A port commissioned or decommissioned during the period contributes only the minutes it was commissioned; `dim_chargers` (`commissioned_ts`, `decommissioned_ts`) says which. Decommissioning removes minutes from the denominator; it isn't downtime.
 
 ### uptime_ratio
 
@@ -132,7 +132,7 @@ Checks specific to EV charging, for confirming a change is real and for segmenti
 
 ## 4. reading demand vs supply
 
-`total_visits` is where demand meets capacity. Compare the two sides to find which constraint is binding at a site:
+`total_visits` is where demand meets capacity. Compare the two sides to find which constraint is binding at a site. Demand and supply meet at a site: visits at one site aren't evidence of demand at another.
 
 | pattern                               | diagnosis                                                     | where to look                                                                   |
 | ------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |

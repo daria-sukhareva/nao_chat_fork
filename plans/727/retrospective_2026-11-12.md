@@ -4,10 +4,14 @@
 **Scope:** adding q020 (an idle charger that wasn't down); designing, generating and loading LOC-002,
 the first scenario added outside LOC-001's Oct 1–14 data; rebuilding both warehouses; adding q021
 (a churn claim the data can't support); keeping CH-002's silence after Oct 15 as an offline
-scenario; adding q022–q027 along the metrics tree; and re-verifying the whole dev set.
+scenario; adding q022–q027 along the metrics tree; re-verifying the whole dev set; the first
+exploratory A/B run (q019, q022–q027); and the changes it led to, including q028.
 **Status:** LOC-002 is committed in kwwhat (`807c80f`, `75eaca3`), loaded into Snowflake RAW and the
 demo DuckDB, and built in both (`ANALYTICS.DBT_CLI_DARIA` and the chat's `analytics.duckdb`). The
-dev set has 21 cases, all re-verified by SQL on 2026-11-12 with matching fingerprints (committed in `e9196d4e`).
+dev set had 21 cases, all re-verified by SQL on 2026-11-12 with matching fingerprints (committed in `e9196d4e`).
+After the exploratory run it has 22 (q028 added, q024 and q025 reworded); those changes, the edits to
+the root-cause skill, `RULES.md` and the metrics tree, and the removal of `drivers_count` from
+kwwhat's semantic model are uncommitted.
 
 This follows the [2026-11-10 retrospective](retrospective_2026-11-10.md).
 
@@ -158,14 +162,15 @@ The first drafts built on the CH-002 scenario ("Was CH-002 offline for all of Oc
 rejected by the author as having "nothing to do with metrics tree". The replacements each test a
 branch of `plans/727/study/arm-b/docs/metrics_tree.md`:
 
-| Case | Question                                                          | Tree branch                                             | The point                                                                                                           |
-| ---- | ----------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| q022 | Why were there no charging visits from Oct 15 to Oct 19, 2025?    | Supply side of `total_visits`; "unobserved demand"      | No charger was available; turned-away drivers leave no record, so lost demand is unknown                            |
-| q023 | Why was network uptime so low from Oct 15 to Oct 19, 2025?        | `uptime_ratio`                                          | 12.38%, all from CH-002 OFFLINE; a decommissioning removes commissioned minutes, it isn't downtime                  |
-| q024 | Why did the number of successful visits go up after Oct 19, 2025? | `total_successful_visits = total_visits × success_rate` | "Because supply came back": new chargers, not better reliability (network uptime 65.37%)                            |
-| q025 | Why were there more drivers after Oct 19, 2025?                   | `monthly_active_drivers = new + returning + anonymous`  | 20 + 0 + 0: new supply brought new drivers, not returning demand                                                    |
-| q026 | Why were there more chargers after Oct 19, 2025?                  | `total_commissioned_minutes`                            | LOC-002 commissioned Oct 20; the data records the commissioning, not the reason                                     |
-| q027 | Why did visits at LOC-002 drop in the week of Oct 27, 2025?       | Demand: `monthly_active_drivers × visits_per_driver`    | 38 → 12 with 100% success and uptime above 99.6%: fewer drivers (20 → 8), coming less often (1.9 → 1.5 visits each) |
+| Case | Question                                                                                 | Tree branch                                              | The point                                                                                                                   |
+| ---- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| q022 | Why were there no charging visits from Oct 15 to Oct 19, 2025?                           | Supply side of `total_visits`; "unobserved demand"       | No charger was available; turned-away drivers leave no record, so lost demand is unknown                                    |
+| q023 | Why was network uptime so low from Oct 15 to Oct 19, 2025?                               | `uptime_ratio`                                           | 12.38%, all from CH-002 OFFLINE; a decommissioning removes commissioned minutes, it isn't downtime                          |
+| q024 | Why did the number of successful visits go up after Oct 19, 2025, compared to Oct 15–19? | `total_successful_visits = total_visits × success_rate`  | "Because supply came back": new chargers, not better reliability (network uptime 65.37%)                                    |
+| q025 | Why were there more drivers after Oct 19, 2025, compared to Oct 15–19?                   | `monthly_active_drivers = new + returning + anonymous`   | 20 + 0 + 0: new supply brought new drivers, not returning demand                                                            |
+| q026 | Why were there more chargers after Oct 19, 2025?                                         | `total_commissioned_minutes`                             | LOC-002 commissioned Oct 20; the data records the commissioning, not the reason                                             |
+| q027 | Why did visits at LOC-002 drop in the week of Oct 27, 2025?                              | Demand: `monthly_active_drivers × visits_per_driver`     | 38 → 12 with 100% success and uptime above 99.6%: fewer drivers (20 → 8), coming less often (1.9 → 1.5 visits each)         |
+| q028 | Did charging demand recover in the week of Oct 20, 2025, compared to the week of Oct 6?  | Demand vs supply, matched at a site; "unobserved demand" | The weeks cover different sites: LOC-001 had no usable port, and LOC-002's 20 drivers were all new. Added after the A/B run |
 
 The author singled out the sentences that make a reference good, now the house style for the
 reference guide:
@@ -205,6 +210,81 @@ A fingerprint check showed that every case relying on `fact_visits`, `fact_charg
 
 ---
 
+## The first exploratory A/B run
+
+q019 and q022–q027 ran twice each on arm A (`RULES.md` and the root-cause skill) and arm B (plus the
+metrics tree and the active-drivers skill), from study commit `fc4bcd63`. All 28 trials completed
+without errors. Arm A cost $6.35 and arm B $6.70; the judge was about 60% of it, because the three
+RAG metrics make about 24 judge calls per trial. Two answers per case per arm, read by me without
+blinding: this picks cases and fixes references, it isn't evidence about the tree.
+
+| Case | Correctness, A → B | Better          | What changed                                                                                                                                                       |
+| ---- | ------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| q019 | 0.6 → 0.7          | Neither         | B quotes the tree's uptime/success decoupling and stops; neither arm read the root-cause skill; B never read the error codes (A did once)                          |
+| q022 | 0.5 → 0.6          | B               | Both B runs find the supply failure; A had one "location switchover" run. B rep 1 read Oct 20 visits, at another site, as demand during Oct 15–19                  |
+| q023 | 0.6 → 0.4          | A               | Both B runs got CH-001 wrong ("newly commissioned mid-period", "recommissioned with more ports"); see below                                                        |
+| q024 | 0.35 → 0.35        | Neither         | Both arms told a success-rate mix-shift story against Oct 1–14, not "supply came back" against Oct 15–19                                                           |
+| q025 | 0.6 → 0.4          | B, by the skill | B applied the active-drivers skill (10 known + ≈101 anonymous) and its mix check; against Oct 1–14 that makes active drivers fall, which the reference marked down |
+| q026 | 0.5 → 0.85         | B               | Both B runs right (1 → 3 chargers, 2 → 6 ports); A rep 2 gave "2 → 4 cumulative" and swapped the commissioning order                                               |
+| q027 | 0.65 → 0.7         | B               | Both B runs used `visits = drivers × visits/driver` and gave visits per driver a secondary share; A said it didn't matter                                          |
+
+Mean Correctness is 0.54 for A and 0.57 for B. The judge's `passed` flag is mostly decided by
+ContextualRelevancy, which here scores schema noise in the tool outputs, and was ignored.
+
+### Findings
+
+- **Skills are read, not loaded.** `load_skill` loads only nao's built-in skills (excel, pdf). The
+  agent called it for `root-cause-analysis` 22 times, it failed every time, and the agent then read
+  the file. I first counted `load_skill` calls and reported the skill missing from q023 in arm B;
+  it was read in every trial except q019, in both arms. Our skill files follow the nao docs.
+- **q019 didn't trigger the skill.** Its description covers "why did X drop"; "Did CH-001's
+  reliability change…?" reads as a lookup, yet the reference wants the cause.
+- **The tree caused q023's error.** Neither B run queried `dim_chargers`. Both saw CH-001 with 475
+  commissioned minutes per port over Oct 15–19, which fits a late commissioning or an early
+  decommissioning equally. The tree said only "A port commissioned mid-month contributes only its
+  commissioned minutes", and the agent took the one case it described. Arm A rep 2 queried
+  `dim_chargers` and was right. The case built on the tree caught a gap in the tree.
+- **Neither arm treats location as where supply meets demand.** The tree and the skill mentioned
+  location only in the definition of a visit, so the agent treated the network as one pool.
+- **The questions didn't name a baseline.** "After Oct 19" let all eight q024 and q025 answers
+  compare against early October. Against that baseline, the skill's count of active drivers fell.
+- **The agent didn't apply the attribution it was given.** B reported q027's split as each part's
+  percent change (~60% and ~21%), though both the tree and the skill's step 2 give log
+  contributions (79.5% and 20.5%).
+- **The thinning shows.** B rep 1 on q027 flagged "exactly 2 visits/day every single day … may
+  reflect a data artifact". The week of Oct 27 kept the first visit per charger per day.
+- **Anonymous drivers.** Arm A counted 11 LOC-001 drivers: 10 known plus the `UNKNOWN` key,
+  through the semantic model's `drivers_count`. The skill counts each anonymous visit as a driver.
+- **The end-of-data artifact leaks in.** A said CH-002's outage "ended Nov 3" twice; B said
+  "still offline as of Nov 3", which is right.
+- **The judge is noisy.** On q025 it scored a hypothesis-only answer above one that found LOC-002;
+  on q019 it weighted counts over the cause; on q024 it read pre-Oct-15 successes as contradicting
+  the reference.
+- **The arm manifest misses the synced context.** It hashes `RULES.md`, the skills and the dataset,
+  not the kwwhat files synced at container start. Removing `drivers_count` mid-round would have
+  changed arm B's context unnoticed; arm B had started before the edit, so both arms matched.
+
+### Changes made in response
+
+| Change                                                                                                                     | Where                                           | Arms |
+| -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---- |
+| "For any question about whether, why, or where a metric changed, read `agent/skills/root-cause-analysis.md`" in `RULES.md` | `common/RULES.md.append`                        | Both |
+| Segment by location first; say when a site opens or closes inside the comparison                                           | root-cause skill, step 4                        | Both |
+| A port commissioned or decommissioned during the period counts only its commissioned minutes; `dim_chargers` says which    | `metrics_tree.md`, `total_commissioned_minutes` | B    |
+| "Demand and supply meet at a site: visits at one site aren't evidence of demand at another"                                | `metrics_tree.md`, section 4                    | B    |
+| q024 and q025 end with "compared to Oct 15–19"; references unchanged                                                       | dataset                                         | Both |
+| q028 added and approved by the author                                                                                      | dataset                                         | Both |
+| `drivers_count` removed (the author: it was defined incorrectly)                                                           | kwwhat `semantic_models.yml`                    | Both |
+
+Upstream nao can preload a skill for a user group, but our fork can't, and merging upstream would
+change the harness mid-study, so the `RULES.md` line stands in for it. The tree changes are changes
+to the treatment, made in the dev phase in response to dev cases.
+
+q024 keeps "after Oct 19" by the author's choice. Its reference counts the week of Oct 20 (38
+successful visits); a correct answer giving the full period's 50 may be marked down.
+
+---
+
 ## Lessons
 
 - **Check what a copy brings with it.** The copied period carried its OFFLINE periods, its
@@ -221,13 +301,25 @@ A fingerprint check showed that every case relying on `fact_visits`, `fact_charg
   after Nov 3 as a recovery, and it wasn't.
 - **Cases should test the tree, not facts about the data.** A case earns its place when a branch of
   the tree decides the right answer.
+- **Read the tool calls, not just the tool names.** A failed `load_skill` followed by a `read` is
+  a loaded skill; counting calls got it wrong.
+- **A question needs its baseline.** "Why did X go up after date D" leaves the comparison to the
+  agent, and the reference silently picks one.
+- **The treatment can cause errors.** Check arm B's mistakes against the tree's wording before
+  blaming the agent.
+- **Generated data must not be regular.** A pattern the agent can see marks the data as synthetic.
 
 ---
 
 ## Still open
 
-- The exploratory run of q019 and q022–q027 on arms A and B (both arms must be rebuilt: the
-  current arm still carries the 12-case dataset).
+- Commit today's study and kwwhat changes, rebuild both arms, and re-run the dev cases the changes
+  touch (q019, q022–q025, q028 at least).
+- Hash the synced context (`repos/`, `databases/`) in the arm manifest.
+- Write into the generation rule: thin or inject demand at random by day and charger, then check
+  the daily counts for patterns.
+- Consider running only Correctness and Completeness (`--metrics`) to roughly halve the judge cost.
+- Rejudge today's results with `--judge-repeats 3` to size the judge noise.
 - The kwwhat issue for an outage still open when the data ends (closed at the latest message, later
   days counted as 100% up).
 - The remaining new types: a sustained fault onset, auth or driver-side failures. And a fixed

@@ -33,7 +33,7 @@ Split that contributor the same way. Repeat until you reach a part that cannot b
 
 ## 4. Segment it
 
-Split that part by the available dimensions. Report the share of the change in the top segments, and whether it is concentrated or spread out.
+Split that part by the available dimensions, starting with location, then charger, port, and driver group. Report the share of the change in the top segments, and whether it is concentrated or spread out. When a location opens or closes inside the comparison, say so: the periods then cover different sites.
 
 ## 5. Separate mix from rate
 
