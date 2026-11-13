@@ -11,6 +11,7 @@ import {
 	hasToolCall,
 	InferUIMessageChunk,
 	isToolUIPart,
+	type JSONSchema7,
 	ModelMessage,
 	pruneMessages,
 	stepCountIs,
@@ -20,7 +21,13 @@ import {
 	UIMessageStreamWriter,
 } from 'ai';
 
-import { disableModelReasoning, fitThinkingBudget, getProviderMeta, ProviderModelResult } from '../agents/providers';
+import {
+	disableModelReasoning,
+	fitThinkingBudget,
+	getProviderMeta,
+	type ModelCallSettings,
+	ProviderModelResult,
+} from '../agents/providers';
 import { getSystemPromptOverride, hasNaoPromptPlaceholder, injectNaoPrompt } from '../agents/system-prompts';
 import { llmTelemetry } from '../agents/telemetry';
 import { getTools } from '../agents/tools';
@@ -68,7 +75,7 @@ import { extractConfiguredDatabases, readProjectContext } from '../utils/nao-con
 import { addPromptCache, cachedSystemInstructions } from '../utils/prompt-cache';
 import { scheduleSaveLlmInferenceRecord } from '../utils/schedule-task';
 import { sanitizeTitle, TITLE_MAX_OUTPUT_TOKENS, titleFromPrompt, titleGenerationUserMessage } from '../utils/title';
-import { isStoragePath } from '../utils/tools';
+import { getJsonSchema, isStoragePath } from '../utils/tools';
 import { formatErrorMessageForUI, truncateMiddle } from '../utils/utils';
 import { listChartPlugins } from './chart-plugin';
 import { compactionService } from './compaction';
@@ -99,6 +106,21 @@ export interface AgentRunResult {
 	responseParts: UIMessagePart[];
 	/** Rows returned by every `execute_sql` call of the run, keyed by query id */
 	queryResults: Map<string, QueryResult>;
+	/** What the model was given besides the messages, so an eval can record it */
+	runContext: AgentRunContext;
+}
+
+export interface AgentRunContext {
+	systemPrompt: string;
+	memoryCount: number;
+	tools: AgentToolDescription[];
+	callSettings: ModelCallSettings;
+}
+
+export interface AgentToolDescription {
+	name: string;
+	description?: string;
+	inputSchema: JSONSchema7;
 }
 
 export type AgentChat = Pick<DBChat, 'id' | 'projectId' | 'userId'> & {
@@ -383,6 +405,7 @@ class AgentManager {
 	private _resolveFinished: (() => void) | undefined;
 	private _streamWriter?: UIMessageStreamWriter<UIMessage>;
 	private _systemPrompt = '';
+	private _memoryCount = 0;
 
 	constructor(
 		readonly chat: AgentChat,
@@ -621,6 +644,7 @@ class AgentManager {
 
 	private async _buildDefaultSystemPrompt(provider?: Provider, timezone?: string, chatUrl?: string): Promise<string> {
 		const memories = await memoryService.safeGetUserMemories(this.chat.userId, this.chat.projectId, this.chat.id);
+		this._memoryCount = memories.length;
 		const userRules = getUserRules(this._toolContext.projectFolder);
 		const connections = getConnections(this._toolContext.projectFolder);
 		const configuredDatabases = extractConfiguredDatabases(this._toolContext.projectFolder);
@@ -885,10 +909,27 @@ class AgentManager {
 				steps: result.steps as AgentRunResult['steps'],
 				responseParts: [],
 				queryResults: this._toolContext.queryResults,
+				runContext: await this._describeRunContext(),
 			};
 		} finally {
 			this._finish();
 		}
+	}
+
+	private async _describeRunContext(): Promise<AgentRunContext> {
+		const tools = await Promise.all(
+			Object.entries(this._agentTools).map(async ([name, agentTool]) => ({
+				name,
+				description: agentTool.description,
+				inputSchema: await getJsonSchema(agentTool),
+			})),
+		);
+		return {
+			systemPrompt: this._systemPrompt,
+			memoryCount: this._memoryCount,
+			tools,
+			callSettings: this._modelConfig.callSettings ?? {},
+		};
 	}
 
 	checkIsUserOwner(userId: string): boolean {
