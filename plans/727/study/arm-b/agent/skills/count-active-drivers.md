@@ -1,6 +1,6 @@
 ---
 name: count-active-drivers
-description: Calculate active drivers for any period and split them into new, returning, and approximate anonymous drivers. Owns the monthly_active_drivers, new_drivers, returning_drivers, anonymous_drivers, and visits_per_driver calculations in the metrics tree. Use when a question needs driver counts or the driver mix over a selected period, or when a visit-success change may be explained by that mix. Do not use for visit outcome definitions (use the semantic layer).
+description: Calculate active drivers for any period and split them into new, returning, and approximate anonymous drivers. Owns the monthly_active_drivers, new_drivers, returning_drivers, anonymous_drivers, and visits_per_driver calculations in the metrics tree. Use whenever an answer counts drivers, including new or returning drivers, splits visits into drivers × visits per driver, or compares driver counts between periods, and when a visit-success change may be explained by the driver mix. Do not use for visit outcome definitions (use the semantic layer).
 ---
 
 # count-active-drivers
@@ -11,12 +11,11 @@ New and returning are distinct credentials. Anonymous is an approximation: anony
 
 ## What already exists (read before querying)
 
-| Location                                                                                                                | What's in it                                | Implication                                                                |
-| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------- |
-| `repos/kwwhat/models/semantic/semantic_models.yml`                                                                      | Governed metrics, including `total_visits`. | Use `total_visits` and visit outcomes as defined. Don't recreate them.     |
-| `repos/kwwhat/models/marts/marts.yml`                                                                                   | Columns of `fact_visits`, `dim_drivers`.    | `first_seen_ts` is the driver's earliest visit end (needs kwwhat PR #192). |
-| [`agent/skills/count-active-drivers/references/active_drivers.sql`](count-active-drivers/references/active_drivers.sql) | DuckDB query for the full split.            | Start from it. Change only the period bounds and any filters.              |
-| [`agent/skills/count-active-drivers/references/validation.md`](count-active-drivers/references/validation.md)           | Boundary cases and pre-report checks.       | Go through it before reporting.                                            |
+| Location                                                                                                      | What's in it                                | Implication                                                                |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------- |
+| `repos/kwwhat/models/semantic/semantic_models.yml`                                                            | Governed metrics, including `total_visits`. | Use `total_visits` and visit outcomes as defined. Don't recreate them.     |
+| `repos/kwwhat/models/marts/marts.yml`                                                                         | Columns of `fact_visits`, `dim_drivers`.    | `first_seen_ts` is the driver's earliest visit end (needs kwwhat PR #192). |
+| [`agent/skills/count-active-drivers/references/validation.md`](count-active-drivers/references/validation.md) | Boundary cases and pre-report checks.       | Go through it before reporting.                                            |
 
 ## Definitions
 
@@ -44,11 +43,41 @@ Processing has a **35-minute SLA**. "Last two hours" literally means [clock − 
 
 ### Step 2 — Run the split
 
-Adapt `agent/skills/count-active-drivers/references/active_drivers.sql`. Apply a location or charger filter to the visits, but keep `first_seen_ts` network-wide: new means new to the network unless the user explicitly asks otherwise.
+Start from this query. Change only the rows of `periods` and any filters.
+
+- Give each period its own row, with exactly one `period_start` and one `period_end`. New and returning are judged against that row's `period_start`, so a comparison of two periods is two rows in one query, never one window grouped by week or day.
+- Apply a location or charger filter to the visits, but keep `first_seen_ts` network-wide: new means new to the network unless the user explicitly asks otherwise.
+
+```sql
+with periods as (
+    select * from (values
+        ('September 2025', timestamp '2025-09-01 00:00:00', timestamp '2025-10-01 00:00:00'),
+        ('October 2025', timestamp '2025-10-01 00:00:00', timestamp '2025-11-01 00:00:00')
+    ) as t (period_label, period_start, period_end)
+)
+
+select
+    p.period_label,
+    p.period_start,
+    p.period_end,
+    count(v.visit_id) as total_visits,
+    count(distinct case when d.is_known_driver and d.first_seen_ts >= p.period_start then v.driver_key end) as new_count,
+    count(distinct case when d.is_known_driver and d.first_seen_ts < p.period_start then v.driver_key end) as returning_count,
+    count(case when not d.is_known_driver then v.visit_id end) as anonymous_count
+from periods as p
+left join analytics.MARTS.fact_visits as v
+    on v.visit_end_ts >= p.period_start
+    and v.visit_end_ts < p.period_end
+    -- and v.location_id = '<location_id>'
+left join analytics.MARTS.dim_drivers as d
+    on v.driver_key = d.driver_key
+group by p.period_label, p.period_start, p.period_end
+order by p.period_start
+```
 
 ### Step 3 — State the history coverage
 
-New means first observed in the available history, so truncated history makes old drivers look new. The demo's 14-day seed cannot establish lifetime history, so disclose this in any split it produces.
+New means first observed in the available history, so truncated history makes old drivers look new. Check where the history starts (the earliest `visit_end_ts` in `fact_visits`) and say so in any split: a driver counted as new in the first weeks of the data may have charged before it began.
 
 ### Step 4 — Explain a visit-success change (only if asked)
 

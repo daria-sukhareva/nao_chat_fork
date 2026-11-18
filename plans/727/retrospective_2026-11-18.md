@@ -5,11 +5,15 @@
 serves the new ids; arm B re-run on q022, q023, q024 and q026, the cases where the agent had
 misread the network's layout; what each answer said. In the afternoon: why the agent kept
 misreading CH-001's missing rows in q023, and four attempts to fix it (a corrected grain, table
-docs, a `RULES.md` rule, a Network Topology bullet in the skill).
+docs, a `RULES.md` rule, a Network Topology bullet in the skill). In the evening: arm B on
+q022–q027 with all of it, the errors that remain, and changes to the driver skill.
 **Status:** kwwhat is at `ad83493` on `exp/metric_tree`: #195 (`c13c68b`), the uptime grain
 description (#201, `b7e54d7`), `persist_docs` (`0043e94`) and the `marts.yml` rule (`ad83493`). The
-skill's Network Topology bullet is uncommitted, so the last runs' manifest reads
-`815cadd0-dirty`. Arm A has not run on any of this. Snowflake hasn't been rebuilt, so the
+skill's Network Topology bullet is committed (`e494744b`), but the arm used in the evening runs
+was built before that commit, so their manifest reads `815cadd0-dirty`; its served skill matches
+the committed one. `mad` is removed from arm B (`34789ba3`). The driver skill's inlined SQL,
+trigger and history line are uncommitted. Arm B's q028 is still to come. Arm A has not run on any
+of this. Snowflake hasn't been rebuilt, so the
 references' `data_fingerprint` values are unchecked against the new ids.
 
 This follows the [2026-11-13 retrospective](retrospective_2026-11-13.md).
@@ -292,6 +296,140 @@ trap as 2026-11-13. The run is kept as a replicate of the table-docs condition. 
 - **None of this is about the tree.** Every change is in the context both arms share; arm A hasn't
   run on it.
 
+## Evening: arm B on the full context
+
+Arm B ran q022–q027 with everything above: unique ids, the grain fix, `persist_docs`, the
+`marts.yml` rule and the Network Topology bullet. Two trials per case, judged once. q028 is still
+running. The arm predates the bullet's commit, so the manifest reads `815cadd0-dirty`, but the
+served skill and `RULES.md` match the committed files.
+
+| Case | Run      | Correctness | Completeness | `dim_chargers` | `marts.yml` read |
+| ---- | -------- | ----------- | ------------ | -------------- | ---------------- |
+| q022 | `195607` | 0.8, 0.9    | 0.6, 0.6     | 2/2            | 2/2              |
+| q023 | `200458` | 0.7, 0.7    | 0.7, 0.7     | 2/2            | 2/2              |
+| q024 | `201432` | 0.5, 0.8    | 0.5, 0.7     | 2/2            | 2/2              |
+| q025 | `202143` | 0.5, 0.9    | 0.5, 0.7     | 2/2            | 1/2              |
+| q026 | `211445` | 0.7, 0.7    | 0.5, 0.4     | 2/2            | 2/2              |
+| q027 | `213138` | 1.0, 0.5    | 1.0, 0.6     | 2/2            | 2/2              |
+
+The topology lookup happened in every trial, and the rule was followed in 11 of 12.
+
+### What the agent answered
+
+- **q022:** both trials gave the cause: "CH-001 was decommissioned at 2025-10-15 07:55" and CH-002
+  "suffered a NoHeartbeat OFFLINE outage" at the same moment. Both omitted the last visit at 20:38
+  on Oct 14 and that demand can't be measured while CH-002 was offline; trial 2 said "not a …
+  demand problem".
+- **q023:** both named CH-002's NoHeartbeat outage and CH-001's decommissioning, and trial 2
+  separated them as the reference does (decommissioning removes commissioned minutes, it doesn't
+  add downtime). Oct 15 at 49.6% and 1,930 downtime minutes are right (checked in the demo
+  DuckDB). Both chose Oct 10–14 as the baseline and called it "100%" (it was 99.93%), and neither
+  gave the period's 12.38%.
+- **q024:** both found the cause, CH-003 and CH-004 commissioned on Oct 20, but replaced the
+  question's Oct 15–19 with an earlier baseline ("the question's 'baseline' period has no data").
+  Trial 1 then explained the rise as "the replacement of a consistently broken charger (CH-002)"
+  and said "CH-002 is still listed as commissioned" without saying it was offline. Trial 2's body
+  was right, but its conclusion read "two simultaneous events on Oct 20: the decommissioning of a
+  broken charger (CH-001)", the wrong date and the wrong charger.
+- **q025:** both queries to `dim_chargers` returned CH-002 at LOC-001, commissioned since Sep 15
+  and never decommissioned, and both answers said "the only charger at LOC-001 was decommissioned
+  on Oct 15"; trial 2 said "no commissioned charger anywhere on the network". Neither checked
+  CH-002's downtime. Both selected `charger_key`, so the answers named chargers by hash
+  (`684bd5…`). Trial 1 also replaced the baseline with Oct 10–14, counted about 37 anonymous
+  visits as drivers ("≈44 drivers before, 20 after"), and told the user "there were actually
+  _fewer_ drivers". Trial 2 kept the question's frame: 20 new drivers, no anonymous visits, new
+  supply rather than returning demand.
+- **q026:** both gave the right timeline, by `charger_id`: CH-001 decommissioned on Oct 15, CH-003
+  and CH-004 commissioned on Oct 20 at 08:00, 1 charger then 3. Trial 1 said "CH-001 going
+  offline on Oct 15", which confuses decommissioning with an outage. Both omitted the port-minutes,
+  that CH-002 counts as commissioned while offline, and that the data records the commissioning,
+  not its reason.
+- **q027:** trial 1 matched the reference in every figure: 38 visits then 12, all successful,
+  drivers 20 then 8, 1.9 then 1.5 visits per driver, about 80% of the drop from fewer drivers, 12
+  of 20 not back. It also said "All 20 week-1 drivers were **returning** drivers (first seen
+  before the location opened)… Zero new drivers arrived in either week." All 20 were new: none of
+  LOC-002's drivers was seen before Oct 20. Its query counted a driver as new only if first seen
+  in Oct 27–Nov 3, for both weeks, so every driver of the week of Oct 20 was "returning" whatever
+  the data. Trial 2 said "each of those 8 drivers visited exactly once" (two visited three times)
+  and "Saturday Nov 1 had zero visits (data gap, not observed)". It also noticed the week of Oct
+  27 is "exactly 2 visits per day … always 1 on CH-003, 1 on CH-004", which is how the seed was
+  generated.
+
+### The judge
+
+- q024 trial 2 scored 0.8 with a wrong conclusion line, and the judge called "CH-001 decommissioned
+  on Oct 15 at 07:55" incorrect, though the reference says exactly that.
+- q024 trial 1 was marked down for CH-002's ConnectorLockFailure visits as "not supported by the
+  reference". They are real, from Oct 1–14; the fault is the period, not the fact.
+- q027 trial 1 scored 1.0 with a false claim about new drivers, because q027's reference doesn't
+  mention novelty.
+
+### Silent periods read as data gaps
+
+The swap of the baseline in q024 and q025, and the "data gap" on Nov 1 in q027, have one source:
+step 1's **Data completeness** bullet asks the agent to look for missing data and compare on a
+matched basis, and doesn't separate no data from no activity. Missing data can only come from where
+the data starts or ends, or from a failed load; this dataset has no failed load, so between Oct 1
+and Nov 3 a day without visits is a real zero.
+
+The dev set teaches the opposite. q015–q017 call the week of Oct 13 a partial week with "only 2 days
+of data", written when the data ended on Oct 14. Since LOC-002 the data runs to Nov 3, so Oct 15–19
+had no supply, and q015 and q017 reward the reading that q024 and q025 penalize. Their numbers still
+hold; their reason doesn't. The current end of the range can't carry the trap yet (see Still open).
+
+The bullet's last sentence, changed after these runs (uncommitted, in `common/`, so both arms):
+
+- Before: "If a period is partial, say so and compare on a matched basis, such as per day."
+- After: "If a period is partial, flag it. Data can only be partial before it starts, after it ends,
+  or where a load failed; inside the data's range, a period with no activity is a real zero, not
+  missing data."
+
+The first sentence (the author's) removes the instruction the agent used to replace the baseline.
+The second targets the misreading itself: the agent didn't misjudge a partial period, it called an
+in-range silent one partial, and flagging alone would keep that claim. Line 20 ("If the change does
+not survive this step, say that and stop") is unchanged.
+
+### New drivers: defined, but not reached
+
+Arm B defines new drivers twice: `docs/metrics_tree.md` ("idTags whose first visit ever is this
+month") and the `count-active-drivers` skill, with SQL relative to each period's start. Arm A has
+only the `first_seen_ts` column. q027 trial 1 read the tree but not the skill, and wrote its own
+window. Across the 12 trials the skill was opened only in q025.
+
+Changes to arm B, after these runs:
+
+1. **`mad` removed** from the skill and the tree (`34789ba3`). They pointed to `mad`, `mad_new`,
+   `mad_retained` and `mad_resurrected` in the semantic layer; those metrics are in another
+   branch.
+2. **The SQL is now in the skill**, and `references/active_drivers.sql` is deleted. A `periods` CTE
+   has one row per period, each with exactly one `period_start` and one `period_end`, and new and
+   returning are judged against that row's start: "a comparison of two periods is two rows in one
+   query, never one window grouped by week or day." The example rows are September and October
+   2025, not the weeks q027 asks about. With q027's weeks and LOC-002 substituted, it returns 20
+   new, then 0 new and 8 returning.
+3. **A trigger in the description:** "Use whenever an answer counts drivers, including new or
+   returning drivers, splits visits into drivers × visits per driver, or compares driver counts
+   between periods."
+4. **History coverage:** "The demo's 14-day seed" is replaced by a check of where the history
+   starts.
+
+These widen the gap between the arms on purpose. Today's B runs are their before.
+
+### Findings
+
+- **The bullet's effect held.** The topology lookup happened in 12 of 12 trials, and CH-001's
+  decommissioning was named in every trial of q022–q024.
+- **Looking up isn't accounting for.** In q025 both trials got CH-002's row and left it out of the
+  answer. The lookup's result needs a check of each charger it returns, not more lookups.
+- **The baseline swap is the most common remaining error:** 4 of 5 trials with the bullet across
+  q024 and q025, and once more on a single day in q027.
+- **A perfect score can sit on a false claim outside the reference.** The judge only checks what
+  the reference states.
+- **The references need to match the question's grain.** q026 asks about chargers and loses
+  Completeness for omitting port-minutes.
+- **Still nothing about the tree.** The driver definition is the first arm-B-only difference that
+  could show up as an A/B gap, and no reference except q025's checks it.
+
 ## Lessons
 
 - **Read the queries before the scores.** The scores moved by a noise-sized amount on three of four
@@ -301,6 +439,11 @@ trap as 2026-11-13. The run is kept as a replicate of the table-docs condition. 
 - **Knowing a definition isn't checking a fact.** The agent read that a missing row means "not
   commissioned" and still didn't ask which ports were missing or why. A step that names the lookup
   changed the behavior; documentation of what it would find didn't.
+- **Separate no data from no activity.** Data is missing only before it starts, after it ends, or
+  where a load failed. Inside the range, a period with no visits is a real zero, and a skill that
+  says "look for missing data" without saying so invites the agent to discard it.
+- **A reference only guards what it says.** A false claim on a point the reference doesn't cover
+  costs nothing. Write the facts a wrong answer is likely to contradict into the reference.
 - **Check the served file, not the manifest.** A stale arm with a stale `arm.json` passes the check.
   `grep` the arm and the container for the change before running.
 
@@ -308,9 +451,15 @@ trap as 2026-11-13. The run is kept as a replicate of the table-docs condition. 
 
 ## Still open
 
-- Commit the skill's Network Topology bullet, so the manifest isn't `-dirty`.
-- Decide on a baseline clause for the bullet ("A period with no activity is still a valid baseline
-  when the question names it"); test on q024 and q025.
+- The completeness edit is in `common/`, and today's B runs used the old wording. Stash it, run arm
+  A on the old wording, then commit it and run both arms. Test on q024 and q025 (baseline kept) and
+  q027 (Nov 1), and read what each answer calls Oct 15–19 or Nov 1, not only the score. Test for
+  overcorrection once a real partial period exists. If the baseline swap persists, add: "when the
+  question names the comparison period, answer that one (another baseline only as labelled
+  context)."
+- Consider a second clause for the Network Topology bullet: account for every charger the lookup
+  returns and check its status in the period (q025 dropped CH-002). This is about the rows already
+  returned, so it doesn't scale with the network.
 - Move the partial-period trap (q015–q017) to the end of the data range. Their references still call
   Oct 15–19 "no data", written when the data ended on Oct 14; since LOC-002 the data runs to Nov 3,
   so those days had no supply, and the references contradict q022–q025. In order:
@@ -324,8 +473,17 @@ trap as 2026-11-13. The run is kept as a replicate of the table-docs condition. 
        Place the next scenario (type 4, driver or authorisation failures) at the end of the range.
     4. Until then, drop the current q015–q017 from the dev set, or rewrite their references to say
        there was no supply after 07:55 on Oct 15.
-- Run arm A on this build, then the remaining B cases (q019, q022, q025, q026, q027) so both arms
-  cover the same set on the same context.
+- Analyse arm B's q028, then rebuild the arm (so the manifest isn't `-dirty`) and run arm A on
+  q022–q028 on the same shared context. Note whether arm A makes q027's new-driver error.
+- Commit the driver skill changes, rebuild arm B, and `grep` the served skill for `periods as`.
+  Then run q025 and q027 on B and check that the skill was opened and the split is right.
+- Add to q027's reference: "All 20 drivers in the week of Oct 20 were new to the network."
+- q026's reference requires port-minutes for a question about chargers: ask about capacity, or
+  stop requiring them.
+- Answers in q025 named chargers by `charger_key`. Consider a line in `RULES.md` or the docs to name
+  chargers by `charger_id`.
+- kwwhat #196: the generator should add jitter. q027 trial 2 spotted the seed's exact 2 visits a
+  day.
 - `fact_uptime_daily` is a view, so its description doesn't sync: materialize it as a table (check
   why #177 made it a view) or rely on the rule.
 - Make `build-arm.sh` and `nao evals --arm-manifest` catch a stale arm (kwwhat commit and
