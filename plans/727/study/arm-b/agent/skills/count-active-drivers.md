@@ -1,6 +1,6 @@
 ---
 name: count-active-drivers
-description: Calculate active drivers for any period and split them into new, returning, and approximate anonymous drivers. Owns the monthly_active_drivers, new_drivers, returning_drivers, anonymous_drivers, and visits_per_driver calculations in the metrics tree. Use when a question needs driver counts or the driver mix over a selected period, or when a visit-success change may be explained by that mix. Do not use for the published daily lifecycle stack (query `mad`, `mad_new`, `mad_retained`, `mad_resurrected` from the semantic layer) or for visit outcome definitions (use the semantic layer).
+description: Calculate active drivers for any period and split them into new, returning, and approximate anonymous drivers. Owns the monthly_active_drivers, new_drivers, returning_drivers, anonymous_drivers, and visits_per_driver calculations in the metrics tree. Use when a question needs driver counts or the driver mix over a selected period, or when a visit-success change may be explained by that mix. Do not use for visit outcome definitions (use the semantic layer).
 ---
 
 # count-active-drivers
@@ -11,12 +11,12 @@ New and returning are distinct credentials. Anonymous is an approximation: anony
 
 ## What already exists (read before querying)
 
-| Location                                                                                                                | What's in it                                       | Implication                                                                |
-| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
-| `repos/kwwhat/models/semantic/semantic_models.yml`                                                                      | Governed metrics, including `total_visits`, `mad`. | Use `total_visits` and visit outcomes as defined. Don't recreate them.     |
-| `repos/kwwhat/models/marts/marts.yml`                                                                                   | Columns of `fact_visits`, `dim_drivers`.           | `first_seen_ts` is the driver's earliest visit end (needs kwwhat PR #192). |
-| [`agent/skills/count-active-drivers/references/active_drivers.sql`](count-active-drivers/references/active_drivers.sql) | DuckDB query for the full split.                   | Start from it. Change only the period bounds and any filters.              |
-| [`agent/skills/count-active-drivers/references/validation.md`](count-active-drivers/references/validation.md)           | Boundary cases and pre-report checks.              | Go through it before reporting.                                            |
+| Location                                                                                                                | What's in it                                | Implication                                                                |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------- |
+| `repos/kwwhat/models/semantic/semantic_models.yml`                                                                      | Governed metrics, including `total_visits`. | Use `total_visits` and visit outcomes as defined. Don't recreate them.     |
+| `repos/kwwhat/models/marts/marts.yml`                                                                                   | Columns of `fact_visits`, `dim_drivers`.    | `first_seen_ts` is the driver's earliest visit end (needs kwwhat PR #192). |
+| [`agent/skills/count-active-drivers/references/active_drivers.sql`](count-active-drivers/references/active_drivers.sql) | DuckDB query for the full split.            | Start from it. Change only the period bounds and any filters.              |
+| [`agent/skills/count-active-drivers/references/validation.md`](count-active-drivers/references/validation.md)           | Boundary cases and pre-report checks.       | Go through it before reporting.                                            |
 
 ## Definitions
 
@@ -69,5 +69,4 @@ Follow the project's metrics-at-a-glance format. State S, E, timezone, and any h
 - **Assign each driver one group for the whole period.** Slicing a period into hours keeps the original S.
 - **Treat anonymous as an upper bound.** One person with several anonymous visits counts several times, as does one who moves ports, since that starts a new visit. A person who authenticates more than 2 minutes after a failed anonymous plug-in counts as both anonymous and known.
 - **Check the mix before reading a change as demand.** A shift from authenticated to anonymous starts raises `active_drivers` and lowers `visits_per_driver` with no change in real demand. Compare new + returning on its own.
-- **Don't confuse this with `mad`.** `mad` excludes anonymous drivers and is a trailing 30-day daily snapshot; `mad_new` means first seen on that day, not in the period.
 - **Don't count `UNKNOWN` as one driver.**

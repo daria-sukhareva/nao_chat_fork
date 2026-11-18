@@ -311,6 +311,19 @@ trap as 2026-11-13. The run is kept as a replicate of the table-docs condition. 
 - Commit the skill's Network Topology bullet, so the manifest isn't `-dirty`.
 - Decide on a baseline clause for the bullet ("A period with no activity is still a valid baseline
   when the question names it"); test on q024 and q025.
+- Move the partial-period trap (q015–q017) to the end of the data range. Their references still call
+  Oct 15–19 "no data", written when the data ended on Oct 14; since LOC-002 the data runs to Nov 3,
+  so those days had no supply, and the references contradict q022–q025. In order:
+    1. Fix `as_of` in `int_charger_commissioned_daily.sql` at 2025-11-03 07:55, where the OCPP logs
+       end. Today `fact_uptime_daily` runs to the current date, and from Nov 4 every charger,
+       CH-002 included, shows as commissioned with no downtime, so the end of the data reads as a
+       healthy network with no visits. Re-check q023 and q026's fingerprints after it.
+    2. Move q017 to the week of Nov 3 (under 8 hours of data, no visits): the drop in visits comes
+       from the partial week, not from a trend.
+    3. q015 and q016 need failures in a partial last week, and LOC-002 succeeded on every visit.
+       Place the next scenario (type 4, driver or authorisation failures) at the end of the range.
+    4. Until then, drop the current q015–q017 from the dev set, or rewrite their references to say
+       there was no supply after 07:55 on Oct 15.
 - Run arm A on this build, then the remaining B cases (q019, q022, q025, q026, q027) so both arms
   cover the same set on the same context.
 - `fact_uptime_daily` is a view, so its description doesn't sync: materialize it as a table (check
