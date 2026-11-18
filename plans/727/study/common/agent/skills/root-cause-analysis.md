@@ -14,6 +14,7 @@ Before explaining a change, check that the comparison is fair:
 - **Data completeness:** both periods are complete. Check the data's actual coverage for each period, and look for late-arriving or missing data. If a period is partial, say so and compare on a matched basis, such as per day.
 - **Calendar:** period length, holidays, and seasonality. Compare per-day rates when periods differ in length.
 - **Definitions:** the metric's definition, thresholds, and the population it covers are the same in both periods, as far as you can tell.
+- **Network Topology:** which locations, chargers and ports were in commission in each period. Look up `commissioned_ts` and `decommissioned_ts` in `dim_chargers` before hypothesising what happened. A charger counts only between its commissioning and decommissioning, so a charger with no rows outside that window isn't missing data. Understand what equipment was in the field before interpreting signals or missing data.
 - **Sample size:** the counts are large enough for the change to mean something. State the counts behind every rate.
 
 If the change does not survive this step, say that and stop.
