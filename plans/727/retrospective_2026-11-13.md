@@ -2,12 +2,12 @@
 
 **Date:** 2026-11-13 (covers a run started on the evening of 2026-11-12)
 **Scope:** a re-run of arm B on q019 and q022–q027, meant to test the changes made after the first
-exploratory A/B run, that ran on the old build instead; the first cases of arm B on the rebuilt arm;
-why q022 keeps failing (the agent can't see the network's layout, and `port_id` isn't unique); and
+exploratory A/B run, that ran on the old build instead; arm B on the rebuilt arm;
+the finding that noise within an arm exceeds the gap between arms; why q022 keeps failing (the agent can't see the network's layout, and `port_id` isn't unique); and
 two kwwhat issues that came out of it.
-**Status:** No study files changed except this retrospective. Arm B is running on the rebuilt arm
-(study commit `55bdd743`, whose `study/` folder matches `7ec0c6fa`); q019, q022 and q023 are in,
-q024, q025 and q028 and all of arm A are still to run. kwwhat issues
+**Status:** No study files changed except this retrospective. Arm B ran on the rebuilt arm
+(study commit `55bdd743`, whose `study/` folder matches `7ec0c6fa`); all of arm B (q019,
+q022–q027) is in; arm A is still to run. kwwhat issues
 [#195](https://github.com/appspace/kwwhat/issues/195) and
 [#196](https://github.com/appspace/kwwhat/issues/196) are filed; nothing in kwwhat has changed.
 
@@ -188,6 +188,40 @@ has never run on #85's output.
 
 ---
 
+## The biggest takeaway: noise within an arm exceeds the gap between arms
+
+Mean scores over the five cases all four runs share (q023–q027, 10 trials per run, judged once):
+
+| Run                        | Build      | Correctness | Completeness |
+| -------------------------- | ---------- | ----------- | ------------ |
+| A, run 1                   | `fc4bcd63` | 0.54        | 0.54         |
+| B, run 1                   | `fc4bcd63` | 0.54        | 0.52         |
+| B, run 2 (stale replicate) | `fc4bcd63` | 0.61        | 0.59         |
+| B, rebuilt                 | `55bdd743` | 0.57        | 0.51         |
+
+- Two runs of the same arm on the same build differ by 0.07 on both metrics; A and B differ by
+  0.00 on Correctness and 0.02 on Completeness. Whatever the tree does is, so far, smaller than
+  run-to-run noise.
+- The rebuilt B is a new treatment, not a third replicate, and lands inside the old B range: it
+  can't show whether the rebuild helped. Its q024 gain (0.4 to 0.55 Correctness) and q025 drop
+  (0.4 to 0.2) cancel out.
+- The 0.07 mixes agent and judge noise, since every trial was judged once.
+- No A/B claim, in either direction, until each arm has several runs on one build with
+  `--repeats` of at least 5 and `--judge-repeats 3`, compared case by case. Arm A on `55bdd743` is
+  the first fair comparison with the rebuilt B, and it will still be underpowered.
+
+### q025 on the rebuilt B
+
+Both trials scored 0.2 Correctness and 0.1 Completeness, down from 0.4 in every earlier B trial.
+Both called Oct 15–19 a "5-day data gap", citing skill step 1 ("compare on a matched basis"), and
+switched to Oct 1–14, the baseline the rewording removed. Against it they counted about 101
+anonymous visits as drivers, concluded drivers fell, and blamed a shift to authenticated
+charging. Neither queried `dim_chargers`, so neither found LOC-002's commissioning on Oct 20. The
+judges also read the reference's "there were no anonymous visits" as covering every period. A
+candidate step 1 line: a period with no activity is a valid baseline when the question names it;
+check whether supply existed before calling it a data gap. It waits until arm A has run on the
+current build.
+
 ## Lessons
 
 - **Check the manifest before reading results.** `study_commit` and the dataset's row list show in
@@ -203,6 +237,8 @@ has never run on #85's output.
   minutes: q023 went through it, q022 didn't.
 - **Fix the data before documenting it.** An identifier that isn't unique misleads every query;
   a description helps only the agents that read it.
+- **Measure the noise before the effect.** Within-arm spread (0.07) exceeded the A/B gap (0.00 to
+  0.02); without replicates the first comparison would have been read as a result.
 - **Ask what a case tests before reading its scores.** q022 was written for the tree's
   supply–demand branch, and mostly tested whether the agent can count ports.
 
@@ -210,15 +246,17 @@ has never run on #85's output.
 
 ## Still open
 
-- Finish arm B on the rebuilt arm (q024, q025, q028), then run arm A on the same build, checking
-  each results file's manifest first.
+- Run arm A on the rebuilt build (`55bdd743`), checking each results file's manifest first. Arm B
+  is complete (q019, q022–q027).
 - After arm A: implement kwwhat #195, rebuild both warehouses, re-check every fingerprint, and
   record it as a change to the common context.
 - Decide on the root-cause skill's step 1 line about which chargers were commissioned where.
 - Give q023 a baseline ("compared to Oct 1–14"), as q024 and q025 got.
 - kwwhat #196 (scenario generator) depends on PR #85; decide the tolerance and #85's CH-003 seed.
 - Make `build-arm.sh` or `nao evals` warn when `study_commit` differs from the study repo's `HEAD`.
-- In q025's reference, write "10 drivers on CH-003 and 10 on CH-004", pending the author's approval.
+- In q025's reference, write "10 drivers on CH-003 and 10 on CH-004" and "that week there were no
+  anonymous visits", pending the author's approval.
+- Decide on the step 1 line about empty periods named as baselines (q025), after arm A.
 - Size the noise before any A/B claim: more repeats per case and `--judge-repeats 3`.
 - Carried over from 2026-11-12: hash the synced context in the arm manifest; the thinning rule in
   the generation rule; `--metrics correctness --metrics completeness`; the kwwhat issues; a fixed
