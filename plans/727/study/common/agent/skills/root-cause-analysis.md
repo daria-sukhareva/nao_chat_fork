@@ -40,15 +40,19 @@ Split that part by the available dimensions, starting with location, then charge
 
 A segment can move the total by changing its share rather than its rate: new low-performing segments can pull a total down while every existing segment stays flat. Report which one it is.
 
-## 6. Check other explanations
+## 6. Attribute the failures
+
+When a success rate moved, check success criteria, error codes, stop reasons, authorization statuses, and attempts that never started a transaction to attribute the failures.
+
+## 7. Check other explanations
 
 Before concluding, check whether another part of the metric caused this movement. Many movements in one part come from a change in another.
 
-## 7. Stay within the evidence
+## 8. Stay within the evidence
 
 State only what the query results show. Treat a pattern as an association unless the data establishes the mechanism, and label any hypothesis as a hypothesis.
 
-## 8. Report
+## 9. Report
 
 - the conclusion first
 - the path through the breakdown, with the contribution at each level

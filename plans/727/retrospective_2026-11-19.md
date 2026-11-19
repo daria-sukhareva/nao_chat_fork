@@ -511,6 +511,24 @@ This is a finding about what the tree covers, not about B's variance. Adding an 
 now would tune arm B to the dev set; if it's tested, it has to be a pre-declared variant of B,
 confirmed on held-out cases.
 
+### Shared-skill change: a step to attribute the failures
+
+Fixing the tree on these cases would tune arm B to the dev set. The author chose instead to add a
+generic step to the shared root-cause skill, which both arms get, so the A/B comparison still
+isolates the tree. It goes after "Separate mix from rate", as step 6 (the later steps become 7–9):
+
+> **6. Attribute the failures.** When a success rate moved, check success criteria, error codes, stop reasons, authorization statuses, and attempts that never started a transaction to attribute the failures.
+
+It addresses both gaps the runs showed: no trial in B, and only some in A, looked at the rejected
+drivers' token status (q029), and no trial in either arm split failures by kind (q031). It doesn't
+name the scenario. Like the Network Topology bullet, it's a shared-context change made on dev
+evidence (A and B on q029–q031, runs above):
+
+- q029–q031 stay dev-only, and the whitepaper says the shared skill was developed on them.
+- On these cases the step removes the room a tree would need on an authorization cause, so they
+  can't show a tree effect there anymore. The tree-coverage finding stands as recorded.
+- A claim about driver-side causes needs held-out cases the skill wasn't written against.
+
 ### Three judge misreads
 
 The Correctness judge misread a correct claim three times in these runs:
@@ -598,6 +616,8 @@ references. The judge also didn't catch q029 A trial 3 (`190000`) counting the s
   reading A/B differences. Then a hinted solvability run for the findings no trial reached: q029's
   "the same drivers succeeded the week before", q030's successful-driver count with the rejections,
   q031's failures by kind.
+- Root-cause step 6 ("Attribute the failures"): commit it, rebuild both arms, rerun A and B on
+  q029–q031 to see whether it's followed, and on q022–q027 to check nothing regresses.
 - For a claim on type 4: 5 or more trials per arm, alternating A, B, B, A, with `rejudge
 --judge-repeats 3`.
 - If an authorization node is tested in the tree, pre-declare it as a variant of B and confirm it on
