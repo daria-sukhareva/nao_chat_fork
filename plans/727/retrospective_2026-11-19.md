@@ -1,11 +1,14 @@
-# Retrospective: Faithfulness doesn't check the skill
+# Retrospective: Faithfulness doesn't check the skill, and the first clean A/B comparison
 
-**Date:** 2026-11-19 (runs from just after midnight)
+**Date:** 2026-11-19
 **Scope:** arm B on q023 and q024 with the new completeness sentence in the root-cause skill; why
 both q024 trials replaced the question's baseline anyway; and why Faithfulness scored one of them
-1.0 even though the skill it had in its context said the opposite of the answer.
-**Status:** both runs used study commit `a7ae60ce` (the driver skill's inlined SQL and the
-completeness edit), so the manifest is clean. Arm A has still not run on this context. The
+1.0 even though the skill it had in its context said the opposite of the answer. Then arm B on
+q022–q028 (3 trials each, Correctness and Completeness only), why q028 fails in every trial, and
+arm A on the same cases: the first A/B comparison on an identical shared context.
+**Status:** B ran from study commit `a7ae60ce` (the driver skill's inlined SQL and the completeness
+edit), A from `f6fe2521`, which adds only this retrospective. Both manifests are clean, and the
+served `root-cause-analysis.md` and `golden_dataset.jsonl` have the same hashes in both arms. The
 reserve baseline clause is drafted, not added.
 
 This follows the [2026-11-18 retrospective](retrospective_2026-11-18.md).
@@ -157,6 +160,105 @@ comparison. The completeness bullet is about labelling the period, not about cho
 
 ---
 
+## Arm B on q022–q028
+
+Arm B ran each case 3 times with `--metrics correctness --metrics completeness`. With `000544`
+(q023) and `001559` (q024) from earlier, all on `a7ae60ce`:
+
+| Case | n   | Correctness | SD   | Range   | Completeness | SD   | Range   |
+| ---- | --- | ----------- | ---- | ------- | ------------ | ---- | ------- |
+| q022 | 5   | 0.82        | 0.11 | 0.7–0.9 | 0.74         | 0.05 | 0.7–0.8 |
+| q023 | 5   | 0.72        | 0.13 | 0.5–0.8 | 0.64         | 0.05 | 0.6–0.7 |
+| q024 | 5   | 0.48        | 0.11 | 0.4–0.6 | 0.40         | 0.07 | 0.3–0.5 |
+| q025 | 3   | 0.63        | 0.23 | 0.5–0.9 | 0.63         | 0.15 | 0.5–0.8 |
+| q026 | 3   | 0.70        | 0.00 | 0.7     | 0.40         | 0.00 | 0.4     |
+| q027 | 3   | 0.73        | 0.15 | 0.6–0.9 | 0.93         | 0.12 | 0.8–1.0 |
+| q028 | 3   | 0.10        | 0.00 | 0.1     | 0.00         | 0.00 | 0.0     |
+
+The pooled SD within a case is 0.13 for Correctness and 0.08 for Completeness. Dropping the RAG
+suite cut the judge's cost from about $0.5 to $0.04–0.06 per run.
+
+The cases fall into three groups:
+
+- **Fixed by the case, SD 0.** q028 fails the same way every time (below). q026's Completeness is
+  capped at 0.4: the reference requires port-minutes and the 08:00 start for a question about
+  chargers, and all three answers answered at the charger grain.
+- **Consistently mediocre.** q024: all 5 trials replaced Oct 15–19 ("not apples-to-apples", "a data
+  gap", "the comparison the question implies is between a data gap and the post-gap period").
+- **Noisy.** q025 (0.5–0.9): the driver skill and its `periods` SQL were used in all 3 trials, and
+  the spread is in the framing. The 0.9 trial says "zero visits and zero drivers is not missing
+  data"; a 0.5 trial says "a data gap caused by charger decommissioning". q027: the driver skill
+  was opened in 1 of 3 trials (0 of 2 on 2026-11-18).
+
+q026 also showed the agent loading the skill with `load_skill` in 2 of 3 trials instead of `read`.
+`load_skill` is on the judge's denylist (`NON_EVIDENCE_TOOLS`), so with the RAG suite on, a skill
+loaded that way would not reach the Faithfulness judge at all.
+
+### q028: the method never starts
+
+"Did charging demand recover in the week of Oct 20, 2025, compared to the week of Oct 6?" The
+reference: the data can't show it, because the two weeks cover different sites.
+
+All three trials did the same thing: read `marts.yml` and the semantic model, ran one network-wide
+query, and charted it. None opened the root-cause skill, none queried `dim_chargers`, none split by
+location. On one query the weeks look like the same network (69 visits against 38, 27.5% success
+against 100%), so the answers said "Yes — charging demand **recovered meaningfully**", or "the
+**reliability problem was resolved** … which may reflect drivers who gave up after repeated
+failures".
+
+The Network Topology bullet lives only inside the skill, and nothing opened the skill:
+
+- The skill's description triggers on "why did X drop", "what caused this change", "is this
+  concentrated somewhere". "Did demand recover?" is a yes/no comparison.
+- Arm B's `RULES.md` does cover it ("For any question about whether, why, or where a metric
+  changed, read `agent/skills/root-cause-analysis.md` before querying"), and was ignored in 3 of 3
+  trials, while the `marts.yml` rule was followed in all 3.
+
+Every why-question tonight opened the skill and ran the lookup; the one whether-question did
+neither, and scored lowest. Getting the method into context mattered more than its wording.
+
+---
+
+## The first clean A/B comparison
+
+Arm A ran the same loop: q022–q028, 3 trials each, the same metrics. Only the arm-specific files
+differ: B has `docs/metrics_tree.md`, the `count-active-drivers` skill and two `RULES.md` lines.
+
+| Case     | Correctness A | Correctness B | B − A     | Completeness A | Completeness B | B − A     |
+| -------- | ------------- | ------------- | --------- | -------------- | -------------- | --------- |
+| q022     | 0.87 ± 0.06   | 0.82 ± 0.11   | −0.05     | 0.70 ± 0.00    | 0.74 ± 0.05    | +0.04     |
+| q023     | 0.67 ± 0.15   | 0.72 ± 0.13   | +0.05     | 0.53 ± 0.06    | 0.64 ± 0.05    | +0.11     |
+| q024     | 0.53 ± 0.15   | 0.48 ± 0.11   | −0.05     | 0.43 ± 0.06    | 0.40 ± 0.07    | −0.03     |
+| q025     | 0.57 ± 0.29   | 0.63 ± 0.23   | +0.07     | 0.53 ± 0.15    | 0.63 ± 0.15    | +0.10     |
+| q026     | 0.60 ± 0.26   | 0.70 ± 0.00   | +0.10     | 0.33 ± 0.06    | 0.40 ± 0.00    | +0.07     |
+| q027     | 0.60 ± 0.17   | 0.73 ± 0.15   | +0.13     | 0.57 ± 0.38    | 0.93 ± 0.12    | +0.37     |
+| q028     | 0.10 ± 0.00   | 0.10 ± 0.00   | 0.00      | 0.00 ± 0.00    | 0.00 ± 0.00    | 0.00      |
+| **Mean** | **0.56**      | **0.60**      | **+0.04** | **0.44**       | **0.54**       | **+0.09** |
+
+Mean ± SD per case; A has 3 trials per case, B 3–5. Runs: A `010634`, `010956`, `011319`,
+`011650`, `123719`, `124104`, `124335`.
+
+- **Correctness: no difference beyond the noise.** A's pooled SD within a case is 0.18, B's 0.13.
+  With 3 trials per arm, the standard error of each case's difference is about 0.12–0.2, and no
+  Correctness difference exceeds it.
+- **Completeness leans to B, not yet a result.** B is ahead on 5 of the 6 cases that can differ (a
+  sign test of p ≈ 0.1, one-sided, on 6 cases). Most of the gap is q027 (+0.37), where A scored 1.0,
+  0.4 and 0.3. A's two low trials left out the 1.9 → 1.5 visits per driver and the 80/20 split,
+  the decomposition the tree spells out: the one place a tree effect is plausible. q023 (+0.11, SDs
+  of 0.05–0.06) is the most consistent gap.
+- **B is less variable.** Pooled SD 0.13 against 0.18 on Correctness, 0.08 against 0.16 on
+  Completeness. q026 is the clearest: B scored 0.7 three times, A 0.7, 0.8 and 0.3 (the 0.3 left out
+  CH-001's decommissioning). A hypothesis worth testing: the tree makes answers more consistent
+  rather than better on average.
+- **Three cases can't discriminate.** q028 is 0.1/0.0 in all six trials: neither arm opens the
+  skill, so B's RULES line didn't help. q026's Completeness is capped by its reference in both arms.
+  q024's baseline swap happens in both arms alike.
+- **The shared changes work in both arms.** A opens the shared root-cause skill too and queried
+  `dim_chargers` in every trial of q025–q027. The Network Topology bullet is a shared-context
+  effect, not a tree effect.
+- **A never addressed new versus returning drivers in q027,** so it neither made B's novelty error
+  of 2026-11-18 nor got it right. q027's reference doesn't check it either way.
+
 ## Lessons
 
 - **A grounding metric can't see a method error.** Faithfulness checks claims against facts. An
@@ -166,6 +268,13 @@ comparison. The completeness bullet is about labelling the period, not about cho
   context, not only what it receives.
 - **Naming the error isn't fixing the choice.** The agent repeated the new sentence word for word
   and made the same swap.
+- **A method only helps if it gets loaded.** The topology check worked in every trial that opened the
+  skill and was absent in every trial that didn't. Check what triggers a skill, not only what it
+  says.
+- **A case with SD 0 measures the case.** q028 and q026's Completeness score the same whatever the
+  agent does. Fix such a case before counting it in an A/B mean.
+- **Look at the spread, not only the mean.** The clearest difference between the arms so far is in
+  variance, not in the average.
 
 ---
 
@@ -179,6 +288,14 @@ comparison. The completeness bullet is about labelling the period, not about cho
 - Add the mechanism to proposal 6 in `upstream_proposals.md` ("State Faithfulness's limits"):
   skills reach the judge, but truth extraction keeps facts and drops instructions, and the question
   is never checked.
-- Run arm A on this context, q022–q028, with `--metrics correctness completeness`.
+- q028: widen the root-cause skill's description to "any comparison of a metric between periods:
+  why it changed, whether it changed or recovered, or where" (shared, both arms). If that doesn't
+  hold, move the topology check into `RULES.md`. Also find out why B's "whether, why, or where" RULES
+  line is ignored. Test on q028 and q021.
+- Fix q026's reference grain (ask about capacity, or stop requiring port-minutes).
+- For an A/B claim: 5 or more trials per case per arm, alternating A, B, B, A with `--experiment`
+  and `--block`, then `rejudge --judge-repeats 3`. Pool across cases for the headline, and test the
+  variance difference as well as the mean.
+- Delete `evals_results_20261119_001618.json` (0 trials, interrupted).
 - Carried over from 2026-11-18: fix `as_of` and move q015–q017 to the end of the range; add the
   new-driver sentence to q027's reference; q026's reference grain.
