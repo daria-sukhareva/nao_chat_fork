@@ -342,9 +342,11 @@ container was running on `demo_duckdb-data`):
 - **Both locations drop:** LOC-002 from 87.3% to 66.7%, LOC-003 from 95.0% to 71.6%.
 - **Uptime is flat at 0.80,** because CH-002's 2 of 10 ports stay offline. No charger explains the
   drop.
-- **The direct evidence:** every known-driver failure in the failure week is `Expired` from one
-  group of idTags, and that group has no successful visit after Nov 10. The rest shows only as
-  anonymous failed attempts tripling across all four chargers.
+- **The direct evidence:** 10 of the 13 known-driver failures in the failure week are `Expired`,
+  all from one group of idTags, and that group has no successful visit after Nov 10. The other 3 are
+  ordinary faults, as in the baseline week. The rest shows only as anonymous failed attempts
+  tripling across all four chargers. In the raw logs, which the agent can't see, 25 Authorize
+  requests were answered `Expired` that week.
 - **Nothing moved before Nov 3:** visits by day, uptime by charger-day and drivers hash the same as
   in the eval volume. dbt passes 369 data tests and 100 unit tests.
 
@@ -370,8 +372,67 @@ now ends on Nov 3.
 - **q008's reference is wrong:** CH-002's outage now runs to Nov 19, not "until the data ends on
   Nov 3", so its 54,720 minutes grows.
 - **Outdated notes:** the notes on q022 and q024 ("questions stay before Nov 3").
-- **Unaffected:** cases bounded before Nov 3, such as q006, q020 and the dated fingerprints of
-  q022–q028.
+- **Answers unaffected:** cases bounded before Nov 3, such as q006, q020 and the dated parts of
+  q022–q028. Their fingerprints are stale anyway; see below.
+
+### Why the fingerprints drifted
+
+q006's fingerprint (`fact_uptime_daily`, Oct 1–14) has the same row count on the rebuilt data but a
+different checksum, although no number in those rows moved. The checksum, `SUM(hash(t))`, hashes the
+whole row, so any column counts. Three things can move a fingerprint:
+
+| Cause                                                                                                                                 | Affects                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| kwwhat #200 (Nov 18): `port_id` became `CH-002-1` instead of `1`, and the surrogate keys were rebuilt                                 | every fingerprint recorded before Nov 18, on any table with those ids, whatever its date filter. q006's was recorded on Nov 11 |
+| #202 and the extension to Nov 19                                                                                                      | open-ended filters, and filters that reach the end of the data                                                                 |
+| Unsorted arrays: DuckDB builds `charge_attempt_ids`, `charger_ids` and `id_tags` with `list_distinct(array_agg(x))`, without an order | `fact_visits` and `fact_charge_attempts`, only when a build orders a list differently                                          |
+
+The array order hasn't changed anything yet. Two builds of the same data gave identical checksums on
+every table, and both matched the live demo. But nothing guarantees the order: it can change with
+threads, DuckDB version, data size or incremental merges. Only 3 visits have more than one element,
+and one of them (Nov 7, on CH-005 and CH-006) falls inside the `fact_visits` fingerprints of
+q029–q031. The fix belongs in kwwhat: sort inside `array_agg_distinct` and `array_distinct`, so the
+same data always gives the same table.
+
+### The cases: q029–q031
+
+Drafted with Claude from SQL against the rebuilt demo (in the running chat-bi container, the
+backend's own path) and fingerprinted after #200 and #202. Not yet reviewed by the author.
+
+**q029: "Why did visit success drop in the week of Nov 10, 2025 compared to the week of Nov 3?"**
+
+- **Tests:** the tree's success branch. The whole drop is in first-attempt success, 91.6% to 68.9%,
+  with visits level.
+- **What the reference says:**
+    - The equipment didn't change.
+    - The drop is spread across both locations and every charger.
+    - 10 failures by identified drivers were rejected as `Expired`, all from one group of idTags.
+      That group's 30 visits the week before all succeeded, and none succeeded this week.
+    - Failed visits without an idTag rose from 10 to 33.
+    - The data limit: expired tokens explain at least 10 of the 34 extra failures, likely most of
+      them, but the exact share can't be measured.
+
+**q030: "Did more drivers charge on the network in the week of Nov 10, 2025 than in the week of Nov
+3?"**
+
+- **Tests:** the tree's own warning about the anonymous-driver mix.
+- **What the reference says:**
+    - Active drivers rose from 68 to 82 only because anonymous visits rose from 10 to 33.
+    - Identified drivers fell from 58 to 49 and visits barely moved (143 to 148), so visits per
+      driver fell from 2.1 to 1.8 with no change in demand.
+    - All 33 anonymous visits were failed plug-ins, likely the token rejections.
+    - The data can't tell how many people made them.
+
+**q031: "Did visit success recover in the week of Nov 17, 2025?"**
+
+- **Tests:** the partial-week trap (type 6) on top of type 4. This is where the q015–q017 move now
+  lives.
+- **What the reference says:**
+    - The week is partial: 2.5 days, ending Wed Nov 19 at 12:00.
+    - 76.1% looks better, but failed visits without an idTag are still 22% of visits, the same as
+      the week of Nov 10 and three times the week of Nov 3.
+    - The one visit by the expired group was rejected again.
+    - The higher rate rests on 11 failures (no faults, one visible rejection), too few to be a trend.
 
 ## Lessons
 
@@ -422,10 +483,15 @@ now ends on Nov 3.
     2. Rebuild `demo_duckdb-data` and both arms, and check that neither manifest is `-dirty`.
     3. Re-verify the open-ended cases by SQL and recompute their fingerprints: q001, q003, q004,
        q007, q008 and q021–q028. Rewrite q008, and the notes on q022 and q024.
-    4. Add the type 4 case, for example "Why did visit success drop in the week of Nov 10 compared
-       to the week of Nov 3?". Its reference names the expired tokens, says that no charger
-       explains it and that most failures are anonymous, and ties the answer to visit success.
-    5. Move q015–q017 to the partial week of Nov 17–19 (2.5 days), with failures continuing.
+    4. Review q029–q031, drafted with Claude and checked by SQL against the rebuilt demo: q029 (why
+       success dropped in the week of Nov 10), q030 (the rise in active drivers is anonymous
+       visits), q031 (the partial week of Nov 17 is no recovery). Then run the judge check on
+       hand-written answers, the solvability check and arm A's headroom on them.
+    5. Retire or rewrite q015–q017. q031 now holds the partial-week trap at the end of the range.
+    6. Recompute every fingerprint recorded before Nov 18: #200's id changes made them all stale,
+       whatever their dates. Do it after the array sort below, so they're computed only once.
+- kwwhat: sort the arrays in `array_agg_distinct` and `array_distinct` on every adapter (a PR off
+  `staging`, like #202), then recompute q029–q031's fingerprints.
 - `payload_extract_parent_id_tag` reads `idTagInfo.idTag` from Authorize.conf. OCPP 1.6 calls the
   field `parentIdTag`, so check whether `parent_id_tag` is always null.
 - Remove the `kwwhat-type4` and `kwwhat-latest-log` docker volumes once they're no longer needed.
