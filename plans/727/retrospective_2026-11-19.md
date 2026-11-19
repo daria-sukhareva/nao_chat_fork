@@ -7,13 +7,14 @@ both q024 trials replaced the question's baseline anyway; and why Faithfulness s
 q022–q028 (3 trials each, Correctness and Completeness only), why q028 fails in every trial, and
 arm A on the same cases: the first A/B comparison on an identical shared context. Last, the type 4
 scenario (driver-side authorization failures): the generator change, the scenario, and the uptime
-fix it needed.
+fix it needed, then q029–q031 and the first A/B run on them.
 **Status:** B ran from study commit `a7ae60ce` (the driver skill's inlined SQL and the completeness
 edit), A from `f6fe2521`, which adds only this retrospective. Both manifests are clean, and the
 served `root-cause-analysis.md` and `golden_dataset.jsonl` have the same hashes in both arms. The
 reserve baseline clause is drafted, not added. kwwhat #202 (uptime fix) and #203 (generator auth)
-are merged to `staging`. The data now has scenario 4. The type 4 seeds are committed on `exp/metric_tree` (`3d3e5fc`), which doesn't
-have #202 yet. No references have been re-verified against the extended data.
+are merged to `staging`. The data now has scenario 4. The type 4 seeds are committed on `exp/metric_tree` (`6406656`, rebased onto
+`staging`, so the branch now has #202). q029–q031 ran on both arms from `7ea2b6d8`; the older references have not been
+re-verified against the extended data.
 
 This follows the [2026-11-18 retrospective](retrospective_2026-11-18.md).
 
@@ -320,7 +321,8 @@ the evidence. The reference has to say that the cause is visible in only part of
 ### The scenario
 
 The rule is in `~/github/make_loc003_auth.py`, outside git like `make_loc002.py`. The seeds are
-committed on kwwhat `exp/metric_tree` as `3d3e5fc`.
+committed on kwwhat `exp/metric_tree` as `6406656` (first `3d3e5fc`, before the rebase onto
+`staging`).
 
 | Part      | Rule                                                                                                                                                                      |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -397,31 +399,36 @@ same data always gives the same table.
 ### The cases: q029–q031
 
 Drafted with Claude from SQL against the rebuilt demo (in the running chat-bi container, the
-backend's own path) and fingerprinted after #200 and #202. Not yet reviewed by the author.
+backend's own path) and fingerprinted after #200 and #202. The references below are the versions
+both arms ran on (study commit `7ea2b6d8`, dataset `786d5112`).
 
 **q029: "Why did visit success drop in the week of Nov 10, 2025 compared to the week of Nov 3?"**
 
 - **Tests:** the tree's success branch. The whole drop is in first-attempt success, 91.6% to 68.9%,
   with visits level.
 - **What the reference says:**
-    - The equipment didn't change.
+    - The equipment didn't change: uptime was the same in both weeks, and faults went from 2 to 3.
     - The drop is spread across both locations and every charger.
-    - 10 failures by identified drivers were rejected as `Expired`, all from one group of idTags.
-      That group's 30 visits the week before all succeeded, and none succeeded this week.
+    - 10 failed visits by identified drivers had their token rejected as `Expired`, so the charge was
+      stopped (`DeAuthorized`) before any energy flowed. All 10 came from 7 drivers; 6 of them
+      visited in the week of Nov 3, and all 10 of those visits succeeded.
     - Failed visits without an idTag rose from 10 to 33.
     - The data limit: expired tokens explain at least 10 of the 34 extra failures, likely most of
       them, but the exact share can't be measured.
 
-**q030: "Did more drivers charge on the network in the week of Nov 10, 2025 than in the week of Nov
-3?"**
+**q030: "Did more drivers charge successfully on the network in the week of Nov 10, 2025 than in the
+week of Nov 3?"**
 
-- **Tests:** the tree's own warning about the anonymous-driver mix.
+- **Tests:** the tree's demand branch, and its own warning about the anonymous-driver mix.
 - **What the reference says:**
-    - Active drivers rose from 68 to 82 only because anonymous visits rose from 10 to 33.
-    - Identified drivers fell from 58 to 49 and visits barely moved (143 to 148), so visits per
-      driver fell from 2.1 to 1.8 with no change in demand.
-    - All 33 anonymous visits were failed plug-ins, likely the token rejections.
-    - The data can't tell how many people made them.
+    - No: 57 identified drivers had a successful visit, then 41, and no anonymous visit succeeded in
+      either week.
+    - 6 drivers who charged in the week of Nov 3 had every visit in the week of Nov 10 rejected
+      because their token had expired.
+    - Total visits barely moved (143 to 148), and anonymous visits rose from 10 to 33, all failed
+      plug-ins, likely more token rejections.
+    - Counting anonymous visits as drivers (68 to 82 active drivers) would be a shift from
+      identified to anonymous visits, not more people.
 
 **q031: "Did visit success recover in the week of Nov 17, 2025?"**
 
@@ -431,8 +438,96 @@ backend's own path) and fingerprinted after #200 and #202. Not yet reviewed by t
     - The week is partial: 2.5 days, ending Wed Nov 19 at 12:00.
     - 76.1% looks better, but failed visits without an idTag are still 22% of visits, the same as
       the week of Nov 10 and three times the week of Nov 3.
-    - The one visit by the expired group was rejected again.
+    - The one failed visit by an identified driver was again a token rejected as `Expired`.
     - The higher rate rests on 11 failures (no faults, one visible rejection), too few to be a trend.
+
+### How the references changed after arm A's first runs
+
+Each change came from reading the judge's reasons, and each is recorded in the case's notes.
+
+- **q029, two terms for the same events.** The reference named only the token status (`Expired`).
+  The judge read answers that named the stop reason (`DeAuthorized`) for the same 10 visits as a
+  contradiction. It now names both.
+- **q029 and q030, a group only the prefix defines.** The references described "drivers whose idTags
+  start with VLT", and q029 credited the group with 30 visits the week before. The judge scored the
+  prefix as a required finding, though an agent can only see it by listing tags. The references now
+  use what the marts show without the prefix: the 7 drivers rejected as `Expired`, 6 of whom
+  charged the week before.
+- **q030, a reference that needed the tree.** It opened "Not that the data can show" and required
+  the 68 to 82 reading, which only an agent using the tree's MAD definition meets. A's answers ("No,
+  58 to 49") scored 0.2. The answer is now "No", led by drivers who charged successfully.
+- **q030, the word "charge".** A counted drivers with any visit (58 to 49), the reference drivers
+  with a successful visit (57 to 41), and the judge marked A's numbers wrong. The question now says
+  "charge successfully". 8 of the 49 identified drivers that week had only failed visits.
+- **q029 and q031, a charger at another location.** "Apart from CH-002, which was offline" made the
+  judge read a correct "no outages at LOC-002 and LOC-003" as a contradiction. CH-002 is at LOC-001
+  and had no visits. The clause is gone; the references say uptime was the same.
+
+### A/B on q029–q031
+
+Both arms ran from study commit `7ea2b6d8` with the same served dataset (`786d5112`), 3 trials each,
+Correctness and Completeness only. A: `190000`, `190110`, `190408`. B: `191539`, `191809`,
+`192057`.
+
+| Case | Correctness A | Correctness B | Completeness A | Completeness B | Method                                                                     |
+| ---- | ------------: | ------------: | -------------: | -------------: | -------------------------------------------------------------------------- |
+| q029 |          0.60 |          0.57 |           0.50 |           0.57 | Found `Expired`: A in 2 of 3 trials, B in none                             |
+| q030 |          0.90 |          0.57 |           0.27 |           0.43 | A answers narrowly; B's driver skill leads to cohort and mix-shift stories |
+| q031 |          0.20 |          0.13 |           0.23 |           0.20 | Both call a recovery in every trial but one of A's earlier runs            |
+| Mean |          0.57 |          0.42 |           0.33 |           0.40 |                                                                            |
+
+- **The score differences are within the noise.** 3 trials per arm, pooled SDs of 0.13–0.18 on
+  earlier cases, and three judge misreads (below).
+- **The method differences aren't noise.** On q029, A queried the rejected drivers' token status in
+  2 of 3 trials and B in none. On q030, B loaded the driver skill in every trial and two of its
+  three explanations were wrong.
+- **q030's Correctness can't discriminate.** A scores 0.90 in every trial with a one-query answer.
+  Only Completeness separates the arms, and it rewards explaining more than the question asked.
+- **Neither arm handles the partial last week.** Every trial in both arms named the partial week,
+  and all but one (A, in an earlier run) still called a recovery. No trial split the failures by
+  kind, so none saw that failures without an idTag stayed at 22%.
+
+### Finding: the tree has no node for authorization
+
+B read `metrics_tree.md` and followed its structure: first-attempt versus troubled success, and
+new versus returning versus anonymous drivers. Neither leads to authorization status. Under
+`success_rate`, the tree offers only first-attempt and troubled success and the support
+interventions, so the reference's key evidence, `id_tag_status = Expired`, sits outside the tree.
+
+The tree's driver node also invited readings that are wrong in this scenario:
+
+- **"New drivers collapsed (41 to 4), which explains most of the drop"** (q030, B trials 1 and 2).
+  Nearly every driver was new in the week of Nov 3, because LOC-003 opened that day and most of the
+  pool was new, so a week later they count as returning (17 to 45). That isn't churn.
+- **"The anonymous visit surge is a mix shift that drags the rate down"** (q029 trial 1, q030 trial
+  3). The anonymous visits are the failures themselves, rejected plug-ins with no idTag, not a
+  segment with a lower rate. q030 trial 3 also reported active drivers "increased 68 to 82", the
+  trap the case was built for.
+- **"Failures concentrate on 4 specific chargers"** (q029 trial 3). Those are all the chargers in
+  use.
+
+A, without the tree, either answered narrowly (q030) or reached the token status more often (q029).
+This is a finding about what the tree covers, not about B's variance. Adding an authorization node
+now would tune arm B to the dev set; if it's tested, it has to be a pre-declared variant of B,
+confirmed on held-out cases.
+
+### Three judge misreads
+
+The Correctness judge misread a correct claim three times in these runs:
+
+1. **q029, A (`184311`, trial 2):** "no outages at LOC-002 and LOC-003" read as contradicting
+   "CH-002 was offline". CH-002 is at LOC-001. This led to the CH-002 clause being removed.
+2. **q029, B (`191539`, trial 1):** the reason credits the answer with finding "that the same
+   drivers who succeeded in Nov 3 failed in Nov 10". The answer says nothing about those drivers
+   and doesn't mention `Expired`. Its 0.7 is too high.
+3. **q030, B (`191809`, trial 2):** "≈ Anonymous drivers (successful): 0 / 0" read as "anonymous
+   visits were 0 in both weeks… a significant factual error". The row is correct, and the
+   reference says the same. Its 0.4 is likely too low.
+
+One misread helped B and one hurt it, so they don't explain the direction of the means. They do
+mean a difference of 0.1–0.2 between arms can't be trusted until the judge is checked on these
+references. The judge also didn't catch q029 A trial 3 (`190000`) counting the same 10 visits twice
+(23 + 10 + 10 presented as 34).
 
 ## Lessons
 
@@ -455,6 +550,14 @@ backend's own path) and fingerprinted after #200 and #202. Not yet reviewed by t
   charge attempt.
 - **End every span at the same point.** Uptime's denominator ended now and its downtime at the last
   log. Both now come from one macro.
+- **A tree only guides where it has a node.** B followed the tree to the structure of the drop and
+  never reached authorization status, which the tree doesn't name. A found it on its own more often.
+- **Write the reference in the data's words.** The judge read `DeAuthorized` against `Expired`, and
+  an unnamed prefix, as disagreements. It can't see the notes, so whatever must count has to be in
+  the reference, in terms an agent can reach from the marts.
+- **A reference mustn't need the method being tested.** q030's first reference required a number
+  only the tree's definition produces, so it penalised the arm without the tree for answering the
+  question.
 
 ---
 
@@ -490,6 +593,15 @@ backend's own path) and fingerprinted after #200 and #202. Not yet reviewed by t
     5. Retire or rewrite q015–q017. q031 now holds the partial-week trap at the end of the range.
     6. Recompute every fingerprint recorded before Nov 18: #200's id changes made them all stale,
        whatever their dates. Do it after the array sort below, so they're computed only once.
+- q029–q031: run the judge check (hand-written answers per case: correct, equipment-blaming,
+  cohort or mix-shift, right cause with every failure claimed as `Expired`, and vague) before
+  reading A/B differences. Then a hinted solvability run for the findings no trial reached: q029's
+  "the same drivers succeeded the week before", q030's successful-driver count with the rejections,
+  q031's failures by kind.
+- For a claim on type 4: 5 or more trials per arm, alternating A, B, B, A, with `rejudge
+--judge-repeats 3`.
+- If an authorization node is tested in the tree, pre-declare it as a variant of B and confirm it on
+  held-out cases, not on q029–q031.
 - kwwhat: sort the arrays in `array_agg_distinct` and `array_distinct` on every adapter (a PR off
   `staging`, like #202), then recompute q029–q031's fingerprints.
 - `payload_extract_parent_id_tag` reads `idTagInfo.idTag` from Authorize.conf. OCPP 1.6 calls the
