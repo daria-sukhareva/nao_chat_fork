@@ -1,15 +1,19 @@
-# Retrospective: Faithfulness doesn't check the skill, and the first clean A/B comparison
+# Retrospective: Faithfulness doesn't check the skill, the first clean A/B comparison, and type 4
 
 **Date:** 2026-11-19
 **Scope:** arm B on q023 and q024 with the new completeness sentence in the root-cause skill; why
 both q024 trials replaced the question's baseline anyway; and why Faithfulness scored one of them
 1.0 even though the skill it had in its context said the opposite of the answer. Then arm B on
 q022–q028 (3 trials each, Correctness and Completeness only), why q028 fails in every trial, and
-arm A on the same cases: the first A/B comparison on an identical shared context.
+arm A on the same cases: the first A/B comparison on an identical shared context. Last, the type 4
+scenario (driver-side authorization failures): the generator change, the scenario, and the uptime
+fix it needed.
 **Status:** B ran from study commit `a7ae60ce` (the driver skill's inlined SQL and the completeness
 edit), A from `f6fe2521`, which adds only this retrospective. Both manifests are clean, and the
 served `root-cause-analysis.md` and `golden_dataset.jsonl` have the same hashes in both arms. The
-reserve baseline clause is drafted, not added.
+reserve baseline clause is drafted, not added. kwwhat #202 (uptime fix) and #203 (generator auth)
+are merged to `staging`. The data now has scenario 4. The type 4 seeds are committed on `exp/metric_tree` (`3d3e5fc`), which doesn't
+have #202 yet. No references have been re-verified against the extended data.
 
 This follows the [2026-11-18 retrospective](retrospective_2026-11-18.md).
 
@@ -134,8 +138,7 @@ Errors outside the period, checked against the demo DuckDB:
   99.65%.
 - Trial 2: "15,365 downtime-minutes per port". It was 27,360 per port from Oct 15 to Nov 3.
 - Trial 1: "Outage end: Nov 3, 07:55 UTC (lasted ~19 days)". Nov 3 at 07:55 is where the data
-  ends, not where the outage ended: the `as_of` problem in an answer. Trial 2 read it right: "still
-  active as of 2025-11-03".
+  ends, not where the outage ended. Trial 2 read it right: "still active as of 2025-11-03".
 
 ### q024 (`001559`): the swap persists
 
@@ -259,6 +262,117 @@ Mean ± SD per case; A has 3 trials per case, B 3–5. Runs: A `010634`, `010956
 - **A never addressed new versus returning drivers in q027,** so it neither made B's novelty error
   of 2026-11-18 nor got it right. q027's reference doesn't check it either way.
 
+## Type 4 simulated: driver-side authorization failures
+
+**The data now has scenario 4.** One eMSP's tokens expire on Nov 10, and visit success falls from
+91.6% to 68.9% at both locations while every charger stays healthy. The cause shows up only when
+visit success is split by driver and authorization status, so the case tests the tree's driver
+branch; every earlier failure in the data was tied to a charger. With it, the data covers root-cause
+types 1, 2, 4, 5 (LOC-002's demand drop, 2026-11-12), 6 and 7 from the experiment plan, and 8 and 9
+are built into questions. Still missing: type 3, a fault onset (a charger's own success rate falls
+and stays down).
+
+The experiment plan's list of root-cause types still lacked type 4, driver or auth-side failures:
+in the seed, auth problems happened on one charger only, so they couldn't be told apart from a
+charger fault. q015 and q016 also need failures in a partial last week, and LOC-002 succeeded on
+every visit. The author chose type 4 as the next scenario, generated with the OCPP log generator.
+
+### The generator could not authorize (kwwhat #203, merged)
+
+Before this change:
+
+- **No Authorize:** every session went straight to StartTransaction.
+- **No rejections:** the central system answered `Accepted` to every idTag.
+- **No shared drivers:** each charger run drew 25 random idTags of its own, so no driver used two
+  chargers, and every driver at a new charger was new.
+
+Added on `feat/generator-auth`:
+
+- `--id-tags-file`: one driver pool shared by every charger run.
+- `--authorize-probability`: the charger sends Authorize before the transaction. Otherwise it starts
+  from its local authorization cache.
+- `server.py --auth-list`: idTag statuses from a `from_ts` on, with an optional `expiryDate`. The
+  central system has no simulated clock, so it takes the latest timestamp the charger sent.
+- **Two rejection paths:**
+    - A rejected Authorize starts no transaction, and the driver leaves.
+    - A rejection in StartTransaction.conf stops the transaction 1 to 3 seconds later with reason
+      `DeAuthorized` and 0 Wh.
+
+40 tests pass, 8 of them new. When every idTag is accepted, the output is byte-identical to the old
+generator for the same seed. #85 (the generator itself) was squash-merged to `staging` first, and
+#203 was rebased onto it.
+
+### What dbt can see decided the design
+
+dbt attaches an event to a charge attempt by `connector_id`, and OCPP 1.6 Authorize carries none
+(`payload_extract_connector_id` skips it). `id_tag` is taken only from StartTransaction and
+RemoteStartTransaction. So:
+
+- **A rejected Authorize** shows in the marts as an ordinary failed attempt: no idTag, no status,
+  the same as a driver who gave up.
+- **A rejection in StartTransaction.conf** keeps the driver's idTag and `id_tag_status`
+  (`Expired`).
+
+Which path the simulation uses therefore decides whether "split by driver" can be answered. The
+author chose both, with `--authorize-probability 0.7`: realistic, and about 30% of the failures carry
+the evidence. The reference has to say that the cause is visible in only part of the data.
+
+### The scenario
+
+The rule is in `~/github/make_loc003_auth.py`, outside git like `make_loc002.py`. The seeds are
+committed on kwwhat `exp/metric_tree` as `3d3e5fc`.
+
+| Part      | Rule                                                                                                                                                                      |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Range     | Nov 3 07:56 to Wed Nov 19 12:00: a full baseline week (Nov 3–9), a full failure week (Nov 10–16), and a partial last week (Nov 17–19)                                     |
+| Chargers  | CH-003 and CH-004 continue at LOC-002 (a boot right after their copied logs end). New LOC-003 with CH-005 and CH-006, laid out like CH-003, commissioned Nov 3 08:00      |
+| Drivers   | One pool: LOC-002's 20 existing idTags (so its drivers return), 30 new idTags, and 15 idTags of one eMSP, prefixed `VLT`                                                  |
+| Failure   | Every `VLT` idTag is `Expired` from Nov 10 00:00 on every charger. 70% of sessions authorize online, 30% start from the local cache                                       |
+| Otherwise | The same on every charger: 3 arrivals per port per day, 5% failed attempts, 2% faults. One server process for all four runs, so transaction ids are unique; one seed each |
+
+What the marts show (built in a separate compose project, `kwwhat-type4`, because the chat-bi
+container was running on `demo_duckdb-data`):
+
+| Week                | Visits | Success | Anonymous failed | Faults | `Expired` (DeAuthorized) | `VLT` visits succeeded |
+| ------------------- | -----: | ------: | ---------------: | -----: | -----------------------: | ---------------------: |
+| Nov 3–9             |    143 |   91.6% |               10 |      2 |                        0 |                     30 |
+| Nov 10–16           |    148 |   68.9% |               33 |      3 |                       10 |                      0 |
+| Nov 17–19 (partial) |     46 |   76.1% |               10 |      0 |                        1 |                      0 |
+
+- **Both locations drop:** LOC-002 from 87.3% to 66.7%, LOC-003 from 95.0% to 71.6%.
+- **Uptime is flat at 0.80,** because CH-002's 2 of 10 ports stay offline. No charger explains the
+  drop.
+- **The direct evidence:** every known-driver failure in the failure week is `Expired` from one
+  group of idTags, and that group has no successful visit after Nov 10. The rest shows only as
+  anonymous failed attempts tripling across all four chargers.
+- **Nothing moved before Nov 3:** visits by day, uptime by charger-day and drivers hash the same as
+  in the eval volume. dbt passes 369 data tests and 100 unit tests.
+
+### Uptime ends where the data ends (kwwhat #202, merged)
+
+`int_charger_commissioned_daily` counted a charger still in commission up to
+`dbt.current_timestamp()`, so `fact_uptime_daily` ran to today and the days after the logs read as
+100% up. Earlier retrospectives planned a fixed `as_of` date for this. That idea is dropped: a fixed
+date only sets the commissioned span, while offline outages already end at the newest log, so the
+uptime denominator and the downtime would drift apart whenever the date and the data disagreed.
+
+The author chose the latest OCPP log timestamp instead, as other models use, through a shared
+macro. #202 adds `latest_ocpp_log_ts()`: `max(ingested_timestamp)` of `stg_ocpp_logs`.
+`incremental_date_range` uses it in place of its inline query, with the same compiled SQL, and open
+commissioned spans end there. `dbt.current_timestamp()` is gone. `fact_uptime_daily` is identical,
+row for row, to a build with the end set by hand to Nov 19 12:00. On `staging`'s own seeds, it
+now ends on Nov 3.
+
+### What the extension breaks
+
+- **Open-ended cases:** q001, q003, q004, q007, q008 and q021–q028 ask about the whole range, so
+  their answers and unbounded fingerprints now cover Nov 3–19.
+- **q008's reference is wrong:** CH-002's outage now runs to Nov 19, not "until the data ends on
+  Nov 3", so its 54,720 minutes grows.
+- **Outdated notes:** the notes on q022 and q024 ("questions stay before Nov 3").
+- **Unaffected:** cases bounded before Nov 3, such as q006, q020 and the dated fingerprints of
+  q022–q028.
+
 ## Lessons
 
 - **A grounding metric can't see a method error.** Faithfulness checks claims against facts. An
@@ -275,6 +389,11 @@ Mean ± SD per case; A has 3 trials per case, B 3–5. Runs: A `010634`, `010956
   agent does. Fix such a case before counting it in an A/B mean.
 - **Look at the spread, not only the mean.** The clearest difference between the arms so far is in
   variance, not in the average.
+- **Check what the model can see before simulating a failure.** The same auth failure is
+  attributable or invisible depending on the OCPP path, because dbt can't attach Authorize to a
+  charge attempt.
+- **End every span at the same point.** Uptime's denominator ended now and its downtime at the last
+  log. Both now come from one macro.
 
 ---
 
@@ -297,5 +416,19 @@ Mean ± SD per case; A has 3 trials per case, B 3–5. Runs: A `010634`, `010956
   and `--block`, then `rejudge --judge-repeats 3`. Pool across cases for the headline, and test the
   variance difference as well as the mean.
 - Delete `evals_results_20261119_001618.json` (0 trials, interrupted).
-- Carried over from 2026-11-18: fix `as_of` and move q015–q017 to the end of the range; add the
-  new-driver sentence to q027's reference; q026's reference grain.
+- Type 4, in order:
+    1. Bring `staging` (#202) into kwwhat `exp/metric_tree`. Until then that branch still ends
+       uptime at the current timestamp.
+    2. Rebuild `demo_duckdb-data` and both arms, and check that neither manifest is `-dirty`.
+    3. Re-verify the open-ended cases by SQL and recompute their fingerprints: q001, q003, q004,
+       q007, q008 and q021–q028. Rewrite q008, and the notes on q022 and q024.
+    4. Add the type 4 case, for example "Why did visit success drop in the week of Nov 10 compared
+       to the week of Nov 3?". Its reference names the expired tokens, says that no charger
+       explains it and that most failures are anonymous, and ties the answer to visit success.
+    5. Move q015–q017 to the partial week of Nov 17–19 (2.5 days), with failures continuing.
+- `payload_extract_parent_id_tag` reads `idTagInfo.idTag` from Authorize.conf. OCPP 1.6 calls the
+  field `parentIdTag`, so check whether `parent_id_tag` is always null.
+- Remove the `kwwhat-type4` and `kwwhat-latest-log` docker volumes once they're no longer needed.
+- Carried over from 2026-11-18: add the new-driver sentence to q027's reference; q026's reference
+  grain. (The fixed `as_of` date is replaced by #202, and the q015–q017 move is in the type 4
+  list.)
