@@ -5,7 +5,7 @@ import { z } from 'zod/v4';
 import { llmTelemetry } from '../agents/telemetry';
 import type { UIMessage } from '../types/chat';
 import type { ModelCosts } from '../types/llm';
-import { AgentRunResult, AgentService } from './agent';
+import { AgentRunResult, AgentService, type AgentToolsResolver } from './agent';
 import { runSqlOverQueryResults } from './duckdb.service';
 import { buildVerificationMessages } from './test-agent-verification';
 
@@ -43,6 +43,7 @@ export class TestAgentService extends AgentService {
 		prompt: string,
 		modelSelection?: LlmSelectedModel,
 		costs?: ModelCosts,
+		tools?: AgentToolsResolver,
 	): Promise<AgentRunResult> {
 		const userMessage = TestAgentService._buildUserMessage(prompt);
 
@@ -57,7 +58,7 @@ export class TestAgentService extends AgentService {
 			testMode: true,
 		};
 
-		const agent = await this.create(tempChat, modelSelection);
+		const agent = await this.create(tempChat, modelSelection, { tools });
 		return agent.generate([userMessage], { costs });
 	}
 
