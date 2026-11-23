@@ -108,6 +108,26 @@ The skill loads, but the question reads like a lookup ("did more drivers…"), s
 and stops at steps 1–2. It is the same gap as q028 trial 1: a trigger that fires doesn't make the
 later steps run.
 
+## q027, A against B: where the tree shows its value
+
+q027 asks why visits at LOC-002 dropped in the week of Oct 27; the answer is fewer drivers, not
+reliability. Same study content on both arms (B `20261123_154002`, A `163306`, 3 trials each):
+
+| Arm | Correctness | Completeness | Split visits into drivers × visits per driver |
+| --- | ----------: | -----------: | --------------------------------------------: |
+| A   |        0.70 |         0.60 |                                        1 of 3 |
+| B   |        0.87 |         0.93 |                                        3 of 3 |
+
+Every trial on both arms found the cause was demand, with 100% success and negligible downtime.
+Two A trials stopped at the visit count; one split by charger (CH-003 and CH-004 each 19 to 6),
+which is the skill's step 4, and never reached drivers. Every B trial split visits into drivers
+(20 to 8) and visits per driver (1.9 to 1.5), and one got the reference's 80/20 share.
+
+So this is where the tree shows its value: on a pure demand question, it tells the agent how to
+split the visit count. The skill's step 2 ("split the metric into its parts") doesn't say what the
+parts of a visit count are. A found them in 1 of 3 trials, B in 3 of 3. With 3 trials, that's
+suggestive rather than conclusive.
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
