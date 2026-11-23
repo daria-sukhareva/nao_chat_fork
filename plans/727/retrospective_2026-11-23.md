@@ -245,6 +245,200 @@ follows if it is. The candidate next change keeps to the author's constraint on 
 the finding to the verdict: "If the cause is still present, the metric hasn't recovered, whatever
 the rate did."
 
+## Dev pilot on the new skill, and rough sizing
+
+**The runs.** Both arms on all 13 dev cases (q019–q031), 3 trials each, with the stop and recovery
+rules in the skill (same skill hash `f3e408a7` on both arms): B `20261123_180613` to `185117` on
+`7936f876`, A `190652` to `194856` on `ccc161aa` (retro-only change on top). Clean manifests, no
+errors; the skill loaded in 78 of 78 trials.
+
+| Case     | Correctness A | Correctness B | Completeness A | Completeness B |
+| -------- | ------------: | ------------: | -------------: | -------------: |
+| q019     |          0.87 |          0.87 |           0.93 |           0.93 |
+| q020     |          0.50 |          0.33 |           0.30 |           0.20 |
+| q021     |          0.47 |          0.30 |           0.30 |           0.20 |
+| q022     |          0.83 |          0.87 |           0.67 |           0.70 |
+| q023     |          0.40 |      **0.63** |           0.37 |           0.63 |
+| q024     |          0.67 |          0.60 |           0.53 |           0.47 |
+| q025     |      **0.70** |          0.40 |           0.63 |           0.37 |
+| q026     |          0.83 |          0.57 |           0.37 |           0.50 |
+| q027     |          0.30 |      **0.63** |           0.30 |           0.53 |
+| q028     |          0.77 |          0.57 |           0.57 |           0.53 |
+| q029     |          0.73 |          0.53 |           0.53 |           0.53 |
+| q030     |          0.60 |          0.33 |           0.33 |           0.33 |
+| q031     |          0.47 |          0.43 |           0.37 |           0.43 |
+| **Mean** |      **0.63** |      **0.54** |       **0.48** |       **0.49** |
+
+**What the pilot shows:**
+
+- **The skill change did no harm where the answer is "yes", and helped q031.** q019, the guard case
+  (CH-001's real drop on small counts), still scored 0.87 on both arms. q031 rose from 0.17 to 0.47
+  on A and from 0.20 to 0.43 on B; each arm had one trial open with "No, … not fully recovered".
+- **q023 is the clearest sign of a tree benefit.** Across both blocks, 3 of A's 6 q023 trials
+  computed uptime against the 12 ports the network has today (about 83–88% instead of 12.38%); none
+  of B's 6 did. Every trial queried `commissioned_minutes`, so the difference is in how the
+  numbers were read, and B reads the tree, which frames uptime per period through commissioned
+  minutes. Six trials per arm: suggestive.
+- **q027's tree advantage didn't repeat.** In the first block every B trial split visits into
+  drivers × visits per driver; this time none computed visits per driver, and two split drivers
+  into new and returning (the driver skill's breakdown, as on q030). B still led, 0.63 to 0.30,
+  because two A trials invented a port-level cause ("Ports 2 … were not yet online") from ports
+  with no visits. The section above on q027 overstated the finding; it was one block.
+- **No rows read as no equipment, or no data.** A's q027 ports, B's q020 trial 1 ("CH-001 was
+  down" because there were no visits and no downtime rows) and B's q025 trials 2 and 3 ("a data
+  gap") are the same failure as kwwhat#206.
+
+**The noise.**
+
+- **Judge:** 42 saved answers rescored 3 times each (`rejudge_results_20261123_175146` to
+  `180244`, about $1): 109 of 126 judgments matched the original exactly, with a mean change of
+  0.02 on Correctness and 0.01 on Completeness. The judge at temperature 0 is consistent,
+  including when it is wrong: the q030 counting misread came back on every repeat. One judgment
+  per answer is enough; the plan's call for several judge repeats predates temperature 0.
+- **Agent:** within a case, Correctness varies with a standard deviation of 0.23 on A and 0.20 on
+  B (26 degrees of freedom each). Case means moved by 0.2–0.4 between the two blocks of 3 (A's
+  q030 0.83 to 0.60, A's q027 0.70 to 0.30, B's q027 0.87 to 0.63), so per-case wins from one block
+  mostly don't repeat.
+- **Where the noise sits:** about 80% of the spread in per-case A − B differences is trial noise.
+  The real variation of the effect between cases is small, a standard deviation of about 0.09.
+
+**Rough sizing**, for a comparison paired by case, from these estimates:
+
+| Cases × trials per arm | Standard error of A − B | Smallest effect detectable (80% power) |
+| ---------------------- | ----------------------: | -------------------------------------: |
+| 13 × 3 (this pilot)    |                   0.053 |                                  ~0.15 |
+| 13 × 5                 |                   0.044 |                                  ~0.12 |
+| 30 × 5                 |                   0.029 |                                  ~0.08 |
+
+The lever is more confirmatory cases, not more trials on dev. The second dev blocks (2 more
+trials per arm) were skipped: they would tighten the dev table, which can't support a claim, and
+change the noise estimates little.
+
+### The sizing math
+
+All figures are Correctness on the new-skill pilot: 13 cases, 3 trials per arm per case.
+
+**Degrees of freedom.** The spread of 3 scores has 2 degrees of freedom: their deviations from the
+mean sum to zero, so two fix the third, and the sample variance divides by k − 1. For A on q023
+(0.2, 0.3, 0.7; mean 0.4), s² = (0.04 + 0.01 + 0.09) / 2 = 0.07. Averaging the 13 per-case
+variances pools them: s²_A = 0.0528 (s_A = 0.23) and s²_B = 0.0379 (s_B = 0.195), each on
+13 × (3 − 1) = 26 degrees of freedom. With 26, the true s_A is roughly 0.18–0.31 (95%).
+
+**Model.** score(case, arm, trial) = overall level + case effect + arm effect + case × arm + trial
+noise. Pairing by case removes the case effect. The case × arm term, with variance τ², is how much
+the effect itself differs between cases; trial noise has variances σ²_A and σ²_B. The per-case
+difference dᶜ = mean of A's k trials − mean of B's k trials has
+
+Var(dᶜ) = τ² + σ²_A / k + σ²_B / k.
+
+**Estimates.** Over the 13 cases, the mean of dᶜ is 0.082 (A ahead) and Var(dᶜ) = 0.0377 (SD
+0.194). Trial noise at k = 3 is (0.0528 + 0.0379) / 3 = 0.0303, which is 0.0303 / 0.0377 = 80% of
+it. The rest is τ² = 0.0377 − 0.0303 = 0.0075, τ = 0.086.
+
+**Standard error** of the mean difference over n cases: SE = √([τ² + (σ²_A + σ²_B) / k] / n).
+
+| n   | k   | τ²     | (σ²_A + σ²_B) / k | Total  |    SE |
+| --- | --- | ------ | ----------------- | ------ | ----: |
+| 13  | 3   | 0.0075 | 0.0303            | 0.0377 | 0.054 |
+| 13  | 5   | 0.0075 | 0.0182            | 0.0256 | 0.044 |
+| 30  | 5   | 0.0075 | 0.0182            | 0.0256 | 0.029 |
+
+More trials shrink only the noise term; more cases divide everything, including τ², which trials
+can't remove.
+
+**Smallest detectable effect,** two-sided α = 0.05, 80% power: MDE = (z₀.₉₇₅ + z₀.₈₀) × SE =
+(1.960 + 0.842) × SE = 2.80 × SE, giving 0.151, 0.124 and 0.082 for the three rows. With few cases
+the t distribution is more honest: the multiplier is 2.179 + 0.873 = 3.05 at 12 degrees of freedom
+and 2.045 + 0.854 = 2.90 at 29, giving 0.16, 0.14 and 0.085. As a check, the pilot's own A lead is
+0.082 / 0.054 = 1.52 standard errors, below the 2.18 needed at 12 degrees of freedom: consistent
+with noise, as a pilot this size should be.
+
+**The target: an effect of 0.10** on the 0–1 Correctness scale (the author's minimum effect of
+interest). The SE has to reach 0.10 / 2.80 = 0.036, so n = per-case variance / 0.036²:
+
+| Trials per arm per case | Per-case variance | Cases (z) | Cases (t) | Trials per arm |
+| ----------------------: | ----------------: | --------: | --------: | -------------: |
+|                       3 |            0.0377 |        30 |        32 |             96 |
+|                       5 |            0.0256 |        21 |        23 |            115 |
+|                      10 |            0.0166 |        14 |        16 |            160 |
+
+Fewer trials on more cases is the cheaper route: 32 cases × 3 trials needs fewer agent calls than
+23 × 5. The case count is sensitive to τ²: at k = 5, τ² = 0 would need 15 cases, and τ² two to three
+times the estimate (0.015 to 0.0225) would need 27 to 32.
+
+**Why it's rough.**
+
+- **Scores aren't normal.** They are bounded at 0 and 1 and come in steps of 0.1; the formulas
+  assume roughly normal means, which is approximate at 13 or more cases.
+- **τ² is very uncertain.** It's the difference of two noisy numbers (0.0377 − 0.0303); with 13
+  cases its true value could be 0 or two to three times larger, and the case count above moves with
+  it.
+- **The noise isn't the same everywhere.** Per-case variances run from 0.003 (q019, q026) to 0.19
+  (B on q025), and pooling assumes one σ. Confirmatory cases may be noisier or calmer than dev.
+- **One endpoint is assumed.** Correctness on all cases with no multiplicity correction; restricting
+  the claim to root cause cases, or testing several metrics, needs its own sizing.
+- **Consistent judge errors aren't in the model.** Judge noise is included, since each trial was
+  judged once, but a misread that repeats every time (q030) is bias, not noise, and no sample size
+  fixes it. The blind rating (step 3) is what checks it.
+
+### The budget
+
+The study has $200 for agent and judge calls, pilot included (`experiment_plan.md`). The cost
+ledger (`tests/outputs/cost_ledger.jsonl`) records $101.89 since Nov 8; runs from Nov 5–7 predate
+it, so at most about $98 is left. Today's 144 trials averaged $0.21 each ($0.20 on A, $0.22 on B);
+the judge is about $0.016 of that.
+
+**Decided:** every confirmatory block is the size the 0.10 target needs at 3 trials, 32 cases × 3
+trials. N and D are compared against A just as B is, so a smaller N or D would be a less sensitive
+test than C2.
+
+| Block            | Cases × trials | Trials |     Cost |
+| ---------------- | -------------: | -----: | -------: |
+| A                |         32 × 3 |     96 |     ~$20 |
+| B                |         32 × 3 |     96 |     ~$20 |
+| N (null control) |         32 × 3 |     96 |     ~$20 |
+| D (degraded)     |         32 × 3 |     96 |     ~$20 |
+| **Total**        |                |    384 | **~$81** |
+
+That leaves about $17, less whatever the runs before Nov 8 cost. Two risks: D's cost per trial is
+unknown (a degraded agent may take more queries), so a D smoke run on 2–3 dev cases (about $1–2)
+comes before the budget is fixed; and every confirmatory block runs with `--max-cost`, around $25
+per block, so one runaway run can't spend the margin. Further dev runs come out of the same margin
+(a full 13 × 3 dev rerun on both arms costs about $16).
+
+## Arm D, the positive control
+
+**Decided:** D is the demo as it was before the experiment: the demo's `RULES.md` unchanged, with no
+root cause skill and no rule pointing to it. It carries only the eval dataset, which the harness
+reads and the agent doesn't. D therefore differs from A in exactly one thing, the skill and its
+trigger, so D against A measures what the shared skill adds.
+
+Two choices behind it:
+
+- **The current `RULES.md`, not the one from before the experiment.** The demo's rules gained two
+  lines during the study: "Skills listed under Skills … are files; open them with `read`" (kwwhat
+  #198, Nov 13) and "Before querying a table, read its entry in `marts.yml`" (`54bcb3d`, Nov 18).
+  Both stay in D, as in A and B, so the skill is the only difference. The data and the semantic
+  model couldn't be reverted per arm in any case: `repos/` and `databases/` are synced from the
+  kwwhat checkout at start-up and shared by every arm.
+- **No corrupted definitions.** A first draft degraded `RULES.md` instead (grounding rules removed,
+  two wrong definitions added); it was dropped in favour of the pre-experiment context.
+
+`build-arm.sh` now copies the dataset for every arm and gives D no overlay. Rebuilt with it, A is
+byte-for-byte the running A arm.
+
+**What it means for C1.** A positive control needs an effect that is known to exist. D's effect is
+the skill's, which the dev runs suggest is real (q028 scored 0.1 on both arms while the skill never
+loaded, and 0.47 to 0.77 per arm and block once it did) but haven't measured across cases. If the
+skill's effect turned out small, D against A would fail C1 without the instruments being at fault.
+The smoke run gives a first estimate.
+
+**The smoke run** (about $2): what a D trial costs, and whether D scores measurably below A. Four
+dev cases, 2 trials each: q028 and q031, where the skill visibly changed answers on dev; q029, a
+root cause case where it mattered less; and q019, a guard where A and B both scored 0.87. Set
+before running: D passes if it runs without errors, costs no more than about $0.30 a trial, and
+scores below A's pilot on q028 and q031.
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
@@ -254,6 +448,8 @@ the rate did."
   answered at steps 1–2, as on q030.
 - **A rule that says what to check must also say what the result does to the answer.** Otherwise
   the check runs and the conclusion ignores it, as on q025, q028 and q031.
+- **One block of 3 trials can't carry a per-case finding.** q027's tree advantage was 3 of 3
+  trials in one block and didn't repeat in the next.
 - **Measure whether a check changed the answer, not whether it ran.** Every trial queried
   `dim_chargers`; one still compared windows with different sites.
 
