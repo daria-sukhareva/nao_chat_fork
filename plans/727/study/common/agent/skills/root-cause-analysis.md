@@ -1,6 +1,6 @@
 ---
 name: root-cause-analysis
-description: Investigate why a metric changed or what is driving it. Use for questions such as "why did X drop", "what caused this change", or "is this concentrated somewhere". Do not use for looking up a single value.
+description: Investigate whether, why, or where a metric changed, or what is driving it. Use whenever an answer compares a metric between two periods, locations, or chargers, including questions such as "why did X drop", "did X change", "what caused this change", or "is this concentrated somewhere". Do not use for looking up a single value.
 ---
 
 # root-cause-analysis
