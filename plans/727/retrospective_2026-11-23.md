@@ -439,6 +439,58 @@ root cause case where it mattered less; and q019, a guard where A and B both sco
 before running: D passes if it runs without errors, costs no more than about $0.30 a trial, and
 scores below A's pilot on q028 and q031.
 
+**Smoke result** (`20261123_213057` to `213728`): passed on all three. No errors in 8 trials; $0.16
+a trial ($1.31 in all); and D scored 0.10 on q028 and 0.20 on q031, against A's 0.77 and 0.47.
+Without the skill D behaves like the demo before the experiment: no trial queried `dim_chargers`,
+most ran 1–3 queries, and both q028 trials answered "Yes, charging demand recovered", the answer
+and the 0.1 that A and B gave before the trigger fix.
+
+**All 13 dev cases on D** (2 trials each; `20261123_213057` to `215541`, built from `5dda7a2c`
+before `build-arm.sh` was committed, so the manifests say dirty; the served files are the same):
+
+| Case     | Correctness A | Correctness B | Correctness D | D trials |
+| -------- | ------------: | ------------: | ------------: | -------- |
+| q019     |          0.87 |          0.87 |          0.55 | 0.8, 0.3 |
+| q020     |          0.50 |          0.33 |      **0.90** | 0.9, 0.9 |
+| q021     |          0.47 |          0.30 |          0.20 | 0.2, 0.2 |
+| q022     |          0.83 |          0.87 |          0.45 | 0.5, 0.4 |
+| q023     |          0.40 |          0.63 |          0.20 | 0.2, 0.2 |
+| q024     |          0.67 |          0.60 |          0.45 | 0.5, 0.4 |
+| q025     |          0.70 |          0.40 |          0.25 | 0.4, 0.1 |
+| q026     |          0.83 |          0.57 |          0.40 | 0.4, 0.4 |
+| q027     |          0.30 |          0.63 |      **0.65** | 0.8, 0.5 |
+| q028     |          0.77 |          0.57 |          0.10 | 0.1, 0.1 |
+| q029     |          0.73 |          0.53 |          0.55 | 0.6, 0.5 |
+| q030     |          0.60 |          0.33 |          0.60 | 0.4, 0.8 |
+| q031     |          0.47 |          0.43 |          0.20 | 0.2, 0.2 |
+| **Mean** |      **0.63** |          0.54 |      **0.42** |          |
+
+Completeness means are 0.48 on A, 0.49 on B and 0.29 on D.
+
+- **D − A is −0.20 on Correctness** (per-case SD 0.30, so a standard error of 0.084 over 13 cases,
+  about 2.4 standard errors) and −0.19 on Completeness. The smoke subset (−0.36) overstated it:
+  its four cases were the ones where the skill matters most.
+- **D beats A on two cases, neither because the skill hurts.** On q020 ("Was CH-001 down on Oct
+  13?") D answers in one to four queries that CH-001 was not down and scores 0.9; A adds claims
+  ("no visits is unusual") that contradict the reference. D's Completeness there is 0.25: it leaves
+  out that CH-001 simply had no visits while CH-002 took all ten. On q027 D's trial 2 makes A's
+  invention (ports 2 inactive) and scores 0.5; A's 0.30 came from two such trials of three.
+- **q019's D trial 2 (0.3) is a reference and judge mismatch, not a degradation.** It attributed
+  CH-001's failures to `INVALID_STOP_REASON` and `FAULTED_AFTER`, the `failure_reason` labels from
+  kwwhat #204; the reference names only the error code, WeakSignal, and the judge treated the two as
+  contradictory. Both are true of the same attempts (stop reason Other after a WeakSignal fault).
+  The q019 reference predates #204 and could name both; it is also a candidate item for the blind
+  rating.
+
+**Stated limitation.** D's effect is about −0.2, twice the 0.10 target, so the D half of C1 shows
+the instruments detect a drop of that size, not one of 0.10. A milder second control would be
+needed to show sensitivity near 0.10, and the budget doesn't cover it. The paper states this. D
+stays as designed because it is a meaningful control: the context before the experiment.
+
+**A note on the metrics, from q020:** a terse answer can score high on Correctness and low on
+Completeness, so a degraded arm can look better on Correctness alone in lookup cases. Both metrics
+are reported.
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
@@ -448,6 +500,14 @@ scores below A's pilot on q028 and q031.
   answered at steps 1–2, as on q030.
 - **A rule that says what to check must also say what the result does to the answer.** Otherwise
   the check runs and the conclusion ignores it, as on q025, q028 and q031.
+- **The skill costs time and money where it does work, and only there.** On the 9 cases arm D has
+  run (2 trials each, against A's and B's 3-trial pilot blocks), D averaged $0.159 and 45 s a
+  trial, A $0.180 and 58 s, B $0.214 and 68 s. D was cheaper and faster on the root cause
+  comparisons (q023, q024, q028, q029, q031; on q028 and q031 about half A's time), where A reads
+  the skill and runs its checks and D answers after a few queries, which is also where D scores
+  lowest. On cases with a direct answer (q019, q020, q022) D was slightly dearer. Paired by case,
+  D is about $0.02 cheaper and 13 s faster than A. Lower cost on a case is a sign the method didn't
+  run, not a saving; D's block cost depends on how many confirmatory cases are comparisons.
 - **One block of 3 trials can't carry a per-case finding.** q027's tree advantage was 3 of 3
   trials in one block and didn't repeat in the next.
 - **Measure whether a check changed the answer, not whether it ran.** Every trial queried
@@ -460,3 +520,8 @@ scores below A's pilot on q028 and q031.
 - q030: B's driver-skill misreadings.
 - The judge check on hand-written answers; the hinted solvability run.
 - The kwwhat array-sort PR and the #204 follow-ups listed on 2026-11-21.
+- The q019 reference names WeakSignal only; consider naming the `failure_reason` labels too (dev
+  only, so it can change).
+- Rebuild D from a clean commit before any confirmatory D block; the dev D runs were built from
+  `5dda7a2c-dirty`.
+- Blind rating of `judge_validation/rating_sheet_2026-11-23.md` (step 3).
