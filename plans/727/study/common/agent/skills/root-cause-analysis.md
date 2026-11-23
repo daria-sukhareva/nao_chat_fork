@@ -44,6 +44,8 @@ A segment can move the total by changing its share rather than its rate: new low
 
 When a success rate moved, check success criteria, error codes, stop reasons, authorization statuses, and attempts that never started a transaction to attribute the failures.
 
+When asked whether a metric recovered, check whether the cause of the earlier drop is still present: compare the share of each failure mode with the period before the drop. A rate can rise while the cause continues.
+
 ## 7. Check other explanations
 
 Before concluding, check whether another part of the metric caused this movement. Many movements in one part come from a change in another.
