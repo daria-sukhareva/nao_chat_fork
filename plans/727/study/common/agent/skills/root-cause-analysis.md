@@ -17,7 +17,7 @@ Before explaining a change, check that the comparison is fair:
 - **Network Topology:** which locations, chargers and ports were in commission in each period. Look up `commissioned_ts` and `decommissioned_ts` in `dim_chargers` before hypothesising what happened. A charger counts only between its commissioning and decommissioning, so a charger with no rows outside that window isn't missing data. Understand what equipment was in the field before interpreting signals or missing data.
 - **Sample size:** the counts are large enough for the change to mean something. State the counts behind every rate.
 
-If the change does not survive this step, say that and stop.
+If the change does not survive this step, the conclusion is that the data can't show it yet. Lead with that, then give what is known.
 
 ## 2. Split the metric into its parts
 
