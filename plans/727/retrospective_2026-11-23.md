@@ -156,6 +156,39 @@ breakdown invites a wrong explanation, and the judge's misread of two different 
 penalises it. Correctness is held down partly by that misread; Completeness is low on both arms for
 the same reason, the stop after the headline.
 
+## First block: A against B on q022–q031
+
+Same study content on both arms (B runs `20261123_151949` to `155716`, A runs `161355` to
+`164715`), 3 trials per case:
+
+| Case     | Correctness A | Correctness B | Completeness A | Completeness B |
+| -------- | ------------: | ------------: | -------------: | -------------: |
+| q022     |          0.87 |          0.67 |           0.67 |           0.70 |
+| q023     |          0.47 |          0.53 |           0.50 |           0.63 |
+| q024     |          0.63 |          0.63 |           0.60 |           0.47 |
+| q025     |          0.47 |          0.50 |           0.47 |           0.57 |
+| q026     |          0.73 |          0.70 |           0.43 |           0.47 |
+| q027     |          0.70 |      **0.87** |           0.60 |       **0.93** |
+| q028     |          0.47 |          0.50 |           0.33 |           0.53 |
+| q029     |          0.53 |          0.60 |           0.53 |           0.60 |
+| q030     |      **0.83** |          0.33 |           0.43 |           0.27 |
+| q031     |          0.17 |          0.20 |           0.20 |           0.20 |
+| **Mean** |      **0.59** |      **0.55** |       **0.48** |       **0.54** |
+
+The arms are close: A is slightly ahead on Correctness (0.59 against 0.55), B on Completeness
+(0.54 against 0.48). Two questions define the result, and they pull in opposite directions:
+
+- **q027, where B wins:** the tree tells B how to split a visit count into drivers × visits per
+  driver. B made that split in 3 of 3 trials and A in 1 of 3.
+- **q030, where A wins:** B's driver skill adds a new and returning split the question didn't ask
+  for. One trial built a wrong explanation on it, and the judge misread its counts as
+  contradicting the reference. A gave the plain count next to total visits.
+
+Without these two cases Correctness is the same on both arms (0.54), and B keeps a smaller lead on
+Completeness (0.52 against 0.47), from q023, q025 and q028. The same B artefacts, the tree and the
+driver skill, help on one demand question and hurt on the other. With 3 trials per case none of the
+gaps is conclusive; the second block (2 more trials per arm) completes 5.
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
