@@ -1,44 +1,14 @@
-# Retrospective: references re-verified after kwwhat #204, and a wider root-cause trigger
+# Retrospective: a wider root-cause trigger
 
 **Date:** 2026-11-23
-**Scope:** cleanup of merged worktrees and scratch volumes; every golden-dataset reference re-checked
-by SQL against the #204 build; the root-cause skill's trigger widened so it loads on comparisons
-such as q028; the plan for rerunning q022–q028 on both arms.
-**Status:** references and trigger changed, not yet committed. No eval runs yet on the new trigger.
+**Scope:** the root-cause skill's trigger widened so it loads on comparisons such as q028; the plan
+for rerunning q022–q028 on both arms.
+**Status:** trigger changed, not yet committed. No eval runs yet on the new trigger.
 The last B runs on q028 are `20261119_005130` (study `a7ae60ce`, before step 6 and #204).
 
 This follows the [2026-11-21 retrospective](retrospective_2026-11-21.md).
 
 ---
-
-## Cleanup
-
-The `kwwhat-generator-auth` and `kwwhat-latest-log` worktrees were clean and their PRs (#203,
-#202) merged, so both were removed. The `kwwhat-failure-reason` worktree was already gone. The
-scratch DuckDB volumes `kwwhat-type4`, `kwwhat-latest-log` and `kwwhat-fr` were held only by
-stopped init containers; containers and volumes were removed. The local branches remain.
-
-## References re-verified after #204
-
-Every numeric claim in q001–q031 was re-checked by SQL against the chat's DuckDB on the #204 build.
-#204 changed no number in the October cases: visit and attempt success, error codes, uptime and
-drivers per week are as before. Inside every filtered period the row counts were unchanged, so the
-checksum drift came from changed columns (#200 keys, #204 success), not from different rows. The
-full-table fingerprints had drifted anyway as LOC-003 and the November data were added.
-
-Five references were stale:
-
-| Case | Was                                              | Now                                                                       | Why                                    |
-| ---- | ------------------------------------------------ | ------------------------------------------------------------------------- | -------------------------------------- |
-| q003 | 2 troubled-success visits                        | 3, the third (Nov 7, LOC-003) with no error code                          | the LOC-003 data                       |
-| q007 | 6 commissioned ports                             | 10                                                                        | LOC-003 added 4 ports                  |
-| q008 | 55,960 of 55,961 downtime minutes, data to Nov 3 | 102,530 of 102,531, CH-002's outage 101,290 minutes, data to Nov 19 12:00 | the data grew                          |
-| q029 | "faults went from 2 to 3"                        | "attempts stopped with reason Other went from 2 to 3", no error codes     | #204 labels them `INVALID_STOP_REASON` |
-| q031 | "no faults (3 the week before)"                  | "no attempts stopped with reason Other (3 the week before)"               | as q029                                |
-
-The q029 and q031 "faults" were never faults: the attempts stopped with reason `Other` while the
-port went on `Charging`, with no error code. Before #204 nothing named them; `failure_reason` made
-the wording checkable. Every fingerprint was refreshed and each case got a dated note.
 
 ## The trigger: why q028 never loaded the skill
 
@@ -86,11 +56,6 @@ recent trials) was a trigger problem too.
 
 ## Lessons
 
-- **A reference that covers the whole dataset goes stale whenever the data grows.** q003, q007 and
-  q008 had no period filter. Each new scenario should re-check them, or they should be bounded to a
-  period.
-- **A schema change can make a reference's words wrong when its numbers stay right.** The q029 and
-  q031 counts held; "faults" didn't.
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
   never loaded, because the question used none of the listed phrasings.
 
