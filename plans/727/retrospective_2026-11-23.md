@@ -73,10 +73,48 @@ The topology figure will measure that instead: whether the periods compared cont
 locations and chargers, or the answer says they don't, rather than whether `dim_chargers` was
 queried.
 
+## q028 on B: the trigger fires, and two failures remain
+
+On the new trigger (`20261123_154445`) B loaded the root-cause skill and read the tree in 3 of 3
+q028 trials, against 0 of 11 trials on earlier builds across both arms. The mean rose from
+0.1 / 0.0 to 0.50 / 0.53, but the trials split three ways:
+
+| Trial | Correctness | Completeness | `dim_chargers` queries | Conclusion                                                                            |
+| ----- | ----------: | -----------: | ---------------------: | ------------------------------------------------------------------------------------- |
+| 1     |         0.1 |          0.1 |                      0 | "Yes, but with major caveats", the two weeks read as one site                         |
+| 2     |         0.9 |          1.0 |                      1 | "entirely different sites, so the metrics don't directly measure recovery"            |
+| 3     |         0.5 |          0.5 |                      1 | topology table right, then "volume did not recover, but the network that existed did" |
+
+**Loading the skill is necessary but not sufficient: the step can still be skipped.** Trial 1
+loaded the skill, but its step 1 checked data coverage and calendar only. It never looked up
+commissioning, called Oct 15–19 "a 5-day gap in the record", and explained the driver mix by
+authentication changes.
+
+**It checks topology and doesn't let it limit the conclusion.** Trial 3 built a correct topology
+table (CH-001 decommissioned, CH-002 offline, LOC-002 opened Oct 20) and still concluded that
+"successful charging demand doubled", a comparison across two sites. That is the same failure as
+q025 trial 2.
+
+## q030 on B: a question that reads like a lookup
+
+q030 asks "Did more drivers charge successfully on the network in the week of Nov 10, 2025 than in
+the week of Nov 3?". On the new build (`20261123_155355`) B loaded the root-cause skill in 3 of 3
+trials and read the driver skill, but not the tree, and ran 2–3 queries in 33–41 s. Every trial
+gave the reference's headline (no: 57 drivers, then 41, and no anonymous successes) and stopped
+there: none looked at the 6 drivers whose tokens expired, the anonymous failed visits rising from
+10 to 33, or the flat visit volume. Completeness 0.3, 0.3, 0.2.
+
+The skill loads, but the question reads like a lookup ("did more drivers…"), so B answers the count
+and stops at steps 1–2. It is the same gap as q028 trial 1: a trigger that fires doesn't make the
+later steps run.
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
   never loaded, because the question used none of the listed phrasings.
+- **Loading the skill is necessary but not sufficient.** A loaded skill's step can still be skipped,
+  as q028 trial 1 skipped the topology check, and a question that reads like a lookup gets
+  answered at steps 1–2, as on q030.
 - **Measure whether a check changed the answer, not whether it ran.** Every trial queried
   `dim_chargers`; one still compared windows with different sites.
 
