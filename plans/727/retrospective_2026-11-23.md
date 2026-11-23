@@ -128,6 +128,34 @@ split the visit count. The skill's step 2 ("split the metric into its parts") do
 parts of a visit count are. A found them in 1 of 3 trials, B in 3 of 3. With 3 trials, that's
 suggestive rather than conclusive.
 
+## q030, A against B: A is better, and the driver skill is why
+
+Same study content on both arms (B `20261123_155355`, A `164343`, 3 trials each):
+
+| Arm | Correctness | Completeness | SQL queries |
+| --- | ----------: | -----------: | ----------: |
+| A   |        0.83 |         0.43 |         1–2 |
+| B   |        0.33 |         0.27 |         2–3 |
+
+A is better here, but not because it analyses more. Both arms gave the reference's headline (no:
+57 drivers, then 41) and stopped, the lookup pattern above; neither looked at the expired tokens or
+the anonymous visits. The difference is what each put next to the headline:
+
+- **A** listed total visits (143 to 148), successful visits, successful drivers and the success
+  rate. Every figure is right, and side by side they already show visits flat while successes
+  fell.
+- **B** followed the driver skill and split successful drivers into new and returning (40 to 3
+  new), with "≈0 anonymous". That split doesn't answer the question, and one trial built a wrong
+  explanation on it (early-October drivers "still counted as new" in the week of Nov 3). Without
+  total visits alongside, the judge read B's "131 to 102 successful visits" as contradicting "143
+  to 148 visits", and "≈0 anonymous" drivers as contradicting "10 to 33 anonymous visits", in all
+  three trials.
+
+So on q030 B's driver skill hurts B: it adds a breakdown the question didn't ask for, the
+breakdown invites a wrong explanation, and the judge's misread of two different counts as one
+penalises it. Correctness is held down partly by that misread; Completeness is low on both arms for
+the same reason, the stop after the headline.
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
