@@ -56,7 +56,7 @@ rm -rf ~/github/kwwhat/demo/chat-bi/arm ~/github/kwwhat/demo/chat-bi/arm.json
 ~/github/nao_chat_fork/plans/727/study/build-arm.sh B ~/github/kwwhat/demo/chat-bi ~/github/kwwhat/demo/chat-bi/arm
 ```
 
-- The first argument is the arm: `A`, `B`, or `N`. Arm D is not defined yet.
+- The first argument is the arm: `A`, `B`, `N`, or `D` (see [`study/README.md`](study/README.md)).
 - `build-arm.sh` refuses to overwrite, so delete the previous arm first.
 - The manifest goes to `chat-bi/arm.json`, outside the project, where the agent can't read it.
   It records the arm, the study commit, and a hash of each file. An `arm.sha256` left by an

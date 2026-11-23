@@ -16,10 +16,7 @@ study_dir=$(cd "$(dirname "$0")" && pwd)
 case $arm in
 	A | N) overlays=(common) ;;
 	B) overlays=(common arm-b) ;;
-	D)
-		echo "Arm D's degradations are not defined yet." >&2
-		exit 1
-		;;
+	D) overlays=() ;;
 	*) usage ;;
 esac
 
@@ -30,8 +27,10 @@ manifest="${out_dir%/}.json"
 
 mkdir -p "$out_dir"
 cp "$demo_dir/RULES.md" "$out_dir/RULES.md"
+# Every arm carries the eval dataset, which the harness reads and the agent doesn't.
+rsync -a "$study_dir/common/tests/" "$out_dir/tests/"
 
-for overlay in "${overlays[@]}"; do
+for overlay in ${overlays[@]+"${overlays[@]}"}; do
 	rsync -a --exclude 'RULES.md.append' "$study_dir/$overlay/" "$out_dir/"
 	if [[ -f $study_dir/$overlay/RULES.md.append ]]; then
 		printf '\n' >>"$out_dir/RULES.md"

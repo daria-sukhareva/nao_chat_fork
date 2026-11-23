@@ -87,7 +87,7 @@ its own. Exact numeric correctness stays with `nao test`.
 | A   | Current context + root cause skill                                                | Baseline                                   |
 | B   | Current context + root cause skill + metrics tree + `count-active-drivers` + rule | Treatment; the bundle is what C2 speaks to |
 | N   | A, run as a separate block                                                        | Null control: false-positive rate for C1   |
-| D   | A with known degradations (rules removed, a definition corrupted)                 | Positive control: sensitivity for C1       |
+| D   | The demo before the experiment: A without the root cause skill or its rule        | Positive control: sensitivity for C1       |
 
 `study/common/agent/skills/root-cause-analysis.md` is shared by all arms and is the only root cause
 procedure; it was moved out of the tree with its domain and tree references removed. C2

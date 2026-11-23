@@ -8,7 +8,9 @@ The files each arm adds to the `kwwhat/demo/chat-bi` project. See the
 | `common/` | Every arm  | The root cause skill and the eval dataset                                       |
 | `arm-b/`  | Arm B only | The metrics tree, the `count-active-drivers` skill, and the rule for `RULES.md` |
 
-Arm N uses the same files as arm A. Arm D's degradations are not defined yet.
+Arm N uses the same files as arm A. Arm D is the demo as it was before the experiment: the demo's
+`RULES.md` unchanged, with no root cause skill and no rule pointing to it. It carries only the eval
+dataset, which the harness reads and the agent doesn't.
 
 ## Building an arm
 
