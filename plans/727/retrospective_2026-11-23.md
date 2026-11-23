@@ -54,10 +54,31 @@ checked for whether it loaded the skill and queried `dim_chargers`. That answers
 whether the wider trigger fires on q028, and whether the topology regression (checks in 2 of 21
 recent trials) was a trigger problem too.
 
+## Querying topology isn't using it
+
+The first B runs on the new build (`ac7f943e`, q022–q025, 3 trials each: `20261123_151949`,
+`152411`, `152857`, `153302`) loaded the root-cause skill and queried `dim_chargers` in 12 of 12
+trials. A recount of the earlier runs, matching the skill read as a file as well as through
+`load_skill`, shows the same on q022–q027 on every build since Nov 18. Only q028 never loaded the
+skill, in 0 of 11 trials across both arms. So "touched `dim_chargers`" isn't the topology check that
+fails, and the "2 of 21" figure counted something narrower.
+
+q025 trial 2 shows the real failure. It looked up commissioning, then said LOC-002's two chargers
+and LOC-003's one "came online Oct 20" (LOC-003 has two, commissioned Nov 3), and compared Oct 1–14
+with Oct 20 to Nov 19, a window that includes LOC-003. That gave 118 drivers and 53 anonymous ones,
+against the reference's 20 drivers and none anonymous in the week of Oct 20. Correctness 0.4,
+Completeness 0.4. The agent checks topology but doesn't use it to bound the comparison window.
+
+The topology figure will measure that instead: whether the periods compared contain the same
+locations and chargers, or the answer says they don't, rather than whether `dim_chargers` was
+queried.
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
   never loaded, because the question used none of the listed phrasings.
+- **Measure whether a check changed the answer, not whether it ran.** Every trial queried
+  `dim_chargers`; one still compared windows with different sites.
 
 ## Still open
 
