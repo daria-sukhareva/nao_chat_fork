@@ -189,6 +189,62 @@ Completeness (0.52 against 0.47), from q023, q025 and q028. The same B artefacts
 driver skill, help on one demand question and hurt on the other. With 3 trials per case none of the
 gaps is conclusive; the second block (2 more trials per arm) completes 5.
 
+## The ceiling: q031, and the check the conclusion ignores
+
+**The ceiling.** All 10 dev cases are pilot data: q019–q031 are dev only, and the plan rules out
+q001–q018 for confirmation. The first block showed failures that both arms share: on q031 every
+trial on both arms called a recovery, and on q023, q025 and q028 the agent checked topology and
+answered as if it hadn't. These put a ceiling on both arms, which shrinks the room the tree has to
+show a difference. The plan allows changing the shared skill on dev, since both arms get it, but
+only before the freeze.
+
+**What we did, on q031.** The skill told the agent to notice a partial period ("If a period is
+partial, flag it") and small counts ("the counts are large enough for the change to mean
+something"), but not what either does to the answer. Every trial flagged the partial week and
+answered "Yes". Two changes went in:
+
+- **The stop rule** (`84b93f82`, by the author): "If the change does not survive this step, the
+  conclusion is that the data can't show it. Lead with that, then give what is known."
+- **A recovery rule in step 6** (`7936f876`): "When asked whether a metric recovered, check whether
+  the cause of the earlier drop is still present: compare the share of each failure mode with the
+  period before the drop. A rate can rise while the cause continues."
+
+Two other proposals were not adopted. Comparing only the same days and hours of each period was
+rejected by the author: the agent should not change the reference periods. A noise test (the new
+period's daily values against the earlier period's daily spread) is held for now.
+
+**How it changed the outcomes** (3 trials each; A `20261123_173539` on a dirty manifest, B
+`174401` on `7936f876`; both with the same skill content):
+
+| Arm | Correctness before | Correctness after | Completeness before | Completeness after | Verdicts after                                          |
+| --- | -----------------: | ----------------: | ------------------: | -----------------: | ------------------------------------------------------- |
+| A   |               0.17 |              0.37 |                0.20 |               0.33 | "partial recovery" ×3                                   |
+| B   |               0.20 |              0.43 |                0.20 |               0.43 | "No, did not recover" ×1, "partial recovery" ×2; 1 pass |
+
+No trial said "Yes" outright any more, and every trial queried failure reasons by week, against 3 of
+6 before. B's trial 1 was the first q031 pass on either arm, and the first to measure the week's
+coverage as 2.5 days. B's trial 2 computed each failure mode as a share of visits in all three weeks
+and labelled `NO_TRANSACTION` (7.0%, 22.3%, 21.7%) "Not recovered", which is the reference's
+evidence. It still concluded "Partial recovery". A's trial 3 found the change "real but small… the
+signal is weak" and still called a partial recovery. The new rule made some trials split by location
+on small segments (LOC-002 at 94.1% from 17 visits), and none flagged the counts.
+
+**The failure mode: the check runs and the conclusion ignores it.** The same pattern shows up in
+three places today:
+
+| Where                            | The check ran                                                | The conclusion ignored it             |
+| -------------------------------- | ------------------------------------------------------------ | ------------------------------------- |
+| q025 B trial 2                   | looked up commissioning                                      | compared windows that include LOC-003 |
+| q028 A trials 1 and 3, B trial 3 | built a correct topology table                               | "Yes, recovered", across two sites    |
+| q031, both arms                  | flagged the partial week; labelled the cause "Not recovered" | "partial recovery"                    |
+
+The rules say what to check, and the agent checks it. None says what a result does to the answer:
+the stop rule depends on step 1 deciding that the change didn't survive, and without a test step 1
+never decides that. The recovery rule says to check whether the cause is still present, not what
+follows if it is. The candidate next change keeps to the author's constraint on periods and links
+the finding to the verdict: "If the cause is still present, the metric hasn't recovered, whatever
+the rate did."
+
 ## Lessons
 
 - **Trigger on the shape of the question, not its words.** The skill had the right step for q028 and
@@ -196,13 +252,15 @@ gaps is conclusive; the second block (2 more trials per arm) completes 5.
 - **Loading the skill is necessary but not sufficient.** A loaded skill's step can still be skipped,
   as q028 trial 1 skipped the topology check, and a question that reads like a lookup gets
   answered at steps 1–2, as on q030.
+- **A rule that says what to check must also say what the result does to the answer.** Otherwise
+  the check runs and the conclusion ignores it, as on q025, q028 and q031.
 - **Measure whether a check changed the answer, not whether it ran.** Every trial queried
   `dim_chargers`; one still compared windows with different sites.
 
 ## Still open
 
 - Rerun q022–q028 on the new trigger (above).
-- q031: 0 of 18 trials avoid calling a recovery; a partial-period rule.
+- q031: the stop and recovery rules are in; the verdict still ignores the evidence. Next: tie the recovery finding to the verdict, and rerun q031 with q019, q027 and q029 as guards.
 - q030: B's driver-skill misreadings.
 - The judge check on hand-written answers; the hinted solvability run.
 - The kwwhat array-sort PR and the #204 follow-ups listed on 2026-11-21.
