@@ -479,8 +479,9 @@ Completeness means are 0.48 on A, 0.49 on B and 0.29 on D.
   CH-001's failures to `INVALID_STOP_REASON` and `FAULTED_AFTER`, the `failure_reason` labels from
   kwwhat #204; the reference names only the error code, WeakSignal, and the judge treated the two as
   contradictory. Both are true of the same attempts (stop reason Other after a WeakSignal fault).
-  The q019 reference predates #204 and could name both; it is also a candidate item for the blind
-  rating.
+  The reference now names both (stop reason Other, `INVALID_STOP_REASON`, after WeakSignal) and says
+  the one `FAULTED_AFTER` attempt was in a visit that succeeded on retry, so a trial that blames it
+  for a failed visit is still wrong. It is also a candidate item for the blind rating.
 
 **Stated limitation.** D's effect is about −0.2, twice the 0.10 target, so the D half of C1 shows
 the instruments detect a drop of that size, not one of 0.10. A milder second control would be
@@ -520,8 +521,6 @@ are reported.
 - q030: B's driver-skill misreadings.
 - The judge check on hand-written answers; the hinted solvability run.
 - The kwwhat array-sort PR and the #204 follow-ups listed on 2026-11-21.
-- The q019 reference names WeakSignal only; consider naming the `failure_reason` labels too (dev
-  only, so it can change).
 - Rebuild D from a clean commit before any confirmatory D block; the dev D runs were built from
   `5dda7a2c-dirty`.
 - Blind rating of `judge_validation/rating_sheet_2026-11-23.md` (step 3).
