@@ -1,6 +1,7 @@
 import hashlib
 import json
 import sys
+import tempfile
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -89,6 +90,7 @@ def rejudge(
         sys.exit(1)
 
     source = _load_results(results_file)
+    _require_writable(results_file.parent, Path.cwd() / OUTPUTS_FOLDER)
     options = _options_from_source(source["data"], metrics, judge_model, verbose)
     answers = [
         (_answer_id(record, index, source["sha256"]), record)
@@ -184,6 +186,18 @@ def _load_results(results_file: Path) -> dict[str, Any]:
         UI.error(f"Could not read results file {results_file}: {e}")
         sys.exit(1)
     return {"data": data, "sha256": hashlib.sha256(content).hexdigest()}
+
+
+def _require_writable(*folders: Path) -> None:
+    """Judging costs money, so a folder the judgments or the ledger can't be written to stops the run first."""
+    for folder in folders:
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryFile(dir=folder):
+                pass
+        except OSError as e:
+            UI.error(f"Cannot write to {folder}, so judgments could not be saved: {e}")
+            sys.exit(1)
 
 
 def _options_from_source(

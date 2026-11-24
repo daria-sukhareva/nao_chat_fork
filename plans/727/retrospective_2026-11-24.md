@@ -163,10 +163,10 @@ as it is under short references, ceiling and all.
 through `/kwwhat`, which is mounted read-only in the container, and `rejudge` writes its output next
 to the input file. That spent about $1.40, not in the cost ledger, which is written after the save.
 The rerun used `/app/kwwhat/tests/outputs/...`, the same host folder mounted writable. Total for this
-test: about $2.80.
+test: about $2.80. `rejudge` now checks that it can write the results folder and the ledger folder before the first
+judgment, and stops if it can't.
 
 ## Still open
 
-- `rejudge` could check that it can write its output folder before judging.
 - The blind rating, which picks the reference style.
 - Rebuild each arm before the next eval run: the arms carry the dataset, and its hash changed.

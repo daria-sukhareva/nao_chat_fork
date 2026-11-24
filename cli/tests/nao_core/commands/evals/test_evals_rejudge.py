@@ -1,4 +1,5 @@
 import json
+import os
 from unittest.mock import patch
 
 import pytest
@@ -146,6 +147,22 @@ def test_a_metric_error_is_recorded_and_exits_non_zero(tmp_path):
 
     assert exc_info.value.code == 1
     assert read_judgments(tmp_path)["judgments"][0]["metrics"][0]["error"] == "judge down"
+
+
+@pytest.mark.skipif(os.name != "posix" or os.geteuid() == 0, reason="needs folder permissions to apply")
+def test_unwritable_output_folder_stops_before_any_judging(tmp_path, built_metrics):
+    results_folder = tmp_path / "read_only"
+    results_folder.mkdir()
+    results_file = write_results(results_folder, ANSWERED)
+    results_folder.chmod(0o500)
+    try:
+        with pytest.raises(SystemExit) as exc_info:
+            rejudge(results_file, judge_repeats=1)
+    finally:
+        results_folder.chmod(0o700)
+
+    assert exc_info.value.code == 1
+    assert built_metrics == []
 
 
 def test_unreadable_results_file_stops(tmp_path):
