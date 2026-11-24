@@ -1,6 +1,6 @@
 # Blind rating sheet, 2026-11-23
 
-Rate each answer against its reference on the two scales below, before opening `rating_key_2026-11-23.json`. The sheet has no arm labels or tool traces. Order is shuffled (seed 20261123). Answers are verbatim except that citation tags are reduced to their numbers.
+Rate each answer against its reference (the short references adopted on 2026-11-24) on the two scales below, before opening `rating_key_2026-11-23.json`. The sheet has no arm labels or tool traces. Order is shuffled (seed 20261123). Answers are verbatim except that citation tags are reduced to their numbers.
 
 ## Scales (the judge's rubrics, `fbda3f9f0f46` and `c493b2deacb0`)
 
@@ -21,7 +21,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why did visits at LOC-002 drop in the week of Oct 27, 2025?
 
-**Reference:** Because fewer drivers came, not because of a reliability problem. Visits at LOC-002 fell from 38 in the week of Oct 20 to 12 in the week of Oct 27, but every visit in both weeks succeeded on the first attempt, uptime stayed above 99.6%, and no charge attempt had an error. Active drivers fell from 20 to 8, and those who came, came less often: 1.9 visits per driver, then 1.5. Fewer drivers account for about 80% of the drop, and fewer visits per driver for the rest. 12 of the 20 drivers from the week of Oct 20 didn't come back, and the data doesn't show why.
+**Reference:** Because fewer drivers came, not because of a reliability problem. Visits at LOC-002 fell from 38 in the week of Oct 20 to 12 in the week of Oct 27, while every visit in both weeks succeeded and uptime stayed above 99.6%. Active drivers fell from 20 to 8, and the data doesn't show why.
 
 **Answer:**
 
@@ -97,7 +97,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Did charging demand recover in the week of Oct 20, 2025, compared to the week of Oct 6?
 
-**Reference:** The data can't show it, because the two weeks cover different sites. LOC-001 had no visits after Oct 14: CH-001 was decommissioned on Oct 15 and CH-002 stayed offline, so LOC-001 had no port a driver could use, and drivers who came there left no record. Every visit in the week of Oct 20 was at LOC-002, commissioned that day: 38 visits, against 69 at LOC-001 in the week of Oct 6. LOC-002's 20 drivers were all new, and none of LOC-001's 10 known drivers charged there. So the week of Oct 20 shows new demand at a new location, not LOC-001's demand coming back or falling.
+**Reference:** The data can't show it, because the two weeks cover different sites. Every visit in the week of Oct 20 was at LOC-002, which opened that day, by drivers who were all new. LOC-001 had no working charger after Oct 14, so its demand left no record. So 38 visits against 69 is new demand at a new location, not LOC-001's demand recovering or falling.
 
 **Answer:**
 
@@ -148,7 +148,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why did the number of successful visits go up after Oct 19, 2025, compared to Oct 15–19?
 
-**Reference:** Because supply came back. From Oct 15 to Oct 19 there were no successful visits: CH-001 had been decommissioned and CH-002 was offline. On Oct 20, LOC-002's CH-003 and CH-004 were commissioned, adding 4 ports that were up 99.69% of the time in the week of Oct 20, while CH-002 stayed offline. That week had 38 successful visits, all at LOC-002 (19 on each charger). Every visit succeeded on the first attempt, and all 20 drivers were new.
+**Reference:** Because supply came back: LOC-002 opened on Oct 20 with CH-003 and CH-004, while LOC-001 still had no working charger. There were no successful visits from Oct 15 to Oct 19, and 38 in the week of Oct 20, all at LOC-002. This is new supply, not LOC-001 recovering.
 
 **Answer:**
 
@@ -209,7 +209,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why did visit success drop in the week of Nov 10, 2025 compared to the week of Nov 3?
 
-**Reference:** Because one group of drivers' charging tokens stopped being accepted, not because of the chargers. Visit success fell from 91.6% (131 of 143 visits) in the week of Nov 3 to 68.9% (102 of 148) in the week of Nov 10, all of it in first-attempt success, while the number of visits stayed level. The equipment didn't change: uptime was the same in both weeks, no attempt recorded an error code, and attempts stopped with reason Other went from 2 to 3. The drop is spread across both locations (LOC-002 from 87.3% to 66.7%, LOC-003 from 95.0% to 71.6%) and every charger, so no site explains it. The evidence is on the driver side: 10 failed visits by identified drivers had their token rejected as Expired, so the charge was stopped (stop reason DeAuthorized) before any energy flowed. All 10 came from 7 drivers, and the same drivers had charged without trouble the week before: 6 of the 7 visited in the week of Nov 3, and all 10 of those visits succeeded, while none of the 7 drivers' 10 visits in the week of Nov 10 succeeded. Failed visits without an idTag rose from 10 to 33. The data can't say why those failed: a token rejected at authorization leaves no idTag and no status, so these visits can't be tied to a driver, and expired tokens explain at least 10 of the 34 extra failed visits, likely most of them, but the exact share can't be measured.
+**Reference:** Because one group of drivers' charging tokens stopped being accepted, not because of the chargers. Visit success fell from 91.6% to 68.9%, across both locations and every charger, while uptime didn't change and no attempt recorded an error code. 10 failed visits had their token rejected as Expired; failed visits without an idTag rose from 10 to 33, likely for the same reason, but the data can't tie them to a driver.
 
 **Answer:**
 
@@ -310,7 +310,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Did more drivers charge successfully on the network in the week of Nov 10, 2025 than in the week of Nov 3?
 
-**Reference:** No, fewer drivers charged successfully. 57 identified drivers had a successful visit in the week of Nov 3, and 41 in the week of Nov 10, and no anonymous visit succeeded in either week. Drivers still came, but their charges were refused: 6 drivers who charged in the week of Nov 3 had every visit in the week of Nov 10 rejected because their token had expired. Total visits barely moved, from 143 to 148, and anonymous visits rose from 10 to 33, every one a failed plug-in that never started a transaction, likely more drivers whose tokens were rejected at authorization, which leaves no idTag. Counting each anonymous visit as a driver would show active drivers rising, from 68 to 82, and visits per driver falling, from 2.1 to 1.8, but that is a shift from identified to anonymous visits, not more people. How many people made the 33 anonymous visits can't be measured, but none of them charged.
+**Reference:** No, fewer drivers charged successfully: 57 identified drivers had a successful visit in the week of Nov 3, and 41 in the week of Nov 10. Drivers still came, but some had their charges refused because their tokens had expired. Anonymous visits rose from 10 to 33 and none succeeded, so counting them as drivers would wrongly show more drivers.
 
 **Answer:**
 
@@ -335,7 +335,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why were there more drivers after Oct 19, 2025, compared to Oct 15–19?
 
-**Reference:** Because a new location opened. From Oct 15 to Oct 19 there were no drivers, since no charger was available. In the week of Oct 20, 20 drivers charged, all at LOC-002, which was commissioned on Oct 20: 10 on CH-003 and 10 on CH-004. All 20 were new drivers, seen for the first time that week. None of LOC-001's 10 known drivers came to LOC-002, and there were no anonymous visits, so the rise comes from new supply bringing new drivers, not from returning demand.
+**Reference:** Because a new location opened. LOC-002, commissioned on Oct 20, brought 20 drivers in its first week, and all of them were new; none of LOC-001's known drivers charged there. So the rise is new supply bringing new drivers, not returning demand.
 
 **Answer:**
 
@@ -398,7 +398,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Did more drivers charge successfully on the network in the week of Nov 10, 2025 than in the week of Nov 3?
 
-**Reference:** No, fewer drivers charged successfully. 57 identified drivers had a successful visit in the week of Nov 3, and 41 in the week of Nov 10, and no anonymous visit succeeded in either week. Drivers still came, but their charges were refused: 6 drivers who charged in the week of Nov 3 had every visit in the week of Nov 10 rejected because their token had expired. Total visits barely moved, from 143 to 148, and anonymous visits rose from 10 to 33, every one a failed plug-in that never started a transaction, likely more drivers whose tokens were rejected at authorization, which leaves no idTag. Counting each anonymous visit as a driver would show active drivers rising, from 68 to 82, and visits per driver falling, from 2.1 to 1.8, but that is a shift from identified to anonymous visits, not more people. How many people made the 33 anonymous visits can't be measured, but none of them charged.
+**Reference:** No, fewer drivers charged successfully: 57 identified drivers had a successful visit in the week of Nov 3, and 41 in the week of Nov 10. Drivers still came, but some had their charges refused because their tokens had expired. Anonymous visits rose from 10 to 33 and none succeeded, so counting them as drivers would wrongly show more drivers.
 
 **Answer:**
 
@@ -432,7 +432,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Did visit success recover in the week of Nov 17, 2025?
 
-**Reference:** No, the data can't show a recovery: the week is partial and the failure continues. The data ends on Wednesday, Nov 19 at 12:00, so the week has 2.5 days and 46 visits. Its success rate, 76.1% (35 of 46), is above the week of Nov 10's 68.9%, but failed visits without an idTag are 22% of visits (10 of 46), the same share as in the week of Nov 10 (33 of 148) and three times the week of Nov 3 (10 of 143). The one failed visit by an identified driver was again a token rejected as Expired (stop reason DeAuthorized). The higher rate rests on 11 failed visits: there were no attempts stopped with reason Other (3 the week before) and one visible token rejection (10 the week before), which on numbers this small isn't a trend. The equipment didn't change: uptime was the same as in the week before.
+**Reference:** No, the data can't show a recovery. The week is partial, since the data ends on Nov 19 at 12:00, and the cause of the drop continues: failed visits without an idTag are 22% of visits, the same share as in the week of Nov 10. The higher success rate, 76.1% against 68.9%, rests on 11 failed visits and isn't a trend.
 
 **Answer:**
 
@@ -484,7 +484,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why did visit success drop in the week of Nov 10, 2025 compared to the week of Nov 3?
 
-**Reference:** Because one group of drivers' charging tokens stopped being accepted, not because of the chargers. Visit success fell from 91.6% (131 of 143 visits) in the week of Nov 3 to 68.9% (102 of 148) in the week of Nov 10, all of it in first-attempt success, while the number of visits stayed level. The equipment didn't change: uptime was the same in both weeks, no attempt recorded an error code, and attempts stopped with reason Other went from 2 to 3. The drop is spread across both locations (LOC-002 from 87.3% to 66.7%, LOC-003 from 95.0% to 71.6%) and every charger, so no site explains it. The evidence is on the driver side: 10 failed visits by identified drivers had their token rejected as Expired, so the charge was stopped (stop reason DeAuthorized) before any energy flowed. All 10 came from 7 drivers, and the same drivers had charged without trouble the week before: 6 of the 7 visited in the week of Nov 3, and all 10 of those visits succeeded, while none of the 7 drivers' 10 visits in the week of Nov 10 succeeded. Failed visits without an idTag rose from 10 to 33. The data can't say why those failed: a token rejected at authorization leaves no idTag and no status, so these visits can't be tied to a driver, and expired tokens explain at least 10 of the 34 extra failed visits, likely most of them, but the exact share can't be measured.
+**Reference:** Because one group of drivers' charging tokens stopped being accepted, not because of the chargers. Visit success fell from 91.6% to 68.9%, across both locations and every charger, while uptime didn't change and no attempt recorded an error code. 10 failed visits had their token rejected as Expired; failed visits without an idTag rose from 10 to 33, likely for the same reason, but the data can't tie them to a driver.
 
 **Answer:**
 
@@ -556,7 +556,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why was network uptime so low from Oct 15 to Oct 19, 2025?
 
-**Reference:** Network uptime was 12.38% from Oct 15 to Oct 19, 2025 (1,900 of 15,350 commissioned port-minutes), against 98.64% from Oct 1 to Oct 14. CH-002 stopped communicating on Oct 15 at 07:55 and was OFFLINE (NoHeartbeat) for the rest of the period, which accounts for all 13,450 minutes of downtime. CH-001 was decommissioned at the same moment; that removed its ports from commissioned minutes rather than adding downtime. With CH-002 the only commissioned charger from Oct 16, uptime was 0% on each day from Oct 16 to Oct 19.
+**Reference:** Because CH-002 went offline (NoHeartbeat) on Oct 15 and stayed offline: network uptime was 12.38% from Oct 15 to Oct 19, against 98.64% from Oct 1 to Oct 14. From Oct 16, CH-002 and its 2 ports were all that was commissioned. CH-001's decommissioning on Oct 15 added no downtime; it removed CH-001's ports from the count.
 
 **Answer:**
 
@@ -616,7 +616,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why were there more chargers after Oct 19, 2025?
 
-**Reference:** Because LOC-002 was commissioned on Oct 20, 2025 at 08:00, with two chargers, CH-003 and CH-004, and 2 ports each. From Oct 16 to Oct 19 only one charger was commissioned, CH-002 at LOC-001, since CH-001 had been decommissioned on Oct 15. From Oct 20 there were three chargers and six ports, and commissioned port-minutes rose from 2,880 a day to 8,640 a day from Oct 21 (6,720 on Oct 20, which started at 08:00). The data records the commissioning, not the reason for it. CH-002 still counts as commissioned, although it was offline.
+**Reference:** Because LOC-002 was commissioned on Oct 20, 2025, with two chargers, CH-003 and CH-004, of 2 ports each. That took the network from one commissioned charger, CH-002, which counts although it was offline, to three. The data records the commissioning, not the reason for it.
 
 **Answer:**
 
@@ -642,7 +642,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why did the number of successful visits go up after Oct 19, 2025, compared to Oct 15–19?
 
-**Reference:** Because supply came back. From Oct 15 to Oct 19 there were no successful visits: CH-001 had been decommissioned and CH-002 was offline. On Oct 20, LOC-002's CH-003 and CH-004 were commissioned, adding 4 ports that were up 99.69% of the time in the week of Oct 20, while CH-002 stayed offline. That week had 38 successful visits, all at LOC-002 (19 on each charger). Every visit succeeded on the first attempt, and all 20 drivers were new.
+**Reference:** Because supply came back: LOC-002 opened on Oct 20 with CH-003 and CH-004, while LOC-001 still had no working charger. There were no successful visits from Oct 15 to Oct 19, and 38 in the week of Oct 20, all at LOC-002. This is new supply, not LOC-001 recovering.
 
 **Answer:**
 
@@ -706,7 +706,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why were there no charging visits from Oct 15 to Oct 19, 2025?
 
-**Reference:** Because no charger was available. On Oct 15 at 07:55, CH-001 was decommissioned, and at the same time CH-002, the only charger still commissioned, stopped communicating and stayed OFFLINE (NoHeartbeat) for the rest of the period. Uptime was 0% from Oct 16 to Oct 19, so there was no port a driver could use. The last visit ended on Oct 14 at 20:38. Drivers who came while CH-002 was offline leave no record, so demand in those days can't be measured.
+**Reference:** Because no charger was available. On Oct 15, CH-001 was decommissioned and CH-002, the only charger left, went offline (NoHeartbeat) for the rest of the period, so uptime was 0% from Oct 16 to Oct 19. Drivers who came while it was offline leave no record, so demand in those days can't be measured.
 
 **Answer:**
 
@@ -750,7 +750,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why did visits at LOC-002 drop in the week of Oct 27, 2025?
 
-**Reference:** Because fewer drivers came, not because of a reliability problem. Visits at LOC-002 fell from 38 in the week of Oct 20 to 12 in the week of Oct 27, but every visit in both weeks succeeded on the first attempt, uptime stayed above 99.6%, and no charge attempt had an error. Active drivers fell from 20 to 8, and those who came, came less often: 1.9 visits per driver, then 1.5. Fewer drivers account for about 80% of the drop, and fewer visits per driver for the rest. 12 of the 20 drivers from the week of Oct 20 didn't come back, and the data doesn't show why.
+**Reference:** Because fewer drivers came, not because of a reliability problem. Visits at LOC-002 fell from 38 in the week of Oct 20 to 12 in the week of Oct 27, while every visit in both weeks succeeded and uptime stayed above 99.6%. Active drivers fell from 20 to 8, and the data doesn't show why.
 
 **Answer:**
 
@@ -794,7 +794,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Did charging demand recover in the week of Oct 20, 2025, compared to the week of Oct 6?
 
-**Reference:** The data can't show it, because the two weeks cover different sites. LOC-001 had no visits after Oct 14: CH-001 was decommissioned on Oct 15 and CH-002 stayed offline, so LOC-001 had no port a driver could use, and drivers who came there left no record. Every visit in the week of Oct 20 was at LOC-002, commissioned that day: 38 visits, against 69 at LOC-001 in the week of Oct 6. LOC-002's 20 drivers were all new, and none of LOC-001's 10 known drivers charged there. So the week of Oct 20 shows new demand at a new location, not LOC-001's demand coming back or falling.
+**Reference:** The data can't show it, because the two weeks cover different sites. Every visit in the week of Oct 20 was at LOC-002, which opened that day, by drivers who were all new. LOC-001 had no working charger after Oct 14, so its demand left no record. So 38 visits against 69 is new demand at a new location, not LOC-001's demand recovering or falling.
 
 **Answer:**
 
@@ -850,7 +850,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why were there more chargers after Oct 19, 2025?
 
-**Reference:** Because LOC-002 was commissioned on Oct 20, 2025 at 08:00, with two chargers, CH-003 and CH-004, and 2 ports each. From Oct 16 to Oct 19 only one charger was commissioned, CH-002 at LOC-001, since CH-001 had been decommissioned on Oct 15. From Oct 20 there were three chargers and six ports, and commissioned port-minutes rose from 2,880 a day to 8,640 a day from Oct 21 (6,720 on Oct 20, which started at 08:00). The data records the commissioning, not the reason for it. CH-002 still counts as commissioned, although it was offline.
+**Reference:** Because LOC-002 was commissioned on Oct 20, 2025, with two chargers, CH-003 and CH-004, of 2 ports each. That took the network from one commissioned charger, CH-002, which counts although it was offline, to three. The data records the commissioning, not the reason for it.
 
 **Answer:**
 
@@ -878,7 +878,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why were there no charging visits from Oct 15 to Oct 19, 2025?
 
-**Reference:** Because no charger was available. On Oct 15 at 07:55, CH-001 was decommissioned, and at the same time CH-002, the only charger still commissioned, stopped communicating and stayed OFFLINE (NoHeartbeat) for the rest of the period. Uptime was 0% from Oct 16 to Oct 19, so there was no port a driver could use. The last visit ended on Oct 14 at 20:38. Drivers who came while CH-002 was offline leave no record, so demand in those days can't be measured.
+**Reference:** Because no charger was available. On Oct 15, CH-001 was decommissioned and CH-002, the only charger left, went offline (NoHeartbeat) for the rest of the period, so uptime was 0% from Oct 16 to Oct 19. Drivers who came while it was offline leave no record, so demand in those days can't be measured.
 
 **Answer:**
 
@@ -919,7 +919,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Did visit success recover in the week of Nov 17, 2025?
 
-**Reference:** No, the data can't show a recovery: the week is partial and the failure continues. The data ends on Wednesday, Nov 19 at 12:00, so the week has 2.5 days and 46 visits. Its success rate, 76.1% (35 of 46), is above the week of Nov 10's 68.9%, but failed visits without an idTag are 22% of visits (10 of 46), the same share as in the week of Nov 10 (33 of 148) and three times the week of Nov 3 (10 of 143). The one failed visit by an identified driver was again a token rejected as Expired (stop reason DeAuthorized). The higher rate rests on 11 failed visits: there were no attempts stopped with reason Other (3 the week before) and one visible token rejection (10 the week before), which on numbers this small isn't a trend. The equipment didn't change: uptime was the same as in the week before.
+**Reference:** No, the data can't show a recovery. The week is partial, since the data ends on Nov 19 at 12:00, and the cause of the drop continues: failed visits without an idTag are 22% of visits, the same share as in the week of Nov 10. The higher success rate, 76.1% against 68.9%, rests on 11 failed visits and isn't a trend.
 
 **Answer:**
 
@@ -974,7 +974,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why was network uptime so low from Oct 15 to Oct 19, 2025?
 
-**Reference:** Network uptime was 12.38% from Oct 15 to Oct 19, 2025 (1,900 of 15,350 commissioned port-minutes), against 98.64% from Oct 1 to Oct 14. CH-002 stopped communicating on Oct 15 at 07:55 and was OFFLINE (NoHeartbeat) for the rest of the period, which accounts for all 13,450 minutes of downtime. CH-001 was decommissioned at the same moment; that removed its ports from commissioned minutes rather than adding downtime. With CH-002 the only commissioned charger from Oct 16, uptime was 0% on each day from Oct 16 to Oct 19.
+**Reference:** Because CH-002 went offline (NoHeartbeat) on Oct 15 and stayed offline: network uptime was 12.38% from Oct 15 to Oct 19, against 98.64% from Oct 1 to Oct 14. From Oct 16, CH-002 and its 2 ports were all that was commissioned. CH-001's decommissioning on Oct 15 added no downtime; it removed CH-001's ports from the count.
 
 **Answer:**
 
@@ -1033,7 +1033,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 **Question:** Why were there more drivers after Oct 19, 2025, compared to Oct 15–19?
 
-**Reference:** Because a new location opened. From Oct 15 to Oct 19 there were no drivers, since no charger was available. In the week of Oct 20, 20 drivers charged, all at LOC-002, which was commissioned on Oct 20: 10 on CH-003 and 10 on CH-004. All 20 were new drivers, seen for the first time that week. None of LOC-001's 10 known drivers came to LOC-002, and there were no anonymous visits, so the rise comes from new supply bringing new drivers, not from returning demand.
+**Reference:** Because a new location opened. LOC-002, commissioned on Oct 20, brought 20 drivers in its first week, and all of them were new; none of LOC-001's known drivers charged there. So the rise is new supply bringing new drivers, not returning demand.
 
 **Answer:**
 

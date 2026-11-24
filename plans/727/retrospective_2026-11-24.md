@@ -3,7 +3,7 @@
 **Date:** 2026-11-24
 **Scope:** the 13 dev references (q019–q031) shortened to a main claim, a supporting number and the
 traps; the pilot's A, B and D answers rejudged against them.
-**Status:** references changed in `golden_dataset.jsonl`, not yet committed. All 104 pilot answers
+**Status:** short references adopted for the dev cases. All 104 pilot answers
 rejudged against the short references (`demo/chat-bi/tests/outputs/short_refs_20261124/`, $1.36);
 results below.
 
@@ -65,8 +65,8 @@ The comparison, long against short:
 - the judge's reasons on the known misreads (q030 B, q026 A), on the inventions that must stay
   penalised (q023, q027, q031) and on q019's D trial.
 
-The blind rating decides between the two styles: keep the one whose scores agree better with the
-human ratings. The choice goes into the case-generation rule before the preregistration tag.
+The plan was for the blind rating to decide between the two styles. That was dropped: see
+Decisions.
 
 ## Main kinds of cut
 
@@ -156,8 +156,21 @@ where a removed detail was what reconciled a correct answer stated at a differen
 commonly state the same fact another way (daily against period, per charger against network),
 because without it the judge reads the other form as a contradiction.
 
-**Decisions.** q023's short reference stays as it is, without the daily figure. Completeness stays
-as it is under short references, ceiling and all.
+**Decisions.**
+
+- **Short references, chosen by the author rather than measured.** The primary comparison doesn't
+  depend on the choice (B − A −0.08 long, −0.09 short), the traps work under both, and each style
+  has a known cost: short references inflate Completeness and created the q023 B misread; long ones
+  give the judge more to contradict and more counts to misread. A rating sheet of the answers where
+  the two styles disagree (9 at a gap of 0.3 or more) would be too small to settle it. The style goes
+  into the case-generation rule before the preregistration tag.
+- **The blind rating keeps its original job:** checking that the judge is fit to score the
+  references the study uses. The sheet (`judge_validation/rating_sheet_2026-11-23.md`, still blank)
+  now shows the short references; the long version is in `5dda7a2c`. Its 20 answers were rejudged
+  against the short references ($0.28), and the key holds both judgments, `judge_long` and
+  `judge_short`.
+- q023's short reference stays as it is, without the daily figure.
+- Completeness stays as it is under short references, ceiling and all.
 
 **Cost note.** The first rejudge attempt judged all 104 answers and saved none: it read the copies
 through `/kwwhat`, which is mounted read-only in the container, and `rejudge` writes its output next
@@ -168,5 +181,5 @@ judgment, and stops if it can't.
 
 ## Still open
 
-- The blind rating, which picks the reference style.
+- The blind rating, against the short references.
 - Rebuild each arm before the next eval run: the arms carry the dataset, and its hash changed.
