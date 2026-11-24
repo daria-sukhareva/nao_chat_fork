@@ -87,9 +87,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > **Hypothesis (not confirmed by data alone):** The 12 drop-out drivers may have been one-time explorers of the new location. Tracking their visits to other locations in a wider network context would confirm whether they switched elsewhere or reduced overall charging frequency.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                                                                                                                |
+| ------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 8                  | 7                   | the fact that all visits on both weeks suceeded was not stated clearly in the conclusion, though appears in the netrics at a glance |
 
 ---
 
@@ -138,9 +138,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > **Hypothesis:** The Oct 6 failures were concentrated on the now-decommissioned CH-001, which likely had a hardware or configuration issue. LOC-002's fresh chargers started clean. To confirm whether LOC-001/CH-002 itself recovered, a comparison limited to CH-002 activity across both weeks would be needed — but CH-002 shows no Oct 20 visits, so there's nothing to compare there.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                                                                                                   |
+| ------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 0                  | 1                   | Main claim contradicts. Charging demand could not be recorded in the offline location. In any case different locations |
 
 ---
 
@@ -199,9 +199,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > **Summary:** Oct 19 is a hard boundary in the charger fleet. CH-001 and the consistently faulted CH-002 were taken offline; CH-003 and CH-004 came live at a new location (LOC-002). The jump from ~25% to 100% success rate is entirely accounted for by removing CH-002 (101 `FAULTED_AFTER` failures) and replacing it with two fully functional chargers.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                                                                                                                     |
+| ------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 0                  | 0.1                 | Charger 002 was not decommissioned, it had an outage. It was not taken offline either. Nor were they replcaed, it's a different location |
 
 ---
 
@@ -300,9 +300,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 > - Identify which id_tags were rejected as `Expired` in Nov 10 and notify those drivers to renew their credentials.
 > - Investigate whether the NO_TRANSACTION spike tracks with specific time-of-day patterns or charger models — if it's authorization-related, the fix is the same group of expired tokens.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                 |
+| ------------------ | ------------------- | ------------------------------------ |
+| 0.8                | 0.7                 | no not because of the chargers claim |
 
 ---
 
@@ -325,9 +325,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > Despite slightly more visits in the week of Nov 10 (+5), the number of unique drivers who successfully charged dropped from 57 to 41 (−28%), and the success rate fell sharply by **22.7 pp**. This is a significant deterioration — worth investigating further.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                                                                                                                             |
+| ------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0.9                | 0.5                 | the reference is stating that counting anonymouse visits as one driver each is wrong but that's exactly what skill active drivers skill asks for |
 
 ---
 
@@ -388,9 +388,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > **In summary:** The increase in drivers after Oct 19 is entirely explained by **a new location (LOC-002) opening on Oct 20 with two new chargers (CH-003, CH-004)**. The Oct 15–19 period was a network dead zone — CH-001 was decommissioned and CH-002 went silent — so it had zero drivers. The apparent "increase" is not a rise in demand; it is a site changeover.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                      |
+| ------------------ | ------------------- | ----------------------------------------- |
+| 0.4                | 0.8                 | It had zero drivers is a misleading claim |
 
 ---
 
@@ -422,9 +422,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > Do you want me to dig into why the total count of successful drivers dropped — for example, whether it's driven by fewer visits, a lower success rate, or changes at specific locations?
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                          |
+| ------------------ | ------------------- | ----------------------------- |
+| 0                  | 0.1                 | Not a collapse of new drivers |
 
 ---
 
@@ -474,9 +474,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > **Bottom line:** Success rate is trending upward from the Nov 10–16 trough, but the Nov 17 week is too incomplete to call a full recovery. The remaining days of that week will be the confirmation.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                        |
+| ------------------ | ------------------- | ------------------------------------------- |
+| 0                  | 0.2                 | did not improve but mentions incomlete week |
 
 ---
 
@@ -546,9 +546,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 > - **NO_TRANSACTION root cause**: The progressive daily worsening across all chargers suggests a backend or network-side issue (e.g., authorization server degradation, OCPP connectivity). This data alone cannot distinguish between drivers abandoning without swiping vs. a silent authorization failure that prevented the transaction from opening.
 > - **Expired credentials**: Likely a planned subscription/contract renewal cycle. Worth cross-referencing with your CRM to confirm whether these 7 drivers had credentials expiring that week — if so, it's a churn/notification issue, not a system fault.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                               |
+| ------------------ | ------------------- | -------------------------------------------------- |
+| 0.5                | 0.5                 | Mentioned subs renewal in what needs investigation |
 
 ---
 
@@ -606,9 +606,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > The timing (CH-001 decommissioned and CH-002 offline at the exact same second) is suspicious — this could indicate a site-level power or connectivity event (e.g., grid/network outage at LOC-001) rather than an isolated CH-002 failure. However, the data only shows the heartbeat silence, not the root infrastructure cause. That would require external site logs or maintenance records.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                             |
+| ------------------ | ------------------- | ------------------------------------------------ |
+| 0.8                | 0.6                 | did not mention no downtime added by charger 001 |
 
 ---
 
@@ -632,9 +632,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > The jump from 1 to 3 chargers right after Oct 19 happened because **two chargers (CH-003 and CH-004) were commissioned simultaneously on Oct 20, 2025 at a brand-new location (LOC-002)**. This was a site expansion — LOC-002 came online and immediately added 2 active chargers in one go. It's not a data artefact; it reflects a real network expansion event.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                              |
+| ------------------ | ------------------- | ------------------------------------------------- |
+| 0.3                | 0.5                 | Not a site expansion and does not mention loc-001 |
 
 ---
 
@@ -696,9 +696,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > **Hypothesis to verify:** CH-002 at LOC-001 is likely still faulted. If it is put back into service without repair, the success rate will return to ~25%.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                              |
+| ------------------ | ------------------- | ------------------------------------------------- |
+| 0.3                | 0.5                 | mixing two locations: mix change and substitution |
 
 ---
 
@@ -740,9 +740,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > The 5-day gap was caused by the **simultaneous decommissioning of CH-001 and an OFFLINE outage on CH-002** at virtually the same timestamp (`07:55` on Oct 15). CH-003 and CH-004 did not come online until Oct 20, leaving the network with no operational charger for exactly those 5 days.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                |
+| ------------------ | ------------------- | ----------------------------------- |
+| 0.7                | 0.8                 | did not mention no record of demand |
 
 ---
 
@@ -786,7 +786,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 | Correctness (0–10) | Completeness (0–10) | Note |
 | ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| 0.9                | 0.9                 |      |
 
 ---
 
@@ -840,9 +840,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > **Demand did not simply recover** — the week of Oct 20 represents a new location (LOC-002) coming online, not a rebound at the original site (LOC-001). The 100% success rate and all-new driver mix on a site that opened exactly on Oct 20 confirm this is a fresh deployment, not recovered traffic. LOC-001 had no data between Oct 15–19 (after CH-001 was decommissioned) and no data at all from Oct 20 onward in this dataset, so its trajectory after Oct 14 is not observable here.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                    |
+| ------------------ | ------------------- | ----------------------- |
+| 1                  | 1                   | Mentioned not obervable |
 
 ---
 
@@ -870,7 +870,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 | Correctness (0–10) | Completeness (0–10) | Note |
 | ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| 1                  | 1                   |      |
 
 ---
 
@@ -911,7 +911,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 | Correctness (0–10) | Completeness (0–10) | Note |
 | ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| 0.5                | 0.8                 |      |
 
 ---
 
@@ -964,9 +964,9 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > Nov 17–19 had only 46 visits vs. 148 the prior week (data ends Nov 19). The recovery signal from LOC-002 is clear but needs confirmation from the full week.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                                    |
+| ------------------ | ------------------- | ------------------------------------------------------- |
+| 0.1                | 0.8                 | claims recovery though the cause is clearly still there |
 
 ---
 
@@ -1025,7 +1025,7 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 
 | Correctness (0–10) | Completeness (0–10) | Note |
 | ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| 1                  | 1                   |      |
 
 ---
 
@@ -1074,6 +1074,6 @@ For each item, fill in both scores and a one-line note. Where the answer gives a
 >
 > The higher driver count is a **direct consequence of the new location (LOC-002) being fully authenticated**, while the old location (LOC-001) had a large volume of unauthenticated visits that were invisible to unique-driver counting. It is not evidence of a larger driver population — visits/day actually _fell_ from 9.9 to 5.0 after the transition.
 
-| Correctness (0–10) | Completeness (0–10) | Note |
-| ------------------ | ------------------- | ---- |
-|                    |                     |      |
+| Correctness (0–10) | Completeness (0–10) | Note                                      |
+| ------------------ | ------------------- | ----------------------------------------- |
+| 0.7                | 1                   | unauthenticated drivers are not invisible |

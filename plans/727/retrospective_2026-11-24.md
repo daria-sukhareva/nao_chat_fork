@@ -179,7 +179,146 @@ The rerun used `/app/kwwhat/tests/outputs/...`, the same host folder mounted wri
 test: about $2.80. `rejudge` now checks that it can write the results folder and the ledger folder before the first
 judgment, and stops if it can't.
 
+## Judge validation: how to rate
+
+**What it answers:** is the judge a good enough stand-in for the author? The author scores 20
+answers by the judge's rubric without seeing its scores, and the two are compared. A constant
+judge bias cancels in B − A; what matters is whether its errors differ by arm, for example misreading
+B's longer answers more often. The sheet has 10 A and 10 B answers, which is what lets that be
+checked.
+
+### 1. Before starting
+
+- Don't open `rating_key_2026-11-23.json` or the judge-scored results files. Two items' cases and
+  the judge's reading of them came up in the 2026-11-23 session; if they're remembered, they are
+  flagged as not blind in the analysis.
+- **Decide what "fit" means before rating,** so the result can't shape the bar. A simple version:
+  the judge is in the same band as the author (0–2, 3–5, 6–8, 9–10) on at least 70% of items, and
+  its average error on A items and on B items differs by no more than 0.1. With 20 items both are
+  rough, and the paper says so.
+- About two hours, with a break halfway. Scores go in the cells of
+  `judge_validation/rating_sheet_2026-11-23.md`.
+
+### 2. For each item
+
+1. Read the question and the reference, then the answer.
+2. List the answer's main claims: its verdict, its cause, the central numbers.
+3. Mark each as agreeing with the reference, contradicting it, or not covered by it. Only
+   contradictions, and accurate but misleading details, lower Correctness. Missing points don't; an
+   extra claim the reference doesn't address doesn't either, even one known to be false. Those go in
+   the note, as the judge's blind spot rather than its error.
+4. Check counts are the same quantity before calling a contradiction: successful visits aren't
+   total visits, a daily figure isn't the period figure. This is where the judge slipped most.
+5. Pick the band first, then the number within it.
+6. Completeness: which of the reference's points the answer covers. Correct extra detail costs
+   nothing.
+7. A one-line note naming the claim that set the score ("says 12 ports; only 2 commissioned").
+
+**Rate the whole answer, not only its Conclusion.** The judge sees the whole answer, tables and steps
+included, and a claim anywhere can contradict the reference; rating only the Conclusion would score
+something other than what the judge scores. Two practical reasons too:
+
+- **The errors that matter often sit outside the Conclusion.** Inventions like "12 ports" or
+  "ports 2 inactive" turn up in a metrics table or a step, while the Conclusion reads fine.
+  Skipping those sections misses exactly what separates the arms.
+- **Not every answer has a Conclusion.** 13 of the 20 do, some titled "Summary" or "Bottom line";
+  7 don't.
+
+The Conclusion is still the place to start:
+
+1. Read the Conclusion, or the opening lines if there isn't one, to get the verdict. That mostly
+   settles the band: the main conclusion contradicts the reference (0–2), or it agrees (3 and up).
+2. Scan the rest for claims that contradict the reference, especially numbers, topology (how many
+   chargers and ports) and stated causes, checking each count is the same quantity as the
+   reference's.
+3. A repeated claim counts once: a Conclusion that restates a table isn't two errors.
+
+### 3. While rating
+
+- Score by the rubric, not by which answer is better.
+- If a reference looks wrong or ambiguous, score by it and say so in the note; that's a finding
+  about the reference.
+- Don't revise earlier scores after seeing later answers. If the scoring drifted, note it.
+
+### 4. Afterwards
+
+Against both the short-reference judge (the one the study uses) and the long one: band agreement
+and mean absolute difference with intervals, the band confusion table, the error split by arm, and
+every item where the author and the judge differ by 0.3 or more, sorted into judge misread, judge too
+lenient or too strict, and reference problem. That gives the judge a fitness verdict for the paper:
+fit for C2, fit with stated limits, or not fit.
+
+### 5. Re-rate after two weeks
+
+From about Dec 8, rate the same sheet again, reshuffled, without looking at the first scores. The
+two passes give the author's own consistency: intra-rater reliability, and the paper calls it that.
+
+## Judge validation: results
+
+The author rated all 20 items blind, against the short references. Scales were mixed (R01 on
+0–10, the rest on 0–1); values above 1 were divided by 10, and R02's Completeness "1" is 1.0 (a
+very detailed answer). R17 was rated 1.0 blind and revised to 0.5 after the judge's reason was
+seen; the blind score is primary, and the revision is reported as made after unblinding.
+
+| Correctness, 20 items              | Judge, short refs | Judge, long refs |
+| ---------------------------------- | ----------------- | ---------------- |
+| Same band as the author (bar: 70%) | 7 (35%)           | 7 (35%)          |
+| Mean absolute difference           | 0.27              | 0.25             |
+| Rank correlation with the author   | 0.39              | 0.54             |
+| Judge minus author                 | +0.11             | +0.03            |
+| Arm bias, B − A (bar: within 0.1)  | −0.04             | −0.08            |
+| Differ by 0.3 or more              | 10                | 12               |
+
+With R17 at 0.5, short: judge minus author +0.14, arm bias +0.01, 9 apart; long: +0.05, −0.03, 11.
+
+| Completeness, 20 items            | Judge, short refs | Judge, long refs |
+| --------------------------------- | ----------------- | ---------------- |
+| Same band as the author           | 4                 | 11               |
+| Mean absolute difference          | 0.26              | 0.25             |
+| Judge minus author                | +0.00             | −0.16            |
+| Arm bias, B − A (bar: within 0.1) | +0.21             | +0.18            |
+
+- **Correctness fails the band bar and passes the arm-bias bar.** The judge's error is about the same
+  on A and B answers, so a uniform lean cancels in B − A, but it agrees with the author's band on
+  only 7 of 20 items under either style.
+- **The judge compresses the scale.** The author used 0 and 1 freely (SD 0.39); the judge stays
+  between 0.4 and 0.9 (SD 0.24). It rarely gives 0 when the headline sounds right, or 1 to an answer
+  with any wrinkle.
+- **Long references track the author's ranking a little better** (0.54 against 0.39). Twenty items
+  can't settle it, and the paper reports it.
+- **Completeness fails the arm-bias bar under both styles.** Relative to the author, the judge scores
+  B's coverage about 0.2 higher than A's; B's answers are longer, and the judge seems to credit length
+  as coverage. Completeness is a C2 guardrail, so it can't show that B doesn't lose coverage without
+  this caveat. On 10 answers an arm it is rough.
+
+**The 10 Correctness disagreements (short references, blind scores):**
+
+| Kind         | Items              | What happened                                                                                                                                                                                       |
+| ------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rubric gap   | R03, R06, R11, R12 | False claims the short reference doesn't mention: CH-002 "decommissioned" or replaced, "zero drivers", a "site expansion", the two locations mixed. The rubric tells the judge not to penalise them |
+| Judge error  | R02, R07           | A main claim the author reads as wrong ("Demand quality recovered dramatically"; "a collapse of new drivers") accepted                                                                              |
+| q023 misread | R10, R19           | Daily figures read as contradicting the period figure, the cost of the short q023 reference                                                                                                         |
+| Nitpick      | R16                | "1 active charger" penalised against "commissioned"                                                                                                                                                 |
+| Rater miss   | R17                | "Genuinely zero visits, no data is missing" contradicts the trap "demand in those days can't be measured"; the judge was right                                                                      |
+
+**Decided: a false claim costs points whether or not the reference mentions it.** The construct is
+whether an answer is right about the data, and the author knows the data. So the rubric's "Do not
+penalize claims the expected output neither supports nor contradicts" is the gap: the judge sees only
+the short reference, and can't know a claim it doesn't cover is false. The author's ratings also took
+0.2 to 0.3 off Correctness for omissions (R01, R10, R11, R13), which the rubric leaves to
+Completeness; that part of the gap is the author's, not the judge's.
+
+**A reference problem the rating found (R05).** q030's short reference said counting anonymous visits
+as drivers "would wrongly show more drivers", but arm B's `count-active-drivers` skill counts each
+anonymous visit as one driver, as an upper bound, and warns about the same mix shift. "Wrongly" set
+the reference against B's own definition. Reworded in the dataset: "Counting each anonymous visit as
+a driver would show more drivers, but that is a shift from identified to anonymous visits, not more
+people." The sheet and key keep the wording that was rated against.
+
 ## Still open
 
-- The blind rating, against the short references.
+- The rubric gap: give the judge what it needs to catch false claims the reference doesn't cover
+  (proposal pending).
+- Completeness's arm bias: decide how the guardrail is reported, or fixed.
+- Re-rate the sheet from about Dec 8, reshuffled, for intra-rater reliability.
 - Rebuild each arm before the next eval run: the arms carry the dataset, and its hash changed.

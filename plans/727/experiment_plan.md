@@ -1,7 +1,7 @@
 # Eval Experiment Plan
 
 Plan for a public whitepaper on measuring context changes with `nao evals`, for
-[getnao/nao#727](https://github.com/getnao/nao/issues/727). Revised 2026-11-05. This is
+[getnao/nao#727](https://github.com/getnao/nao/issues/727). Revised 2026-11-24. This is
 a map, not a contract: it goes stale when the agent, data, or context changes.
 
 Builds on the [Correctness plan](https://github.com/getnao/nao/blob/4b02276f449ef35256cf9b04b06afcceb67b1d24/plans/727/correctness_plan.md)
@@ -54,8 +54,9 @@ kwwhat demo project.
 
 ### Hypotheses
 
-Every comparison is paired by case. Effect sizes, margins, the false-positive bound, and the
-multiplicity rule are set in the preregistration (Phase 5); none is fixed yet.
+Every comparison is paired by case. The minimum meaningful effect for C2 is 0.10 on the 0–1
+Correctness scale (decided 2026-11-24, open decision 1). The guardrail margins, the false-positive
+bound, and the multiplicity rule are set in the preregistration (Phase 5).
 
 | ID  | Hypothesis                                                                                         | Comparison     | Metric                                             | Type                  |
 | --- | -------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- | --------------------- |
@@ -230,6 +231,13 @@ observable signals and gaming paths.
   headroom on dev, because the skill may already pass most traps.
 - Pilot on dev only to estimate agent and judge variance, then size the confirmatory
   set and repetitions (at least 3 runs per case per arm).
+- **Sized 2026-11-24** from the 13-case dev pilot on A and B (retrospective 2026-11-23, "The
+  sizing math"): to detect 0.10 on Correctness, paired B − A, two-sided α = 0.05 at 80% power,
+  the confirmatory set needs about **32 cases × 3 trials** per arm. Trial noise is about 80% of
+  the per-case difference variance and judge noise about 0.02, so each answer is judged once.
+  Every block, A, B, N and D, is 32 × 3, because N and D are compared with A just as B is: 384
+  trials, about $81 of the $200 budget. Each block runs with `--max-cost` of about $25. The
+  estimate rests on 13 dev cases, so it is rough.
 
 **Exit:** a frozen, hashed confirmatory set, a datasheet, and a sizing rationale with
 its assumptions.
@@ -239,9 +247,21 @@ its assumptions.
 - Keep one generic Correctness definition for all cases: `evaluation_steps` plus GEval's
   `rubric` score bands. Include both in `GEvalRubric.version()`. Extra claims that don't
   contradict the reference aren't penalized, because the judge can't see tool output.
-- Write each reference as a short natural-language answer that states every required claim,
-  derived from the data and never from the tree. The rubric must not encode the tree, or arm B
-  would win by construction.
+- Write each reference as a short natural-language answer, derived from the data and never
+  from the tree. The rubric must not encode the tree, or arm B would win by construction.
+- **Reference style, decided 2026-11-24** (retrospective 2026-11-24): each reference states
+    1. the main claim first;
+    2. the one number that supports it;
+    3. the case's misleading reading and data limits, as negations the judge can score against
+       ("not LOC-001 recovering", "the data doesn't show why").
+
+    Incidental detail (exact times, secondary counts, label names, decompositions) goes in the
+    case's `notes`, which the judge doesn't see. Keep a detail when correct answers commonly state
+    the same fact another way (daily against period, per charger against network), or the judge
+    reads the other form as a contradiction. Rejudging the 104 pilot answers showed the style
+    leaves B − A unchanged (−0.08 long, −0.09 short) and keeps the traps; it raises Completeness
+    toward its ceiling (35 of 104 trials at 0.9 or above, against 9), which is accepted.
+
 - A wrong diagnosis is caught because it contradicts a required claim, so each reference
   states the facts that rule out the likely wrong diagnoses. In q018, "each charger's own
   success rate stayed the same" contradicts any answer that says CH-002 got worse.
@@ -315,9 +335,12 @@ context, raw records, and pinned versions.
 
 ## Open decisions
 
-1. **Primary endpoint:** Correctness on root cause cases. Still open: the minimum
-   meaningful improvement and the guardrail limits.
-2. **Case generation rule:** which metrics, periods, and minimum change size.
+1. **Primary endpoint:** Correctness on root cause cases. **Minimum meaningful effect: 0.10**
+   on the 0–1 scale, two-sided (decided 2026-11-24); the design is 32 cases × 3 trials per arm
+   (Phase 3). Still open: the guardrail limits.
+2. **Case generation rule:** which metrics, periods, and minimum change size. Decided: references
+   follow the style in Phase 4 (main claim, one supporting number, misleading reading and data
+   limits as negations; 2026-11-24).
 3. **Canonical dataset location and provenance format:** kept in the fork while the study is designed, then copied to the demo; provenance in the JSONL rows or a datasheet.
 4. **Correctness and Completeness overlap (found 2026-11-06).** In the first run with
    repetitions (`evals_results_20261106_222427.json`, q018, arm B), repetition 2 stated
