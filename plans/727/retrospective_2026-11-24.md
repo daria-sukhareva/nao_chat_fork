@@ -3,9 +3,9 @@
 **Date:** 2026-11-24
 **Scope:** the 13 dev references (q019–q031) shortened to a main claim, a supporting number and the
 traps; the pilot's A, B and D answers rejudged against them.
-**Status:** references changed in `golden_dataset.jsonl`, not yet committed. The rejudge is running
-on copies of the pilot results in `demo/chat-bi/tests/outputs/short_refs_20261124/`; no results
-yet.
+**Status:** references changed in `golden_dataset.jsonl`, not yet committed. All 104 pilot answers
+rejudged against the short references (`demo/chat-bi/tests/outputs/short_refs_20261124/`, $1.36);
+results below.
 
 This follows the [2026-11-23 retrospective](retrospective_2026-11-23.md).
 
@@ -96,8 +96,77 @@ One phrasing changed rather than shrank: q019's "against 31 of 31 on its other d
   (q020, q027), "too few to say anything about churn" (q021), "the data can't tie them to a driver"
   (q029).
 
+## Results: long against short
+
+Each of the 104 answers judged once against the short reference, compared with its original
+judgment against the long one. Same answers, same judge, same rubric; only the reference changed.
+
+| Correctness         | long  | short |
+| ------------------- | ----- | ----- |
+| A mean              | 0.63  | 0.65  |
+| B mean              | 0.54  | 0.57  |
+| D mean              | 0.42  | 0.50  |
+| B − A (13 cases)    | −0.08 | −0.09 |
+| SD of B − A by case | 0.19  | 0.12  |
+| SE of B − A         | 0.054 | 0.033 |
+| D − A               | −0.20 | −0.16 |
+| Within-case SD, A+B | 0.21  | 0.25  |
+
+| Completeness           | long  | short |
+| ---------------------- | ----- | ----- |
+| A mean                 | 0.48  | 0.64  |
+| B mean                 | 0.49  | 0.62  |
+| D mean                 | 0.29  | 0.43  |
+| B − A                  | +0.01 | −0.02 |
+| Trials at 0.9 or above | 9     | 35    |
+
+- **Correctness barely moved, and B against A didn't change.** Means rose by 0.02 to 0.03 on A and
+  B. B − A stayed at about −0.08. The spread of the per-case difference fell from 0.19 to 0.12, so
+  its standard error fell from 0.054 to 0.033, while the trial-to-trial spread within a case rose
+  from 0.21 to 0.25. On 13 cases neither is firm; the sizing isn't redone on it.
+- **D gained most (+0.08), and D − A shrank from −0.20 to −0.16.** D's answers are terser, and the
+  short references stopped penalising them for details they got differently. The positive control
+  is slightly weaker under short references.
+- **The traps still work.** q023's "12 ports" still scores 0.2 to 0.3 (A t1 and t2, both D trials):
+  the judge quotes "CH-002 and its 2 ports were all that was commissioned" against it. q027 A t3's
+  "only 2 of 8 connectors were active" still scores 0.1 against "not because of a reliability
+  problem". q028 B t2 and the q031 "recovered" verdicts stay low.
+- **"The data doesn't show why" now bites on q027 B.** All three B trials asserted a cause (an
+  opening surge, then a trough) and fell from 0.6–0.7 to 0.5–0.6. The old reference had the same
+  phrase; in a short one it is more prominent. That is the intended penalty: a cause the data
+  doesn't support, stated as found.
+- **Cutting a detail created a new misread on q023 B.** All three B trials fell (0.7, 0.7, 0.5 to
+  0.4, 0.5, 0.4). They gave daily figures (Oct 15 at 33–50%, 0% on Oct 16–19) and a baseline over
+  Oct 8–14 at about 100%, and the judge read each as contradicting the period figures (12.38% over
+  Oct 15–19, 98.64% over Oct 1–14). The long reference had "uptime was 0% on each day from Oct 16
+  to Oct 19", which told the judge the daily and period figures agree. Removing it made correct
+  answers look wrong.
+- **The q030 B misread survived.** B's answers say anonymous drivers who charged successfully were 0,
+  which is true; the judge still reads it as contradicting "anonymous visits rose from 10 to 33". The
+  scores rose (0.3, 0.3, 0.4 to 0.5, 0.5, 0.4), but the misread is the same.
+- **q019 D t2 stayed low (0.3 to 0.4), and rightly.** The short reference no longer names the labels,
+  but that trial called the cause "a backend/OCPP stop-reason issue", which contradicts "a fault on
+  the charger". The old 0.3 wasn't only a label mismatch.
+- **Completeness inflated.** 35 of 104 trials score 0.9 or above, against 9. With fewer points to
+  cover, Completeness stops separating answers, and B − A on it is about zero either way.
+
+**Reading.** Short references don't move the primary comparison, keep the traps, and may make the
+per-case difference less noisy. They cost Completeness most of its range, and they create misreads
+where a removed detail was what reconciled a correct answer stated at a different grain. The rule that follows: keep a detail when correct answers
+commonly state the same fact another way (daily against period, per charger against network),
+because without it the judge reads the other form as a contradiction.
+
+**Decisions.** q023's short reference stays as it is, without the daily figure. Completeness stays
+as it is under short references, ceiling and all.
+
+**Cost note.** The first rejudge attempt judged all 104 answers and saved none: it read the copies
+through `/kwwhat`, which is mounted read-only in the container, and `rejudge` writes its output next
+to the input file. That spent about $1.40, not in the cost ledger, which is written after the save.
+The rerun used `/app/kwwhat/tests/outputs/...`, the same host folder mounted writable. Total for this
+test: about $2.80.
+
 ## Still open
 
-- The rejudge results and the long against short comparison.
+- `rejudge` could check that it can write its output folder before judging.
 - The blind rating, which picks the reference style.
 - Rebuild each arm before the next eval run: the arms carry the dataset, and its hash changed.
