@@ -339,6 +339,7 @@ finds the rate held. On 2026-11-25 all 78 checks pass, so no case is dropped.
 
 - The rubric gap: decided 2026-11-25, a `facts` field the Correctness judge checks claims against
   (rubric `5044f3e626cf`), validated on a second blind sheet.
-- Completeness's arm bias: decide how the guardrail is reported, or fixed.
+- Completeness's arm bias: decided 2026-11-25, the rubric stays; Completeness is reported as a
+  guardrail with the measured bias.
 - Re-rate the sheet from about Dec 8, reshuffled, for intra-rater reliability.
 - Rebuild each arm before the next eval run: the arms carry the dataset, and its hash changed.

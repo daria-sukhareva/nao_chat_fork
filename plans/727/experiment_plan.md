@@ -21,7 +21,8 @@ Tags: `Confirmed` (read from an artifact), `Assumed` (safe default, override it)
 - **Agent model:** `anthropic:claude-sonnet-4-6`, pinned for the whole study.
 - **Judge model:** the same model as the agent. Self-preference bias is a stated limitation
   in the whitepaper (see threats).
-- **Budget:** $200 for agent and judge calls across the whole study, pilot included.
+- **Budget:** $300 for agent and judge calls across the whole study, pilot included (raised from
+  $200 on 2026-11-25; the cost ledger showed $108.09 spent by then).
 - **Rule text and tree path:** approved as drafted below.
 - **Rule compliance is out of scope (2026-11-07).** Whether answers follow `RULES.md`
   (terminology, percentages and pp, the glance table, fully qualified tables) is a different
@@ -116,15 +117,15 @@ The tree, both skills, the rule text, and the degradations are frozen and hashed
 
 ## Metric roles
 
-| Metric                        | Role                                          | Used for                                                                                                          |
-| ----------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Correctness, root cause cases | Primary (same generic rubric as lookup cases) | Decides C2, once its rubric and references pass validation                                                        |
-| Completeness                  | Guardrail                                     | B must not lose coverage of what the reference requires; the non-inferiority margin is set in the preregistration |
-| Correctness, lookup cases     | Guardrail                                     | The treatment must not break what already works                                                                   |
-| Faithfulness                  | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the answer go beyond or against what the agent saw?                                  |
-| ContextualRelevancy           | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the agent pull the wrong or unfocused evidence?                                      |
-| AnswerRelevancy               | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the answer address a different question?                                             |
-| Cost, latency, error rate     | Guardrails                                    | Limits are set in the preregistration                                                                             |
+| Metric                        | Role                                          | Used for                                                                                                                                                       |
+| ----------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Correctness, root cause cases | Primary (same generic rubric as lookup cases) | Decides C2, once its rubric and references pass validation                                                                                                     |
+| Completeness                  | Guardrail                                     | B must not lose coverage of what the reference requires; the non-inferiority margin is set in the preregistration. Reported with its measured arm bias (below) |
+| Correctness, lookup cases     | Guardrail                                     | The treatment must not break what already works                                                                                                                |
+| Faithfulness                  | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the answer go beyond or against what the agent saw?                                                                               |
+| ContextualRelevancy           | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the agent pull the wrong or unfocused evidence?                                                                                   |
+| AnswerRelevancy               | Troubleshooting; exploratory proxy under H3   | When Correctness is low: did the answer address a different question?                                                                                          |
+| Cost, latency, error rate     | Guardrails                                    | Limits are set in the preregistration                                                                                                                          |
 
 ---
 
@@ -236,7 +237,7 @@ observable signals and gaming paths.
   the confirmatory set needs about **32 cases × 3 trials** per arm. Trial noise is about 80% of
   the per-case difference variance and judge noise about 0.02, so each answer is judged once.
   Every block, A, B, N and D, is 32 × 3, because N and D are compared with A just as B is: 384
-  trials, about $81 of the $200 budget. Each block runs with `--max-cost` of about $25. The
+  trials, about $81 of the $300 budget. Each block runs with `--max-cost` of about $25. The
   estimate rests on 13 dev cases, so it is rough.
 
 **Exit:** a frozen, hashed confirmatory set, a datasheet, and a sizing rationale with
@@ -311,6 +312,10 @@ its assumptions.
   reference alone, and confirmatory mode doesn't require them. Facts name a thing in each form a
   correct answer may use where that makes sense, such as an error code with its `failure_reason`
   label; the rubric is not changed for this.
+- **Completeness keeps its rubric (2026-11-25).** In the first blind rating the judge scored B's
+  coverage about 0.2 higher than A's relative to the author, under both reference styles. The
+  rubric is not changed; Completeness stays a guardrail and is reported with that bias, so a
+  non-inferiority result for B is weaker than it looks.
 
 **Exit:** a fitness verdict per scorer. A scorer that fails can only appear as exploratory.
 
