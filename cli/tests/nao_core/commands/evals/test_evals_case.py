@@ -62,6 +62,19 @@ def test_expected_output_is_required_only_for_correctness(tmp_path):
         load_cases(path, require_expected_output=True)
 
 
+def test_facts_are_optional_and_must_be_non_empty_strings(tmp_path):
+    path = write_dataset(
+        tmp_path,
+        row(id="q001", input="Uptime?", expected_output="99.71%.", facts=["CH-002 has 2 ports."]),
+        row(id="q002", input="Ports?", expected_output="4 ports."),
+    )
+    assert [case.facts for case in load_cases(path, require_expected_output=True)] == [["CH-002 has 2 ports."], []]
+
+    bad = write_dataset(tmp_path, row(id="q003", input="Uptime?", expected_output="x", facts=["ok", ""]))
+    with pytest.raises(DatasetValidationError, match="field 'facts' must be a list of non-empty strings"):
+        load_cases(bad, require_expected_output=True)
+
+
 def test_select_cases_filters_by_id():
     cases = [EvalCase(id="q001", input="a"), EvalCase(id="q002", input="b")]
 

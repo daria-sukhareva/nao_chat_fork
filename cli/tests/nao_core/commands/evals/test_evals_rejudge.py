@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from nao_core.commands.evals.rejudge import rejudge
+from nao_core.commands.evals.runner import NO_FACTS
 
 ANSWERED = {
     "id": "q018",
@@ -97,8 +98,15 @@ def test_saved_answer_and_context_are_what_the_judge_sees(tmp_path, built_metric
     assert test_case.actual_output == "CH-002 was down."
     assert test_case.expected_output == "Required: CH-002 outage."
     assert test_case.retrieval_context == ["[SQL result]\nColumns: visits"]
+    assert test_case.context == [NO_FACTS]
     assert options.suites == ["correctness"]
     assert options.thresholds["correctness"] == 0.6
+
+
+def test_saved_facts_reach_the_judge_as_context(tmp_path, built_metrics):
+    rejudge(write_results(tmp_path, {**ANSWERED, "facts": ["CH-002 was offline."]}), judge_repeats=1)
+
+    assert built_metrics[0][2].judged_test_cases[0].context == ["CH-002 was offline."]
 
 
 def test_judge_defaults_to_the_original_judge_unless_overridden(tmp_path, built_metrics):

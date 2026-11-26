@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 EVALS_FOLDER = "tests/evals"
@@ -13,6 +13,7 @@ class EvalCase:
     id: str
     input: str
     expected_output: str | None = None
+    facts: list[str] = field(default_factory=list)
 
 
 class DatasetValidationError(Exception):
@@ -74,11 +75,24 @@ def _parse_row(line: str, require_expected_output: bool) -> tuple[list[str], Eva
         *_validate_string_field(row, "id", required=True),
         *_validate_string_field(row, "input", required=True),
         *_validate_string_field(row, "expected_output", required=require_expected_output),
+        *_validate_facts(row),
     ]
     if errors:
         return errors, None
 
-    return [], EvalCase(id=row["id"], input=row["input"], expected_output=row.get("expected_output"))
+    return [], EvalCase(
+        id=row["id"], input=row["input"], expected_output=row.get("expected_output"), facts=row.get("facts") or []
+    )
+
+
+def _validate_facts(row: dict) -> list[str]:
+    """Facts are optional verified statements the Correctness judge checks claims against, beyond the reference."""
+    facts = row.get("facts")
+    if facts is None:
+        return []
+    if not isinstance(facts, list) or not all(isinstance(fact, str) and fact.strip() for fact in facts):
+        return ["field 'facts' must be a list of non-empty strings"]
+    return []
 
 
 def _validate_string_field(row: dict, field: str, required: bool) -> list[str]:

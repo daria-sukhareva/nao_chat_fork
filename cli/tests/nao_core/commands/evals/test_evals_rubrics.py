@@ -22,10 +22,14 @@ class StubJudge(DeepEvalBaseLLM):
         return "stub"
 
 
-def test_correctness_compares_only_actual_and_expected_output():
+def test_correctness_checks_the_answer_against_the_reference_and_the_case_facts():
     metric = CORRECTNESS_RUBRIC.build_metric(StubJudge(), threshold=0.7)
 
-    assert metric.evaluation_params == [SingleTurnParams.ACTUAL_OUTPUT, SingleTurnParams.EXPECTED_OUTPUT]
+    assert metric.evaluation_params == [
+        SingleTurnParams.ACTUAL_OUTPUT,
+        SingleTurnParams.EXPECTED_OUTPUT,
+        SingleTurnParams.CONTEXT,
+    ]
     assert metric.evaluation_steps == CORRECTNESS_RUBRIC.evaluation_steps
     assert metric.threshold == 0.7
 

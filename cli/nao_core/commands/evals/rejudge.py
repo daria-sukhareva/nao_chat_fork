@@ -238,6 +238,7 @@ def _saved_answer(record: dict[str, Any]) -> EvalResult:
         id=record["id"],
         input=record["input"],
         expected_output=record.get("expected_output"),
+        facts=record.get("facts") or [],
         actual_output=record.get("actual_output"),
         retrieval_context=record.get("retrieval_context") or [],
     )

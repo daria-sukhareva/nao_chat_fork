@@ -315,10 +315,30 @@ the reference against B's own definition. Reworded in the dataset: "Counting eac
 a driver would show more drivers, but that is a shift from identified to anonymous visits, not more
 people." The sheet and key keep the wording that was rated against.
 
+## Where confirmatory facts come from (2026-11-26)
+
+**Decided: the cause comes from the scenario, every number from the warehouse.** The generator
+knows why each change happened; the warehouse only shows that it happened. But the agent queries the
+warehouse, so a correct answer quotes what is there, and facts taken from generator settings would
+penalise it:
+
+- Settings are not observed values. LOC-101 is set to 8 arrivals per port per day, but a port serves
+  one driver at a time and loses arrivals while busy, so the warehouse tops out near 40 visits a day.
+  A planted fault probability is a dice setting, not a rate anyone can see.
+- The generator doesn't know its side effects. Retries add attempts, and LOC-108 moved 24% between
+  weeks with no episode planted. Facts built from settings would miss these or claim nothing else
+  changed.
+
+So each confirmatory case takes its cause and scope (which charger, what kind of failure, which days)
+from `confirmatory_scenario.md`, and every number from SQL on the built warehouse. A case is used only
+if `check_seed.py` confirms its episode, so a dbt bug that changes a number fails the check instead of
+reaching the facts. Controls take "nothing changed" from the scenario and are used only if the check
+finds the rate held. On 2026-11-25 all 78 checks pass, so no case is dropped.
+
 ## Still open
 
-- The rubric gap: give the judge what it needs to catch false claims the reference doesn't cover
-  (proposal pending).
+- The rubric gap: decided 2026-11-25, a `facts` field the Correctness judge checks claims against
+  (rubric `5044f3e626cf`), validated on a second blind sheet.
 - Completeness's arm bias: decide how the guardrail is reported, or fixed.
 - Re-rate the sheet from about Dec 8, reshuffled, for intra-rater reliability.
 - Rebuild each arm before the next eval run: the arms carry the dataset, and its hash changed.

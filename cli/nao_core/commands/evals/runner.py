@@ -32,6 +32,7 @@ from .tool_calls import build_retrieval_context, list_files_read
 
 BACKEND_URL = os.getenv("NAO_EVAL_URL", os.getenv("BACKEND_URL", "http://localhost:5005"))
 OUTPUTS_FOLDER = "tests/outputs"
+NO_FACTS = "No facts are recorded for this case beyond the expected output."
 
 os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "YES")
 
@@ -62,6 +63,7 @@ class EvalResult:
     id: str
     input: str
     expected_output: str | None
+    facts: list[str] = field(default_factory=list)
     run_id: str | None = None
     experiment_id: str | None = None
     arm: str | None = None
@@ -315,6 +317,7 @@ def run_trial(trial: Trial, client: EvalsClient, options: EvalOptions, labels: R
         id=trial.case.id,
         input=trial.case.input,
         expected_output=trial.case.expected_output,
+        facts=trial.case.facts,
         run_id=labels.run_id,
         experiment_id=labels.experiment_id,
         arm=labels.arm,
@@ -326,7 +329,7 @@ def run_trial(trial: Trial, client: EvalsClient, options: EvalOptions, labels: R
 
 
 def run_case(case: EvalCase, client: EvalsClient, options: EvalOptions, result: EvalResult | None = None) -> EvalResult:
-    result = result or EvalResult(id=case.id, input=case.input, expected_output=case.expected_output)
+    result = result or EvalResult(id=case.id, input=case.input, expected_output=case.expected_output, facts=case.facts)
     repetition = f" [dim](repetition {result.repetition})[/dim]" if result.repetition > 1 else ""
     UI.print(f"[bold]Running:[/bold] {case.id}{repetition} [dim]{case.input[:80]}[/dim]")
     result.started_at = datetime.now(timezone.utc).isoformat()
@@ -591,6 +594,7 @@ def _build_test_case(result: EvalResult) -> Any:
         input=result.input,
         actual_output=result.actual_output or "",
         expected_output=result.expected_output,
+        context=result.facts or [NO_FACTS],
         retrieval_context=result.retrieval_context or None,  # type: ignore[arg-type]
     )
 
