@@ -250,7 +250,10 @@ its assumptions.
   contradict the reference aren't penalized, because the judge can't see tool output.
 - Write each reference as a short natural-language answer, derived from the data and never
   from the tree. The rubric must not encode the tree, or arm B would win by construction.
-- **Reference style, decided 2026-11-24** (retrospective 2026-11-24): each reference states
+- **Reference style, decided 2026-11-24, superseded 2026-11-27** (see "Judge for the confirmatory
+  run" in Phase 4). References are back to the full verified account: the cause first, the
+  misleading reading named, the data limits stated, in the asked period. The short style below
+  is kept as a record. It stated
     1. the main claim first;
     2. the one number that supports it;
     3. the case's misleading reading and data limits, as negations the judge can score against
@@ -311,11 +314,42 @@ its assumptions.
   rated. Facts are optional: a case without them is judged against its
   reference alone, and confirmatory mode doesn't require them. Facts name a thing in each form a
   correct answer may use where that makes sense, such as an error code with its `failure_reason`
-  label; the rubric is not changed for this.
+  label; the rubric is not changed for this. **Withdrawn 2026-11-27:** on the second blind sheet
+  this judge did worst of the three (see below). The `facts` field stays in the code but cases
+  don't carry it, and the rubric no longer reads it.
 - **Completeness keeps its rubric (2026-11-25).** In the first blind rating the judge scored B's
   coverage about 0.2 higher than A's relative to the author, under both reference styles. The
   rubric is not changed; Completeness stays a guardrail and is reported with that bias, so a
   non-inferiority result for B is weaker than it looks.
+
+- **Judge for the confirmatory run (2026-11-27; retrospective 2026-11-27).** Long references with rubric `fbda3f9f0f46`,
+  the judge the dev pilot ran with. The author rated two blind sheets of 20 answers; Correctness
+  against the author:
+
+    | Judge                      | Same band, sheet 2 | Same band, both | Rank correlation, sheet 2 | Rank correlation, both | Arm bias, both |
+    | -------------------------- | ------------------ | --------------- | ------------------------- | ---------------------- | -------------- |
+    | Long references            | 7                  | 14 of 40        | 0.70                      | 0.62                   | −0.10          |
+    | Short references           | 6                  | 13 of 40        | 0.42                      | 0.41                   | −0.07          |
+    | Short references and facts | 4                  | 10 of 40        | 0.57                      | 0.52                   | −0.09          |
+
+    The long-reference judge ranks answers most like the author on both sheets. The facts judge
+    never scored 0.9 or above on sheet 2, against the author's 12, and its reasons penalise claims
+    the facts don't mention, omissions, and contradictions that aren't there. No judge reaches the
+    same-band bar (70%): the author's scores sit at the ends of the scale and the judge's in the
+    middle. Arm bias is negative for every judge, so the judge scores B's answers lower than the
+    author does relative to A's, which works against the hypothesis.
+
+- **Fit is checked on a third blind sheet (2026-11-27).** Both sheets shaped the choice above,
+  so neither can test it. The same-band bar is replaced, because the study compares arms on the
+  same cases and needs the judge to order answers as the author does, not to match exact
+  scores. Fixed before the sheet is drawn:
+    - 30 answers from the confirmatory run's root-cause trials, 15 from A and 15 from B, drawn
+      with a fixed seed, with arm labels and tool traces removed, rated on the same scales
+      before the judge's scores are opened.
+    - Correctness is fit as the primary metric if its rank correlation with the author is at
+      least 0.5 and its arm bias (mean error on B answers minus mean error on A answers) is
+      within ±0.1. Otherwise C2 is reported as exploratory.
+    - Completeness is reported with its measured arm bias, as a guardrail, with no pass bar.
 
 **Exit:** a fitness verdict per scorer. A scorer that fails can only appear as exploratory.
 
@@ -356,8 +390,8 @@ context, raw records, and pinned versions.
    on the 0–1 scale, two-sided (decided 2026-11-24); the design is 32 cases × 3 trials per arm
    (Phase 3). Still open: the guardrail limits.
 2. **Case generation rule:** which metrics, periods, and minimum change size. Decided: references
-   follow the style in Phase 4 (main claim, one supporting number, misleading reading and data
-   limits as negations; 2026-11-24).
+   are the full verified account (Phase 4, "Judge for the confirmatory run", 2026-11-27; the short
+   style of 2026-11-24 is superseded).
 3. **Canonical dataset location and provenance format:** kept in the fork while the study is designed, then copied to the demo; provenance in the JSONL rows or a datasheet.
 4. **Correctness and Completeness overlap (found 2026-11-06).** In the first run with
    repetitions (`evals_results_20261106_222427.json`, q018, arm B), repetition 2 stated

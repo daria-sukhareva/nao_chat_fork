@@ -26,8 +26,8 @@ Decided 2026-11-25 (`experiment_plan.md`, open decision 2):
   primary endpoint.
 - **Questions:** one template per case, drawn at random (seed 20261125) from the set for its
   comparison type (below).
-- **References and facts:** computed by SQL after the build, to the recipe below; short reference
-  style (main claim, one number, the misleading reading and data limits as negations).
+- **References:** computed by SQL after the build, to the recipe below; the full verified account
+  (2026-11-27; the short style and facts of 2026-11-25 are withdrawn).
 
 One episode per root-cause case, each on its own location or charger and period, so the cases are
 independent. No two episodes share a location in overlapping baseline and episode periods.
@@ -138,17 +138,18 @@ One is drawn per case. Dates are written out, with the year.
 - **No change and false premise:** the period-change templates, with the direction the premise
   states.
 
-## References and facts
+## References
 
 Computed by SQL from the built marts, to one recipe per case type, after the checks below pass.
+Cases carry no `facts` (withdrawn 2026-11-27).
 
-- **Short reference:** the verdict and cause; the metric in B and P; the misleading reading as a
-  negation; the data limits that apply (partial period, anonymous visits can't be tied to drivers,
-  drivers who came while a charger was offline left no record).
-- **Facts:** the topology of the case's locations over B and P (chargers, ports, commissioning,
-  outages); the metric at period and daily grain, and per charger; the data range; how anonymous
-  visits are recorded; error codes and `failure_reason` labels together wherever failures are
-  counted.
+Each reference is the full verified account, in the style of the dev references: the verdict and
+cause first; the metric in B and P, with the counts behind it; the misleading reading named and
+ruled out with the numbers that rule it out; the data limits that apply (partial period, anonymous
+visits can't be tied to drivers, drivers who came while a charger was offline left no record); the
+topology that matters to the case (chargers, ports, commissioning, outages); error codes and
+`failure_reason` labels together wherever failures are counted. The cause and its scope come from
+this scenario; every number comes from the warehouse.
 
 ## Checks after the build
 
@@ -223,4 +224,4 @@ W8 by chance. Controls are therefore checked against the built data, not assumed
 - Partial-period controls use W9 only.
 - Commissioned ports added to the metrics.
 - Facts are optional: a case without them is judged against its reference alone, and confirmatory
-  mode doesn't require them.
+  mode doesn't require them. Superseded 2026-11-27: cases carry no facts.

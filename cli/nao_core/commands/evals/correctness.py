@@ -4,15 +4,14 @@ CORRECTNESS_RUBRIC = GEvalRubric(
     name="Correctness",
     evaluation_steps=[
         "List the factual claims the actual output makes: values, entities, dates, relationships, and causes.",
-        "Compare each claim with the expected output and with the context, which lists verified facts about the "
-        "case, and penalize every claim that contradicts either.",
-        "The context is not a list of required elements: a fact in it that the output leaves out costs nothing.",
+        "Compare each claim with the expected output for factual accuracy, and penalize every claim that "
+        "contradicts it.",
         "Penalize details that are accurate on their own but misleading in context.",
         "Do not penalize omissions. A required element that is missing is judged by Completeness, not here.",
         "Do not penalize wording. A fact or mechanism stated in different terms from the expected output is correct.",
-        "Do not penalize claims that neither the expected output nor the context supports or contradicts.",
+        "Do not penalize claims the expected output neither supports nor contradicts.",
     ],
-    evaluation_params=["actual_output", "expected_output", "context"],
+    evaluation_params=["actual_output", "expected_output"],
     score_bands=[
         ScoreBand(
             0,
@@ -32,6 +31,6 @@ CORRECTNESS_RUBRIC = GEvalRubric(
             "The main conclusion and central claims agree with the expected output; one or two minor claims "
             "are wrong or misleading.",
         ),
-        ScoreBand(9, 10, "No claim contradicts the expected output or the context, and none is misleading."),
+        ScoreBand(9, 10, "No claim contradicts the expected output, and none is misleading."),
     ],
 )

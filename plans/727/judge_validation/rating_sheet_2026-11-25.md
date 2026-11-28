@@ -39,7 +39,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 0.9               | 0.5                |      |
 
 ---
 
@@ -108,7 +108,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 0                 | 0.2                |      |
 
 ---
 
@@ -172,7 +172,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 0.8               | 0.8                |      |
 
 ---
 
@@ -230,7 +230,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -252,7 +252,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -298,9 +298,9 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 >
 > **Conclusion:** The visit drop in the week of Oct 27 reflects the location operating with only 1 connector per charger (2 total) during its first two weeks — Port 2 and its connectors were not yet commissioned. The recovery on Nov 3 coincides exactly with Ports 2 (and additional connectors) going live. The Oct 27 week was not anomalous; it was simply the constrained baseline before the full hardware became available.
 
-| Correctness (0–1) | Completeness (0–1) | Note |
-| ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| Correctness (0–1) | Completeness (0–1) | Note                                                                                                |
+| ----------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| 0                 | 0                  | I think this one failed because synthetic data was low queslity and suggested other interpretations |
 
 ---
 
@@ -355,7 +355,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -380,7 +380,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 0.8               | 0.5                |      |
 
 ---
 
@@ -436,7 +436,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -473,7 +473,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 0                 | 0                  |      |
 
 ---
 
@@ -543,9 +543,9 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 >
 > The network didn't get better — it shed a broken charger and replaced it with working ones. The underlying `ConnectorLockFailure` issue on CH-002 was never resolved; it was simply retired.
 
-| Correctness (0–1) | Completeness (0–1) | Note |
-| ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| Correctness (0–1) | Completeness (0–1) | Note                                                                             |
+| ----------------- | ------------------ | -------------------------------------------------------------------------------- |
+| 0.7               | 0.9                | nothing was replace, just new commissioned. maybe replaced in a difference sense |
 
 ---
 
@@ -580,7 +580,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 0.8                |      |
 
 ---
 
@@ -620,7 +620,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -672,7 +672,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -720,7 +720,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -780,7 +780,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 0.2               | 0.3                |      |
 
 ---
 
@@ -808,7 +808,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 0.9                |      |
 
 ---
 
@@ -861,7 +861,7 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
 
@@ -922,9 +922,9 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 >
 > **Confidence: High.** The commissioning timestamps, failure codes, and visit counts all tell a consistent story with no unexplained residual.
 
-| Correctness (0–1) | Completeness (0–1) | Note |
-| ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| Correctness (0–1) | Completeness (0–1) | Note                                                                                   |
+| ----------------- | ------------------ | -------------------------------------------------------------------------------------- |
+| 0                 | 0                  | chargers are nit generating activity, there was no transition and nothing got replaced |
 
 ---
 
@@ -984,6 +984,6 @@ Rate the whole answer, not only its conclusion. Where the answer gives a count, 
 
 | Correctness (0–1) | Completeness (0–1) | Note |
 | ----------------- | ------------------ | ---- |
-|                   |                    |      |
+| 1                 | 1                  |      |
 
 ---
