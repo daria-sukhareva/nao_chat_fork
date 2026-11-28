@@ -1,0 +1,502 @@
+[
+	{
+		"item": "R01",
+		"id": "q027",
+		"arm": "B",
+		"file": "evals_results_20261123_154002.json",
+		"answer_id": "ac906e5c-611e-439c-8264-d152f95f48a4",
+		"repetition": 1,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.9,
+			"Completeness": 0.9
+		},
+		"reasons_long": {
+			"Correctness": "The actual output's main conclusion matches the expected output precisely: the drop is demand-side, not a reliability problem, driven by fewer drivers returning. Key figures align well — visits fell from 38 to 12, active drivers from 20 to 8, success rate held at 100%, 12 of 20 drivers didn't return, and visits per driver declined from ~1.9 to ~1.5. The actual output correctly notes uptime was negligible/minimal, consistent with the expected output's '99.6%+' claim. One minor issue: the actual output frames the uptime as 'negligible downtime' rather than quantifying it as above 99.6%, but this is not contradictory. The actual output adds a 'new-site opening surge' hypothesis not in the expected output, but this is neither supported nor contradicted by the expected output, so it is not penalized. The claim that 'fewer drivers account for about 80% of the drop' is in the expected output but absent from the actual output — however, omissions are not penalized here. No claims contradict the expected output, and none are misleading.",
+			"Completeness": "The actual output covers all key elements of the expected output: the visit drop from 38 to 12, the 100% success rate in both weeks, negligible downtime (uptime healthy), the driver count falling from 20 to 8, visits per driver declining from ~1.9 to ~1.5, and 12 of 20 drivers not returning. It correctly identifies the cause as demand-side (fewer drivers, not reliability). The actual output goes further with a 'new-site opening surge' hypothesis and additional framing, but this is extra detail rather than an omission. The only minor gap is that the expected output explicitly states 'fewer drivers account for about 80% of the drop, and fewer visits per driver for the rest' as a quantified decomposition — the actual output implies this but does not state the 80/20 split explicitly. Overall coverage is strong across all required elements."
+		},
+		"judge_short": {
+			"Correctness": 0.8,
+			"Completeness": 1.0
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion matches the expected output: visits dropped due to fewer drivers, not a reliability problem. The actual output correctly identifies the fall from 38 to 12 visits, the drop in active drivers from 20 to 8, the 100% success rate in both weeks, and negligible downtime. One minor issue: the actual output states uptime was 'negligible' downtime with 'brief OFFLINE NoHeartbeat blips of 10–20 min/day,' which is consistent with the expected output's '>99.6% uptime' claim. The actual output goes further by offering a causal explanation ('new-site opening surge' / 'classic new-site demand pattern'), whereas the expected output explicitly states 'the data doesn't show why.' This added causal claim is not directly contradicted by the expected output but goes beyond what the data supports per the expected output. However, this is framed as a hypothesis and interpretation rather than a hard factual claim, and the core facts all align. This is a minor overreach rather than a contradiction.",
+			"Completeness": "The actual output fully covers all required elements of the expected output: it confirms visits dropped from 38 to 12, that success rate remained at 100% (consistent with 'every visit succeeded'), that uptime/downtime was negligible (consistent with 'above 99.6%'), and that active drivers fell from 20 to 8. It also correctly identifies the cause as a demand-side drop (fewer drivers came, not a reliability problem). The actual output goes further with additional analysis (new-site opening surge hypothesis, driver retention breakdown), but this is additional correct detail that should not be penalized per the evaluation criteria. All core elements of the expected output are addressed clearly and accurately."
+		}
+	},
+	{
+		"item": "R02",
+		"id": "q028",
+		"arm": "A",
+		"file": "evals_results_20261123_163629.json",
+		"answer_id": "7400b0ae-4b7a-4586-86e5-ee064a0354af",
+		"repetition": 1,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.4,
+			"Completeness": 0.3
+		},
+		"reasons_long": {
+			"Correctness": "The actual output's main conclusion agrees that the two weeks are not comparable because they cover different sites (LOC-001 vs LOC-002), which aligns with the expected output. However, several central claims contradict or mislead relative to the expected output. The actual output states CH-002 'had no activity' in Oct 20 but frames this as uncertain ('suggesting'), whereas the expected output is clear that CH-002 stayed offline and LOC-001 had no usable ports after Oct 14. More significantly, the actual output frames the Oct 20 data as 'demand recovery' with quality surging, implying a positive trend narrative, while the expected output explicitly states the Oct 20 week shows 'new demand at a new location, not LOC-001's demand coming back or falling' — meaning no recovery conclusion can be drawn at all. The actual output also does not mention that none of LOC-001's 10 known drivers charged at LOC-002, and that LOC-002's 20 drivers were all new — a key fact supporting the expected output's conclusion that these are entirely separate demand pools. The actual output's framing of 'demand quality recovered dramatically' is misleading in context, as the expected output says the data cannot show recovery at all. These are central interpretive errors, not minor ones.",
+			"Completeness": "The actual output answers 'yes, demand recovered' with detailed metrics and analysis, but the expected output's core conclusion is that the data *cannot* show recovery because the two weeks cover entirely different sites with no overlapping drivers or chargers. The actual output does acknowledge the site topology change and notes it's 'not an apples-to-apples comparison,' but it still concludes 'Yes, charging demand recovered' rather than stating the question cannot be answered as posed. The expected output emphasizes that LOC-001 had no usable ports after Oct 15 (CH-001 decommissioned, CH-002 offline), that none of LOC-001's known drivers appeared at LOC-002, and that Oct 20 represents entirely new demand at a new location — not recovery. The actual output misses the driver overlap analysis (none of LOC-001's 10 drivers charged at LOC-002) and the key conclusion that this is new demand, not recovered demand. The fundamental answer diverges from the expected output's conclusion, which is the most critical required element."
+		},
+		"judge_short": {
+			"Correctness": 0.6,
+			"Completeness": 0.6
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion agrees with the expected output: the two weeks are not comparable because they cover different sites, and the Oct 20 data reflects a new location (LOC-002) rather than recovered demand at LOC-001. However, the actual output makes several claims that contradict or are misleading relative to the expected output. It states CH-001 was 'decommissioned Oct 15,' but the expected output says LOC-001 had no working charger after Oct 14 — a minor discrepancy. More significantly, the actual output claims CH-002 was 'present in both weeks' but had no Oct 20 activity, whereas the expected output implies LOC-001 broadly had no working charger after Oct 14, not just CH-001. The actual output also claims the Oct 20 drivers were not noted as 'all new,' though the expected output specifically mentions all Oct 20 drivers were new — this is an omission rather than a contradiction. The actual output's framing that 'demand quality recovered dramatically' is somewhat misleading given the expected output's point that the 38 visits represent entirely new demand at a new location, not recovery of any kind. The core conclusion aligns, but the framing of 'recovery' and some site/charger timeline details introduce minor inaccuracies or misleading context.",
+			"Completeness": "The actual output does address the core question and includes the key insight from the expected output — that the two weeks cover different sites (LOC-001 vs LOC-002), making a direct comparison invalid. It correctly notes that LOC-002 was new, that CH-001 was decommissioned, and that the 38 visits in Oct 20 represent new demand at a new location rather than recovery of LOC-001's demand. However, the actual output goes further and frames the answer as 'Yes, charging demand recovered' in its headline conclusion, which partially contradicts the expected output's stance that the data simply cannot show recovery because the sites are different. The expected output emphasizes that LOC-001 had no working charger after Oct 14 and left no record, making the comparison meaningless for assessing recovery — a nuance the actual output touches on but softens by still affirming 'recovery.' The core required element (different sites, not comparable) is covered, but the framing diverges from the expected output's more definitive 'the data can't show it' conclusion."
+		}
+	},
+	{
+		"item": "R03",
+		"id": "q024",
+		"arm": "A",
+		"file": "evals_results_20261123_162307.json",
+		"answer_id": "86305b89-60a8-4821-b856-c0762162a5cf",
+		"repetition": 2,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.7,
+			"Completeness": 0.6
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: the increase in successful visits after Oct 19 is due to CH-003 and CH-004 being commissioned at LOC-002 on Oct 20, while CH-001 and CH-002 were offline. The gap Oct 15–19 is correctly identified as having no active chargers. The 38 successful visits (19 per charger) and 100% success rate are correctly stated. However, the actual output makes one contradicting claim: it states CH-001 was decommissioned on Oct 15, but the expected output implies CH-001 was already decommissioned and CH-002 was simply offline (not necessarily decommissioned) during Oct 15–19. The actual output also claims CH-002 had 101 visits with 0% success rate before Oct 15, which the expected output does not contradict. The actual output does not mention that all 20 drivers were new, but omissions are not penalized. The claim about CH-002 being 'decommissioned' vs 'offline' is a minor discrepancy. The uptime figure of 99.69% mentioned in the expected output is absent but not penalized as an omission. Overall, the central claims align well with minor inaccuracies around CH-001's decommission date framing and CH-002's status.",
+			"Completeness": "The actual output correctly identifies the core reason: CH-001/CH-002 were decommissioned and CH-003/CH-004 were commissioned on Oct 20, explaining the jump in successful visits. It accurately notes zero visits Oct 15–19, the 100% success rate of CH-003 and CH-004, and 19 visits each. However, it omits several specific details required by the expected output: the 99.69% uptime figure for LOC-002 chargers, the fact that all 20 drivers were new, and the detail that every visit succeeded on the first attempt. The actual output also incorrectly frames Oct 15–19 as having 'zero visit rows' rather than clarifying that CH-002 was offline (not decommissioned) during that period — the expected output distinguishes CH-001 decommissioning from CH-002 being offline. These omissions represent partial coverage of the required elements."
+		},
+		"judge_short": {
+			"Correctness": 0.8,
+			"Completeness": 0.8
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion aligns well with the expected output: the increase in successful visits after Oct 19 is due to new supply (CH-003 and CH-004 at LOC-002), not a recovery of LOC-001. The gap Oct 15–19 having no successful visits is correctly identified. The claim that LOC-002 opened on Oct 20 with CH-003 and CH-004 matches. However, the actual output states CH-001 was decommissioned on Oct 15, implying LOC-001 had no chargers after that date, while the expected output says 'LOC-001 still had no working charger' after Oct 20 — suggesting CH-001 may still have been present but non-functional, or the framing differs slightly. The actual output also adds detail about CH-001 having 35 successful visits before Oct 15, and frames the explanation as a 'mix effect' / 'fleet composition change,' which is consistent with the expected output's point that this is new supply, not recovery. The claim about 38 successful visits in the week of Oct 20 (all at LOC-002) is consistent. One minor issue: the actual output says CH-001 was decommissioned Oct 15, but the expected output implies LOC-001 still had no working charger after Oct 20 (not necessarily that CH-001 was formally decommissioned). Overall, the central claims are accurate and aligned, with only minor framing differences.",
+			"Completeness": "The actual output covers the core required elements: LOC-002 opened on Oct 20 with CH-003 and CH-004, there were no successful visits Oct 15–19, and the increase is due to new supply rather than LOC-001 recovering. It correctly identifies the fleet composition change as the explanation. However, it does not explicitly state the count of 38 successful visits in the week of Oct 20 (it gives 19+19=38 implicitly via the table but never states '38 successful visits' as a summary figure). It also adds substantial extra detail (CH-002's 101 failures, success rate percentages, decommission timestamps) that goes beyond the expected output but is not penalized. The key required elements are largely present, though the '38 successful visits' figure is only derivable from the table rather than stated directly, and the framing closely matches the expected explanation."
+		}
+	},
+	{
+		"item": "R04",
+		"id": "q029",
+		"arm": "B",
+		"file": "evals_results_20261123_155129.json",
+		"answer_id": "9737b51b-1395-4e6a-a677-4c3f1e0feab4",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.7,
+			"Completeness": 0.6
+		},
+		"reasons_long": {
+			"Correctness": "The actual output's main conclusion agrees with the expected output: the success rate fell from 91.6% to 68.9%, driven by AUTH_REJECTED (expired tokens) and NO_TRANSACTION failures, spread across all chargers at both locations. Key metrics match exactly (143 vs 148 visits, 131 vs 102 successes, LOC-002 87.3%→66.7%, LOC-003 95.0%→71.6%). The AUTH_REJECTED analysis is accurate: 10 failures, all Expired id_tag_status, 0 in prior week. However, the actual output treats NO_TRANSACTION as a separate independent cause and speculates it may be 'authorization rejections on the OCPP 1.6 Authorize path' or 'drivers abandoning attempts,' whereas the expected output strongly implies expired tokens likely explain most of the NO_TRANSACTION failures too (since rejected authorization leaves no idTag). The actual output's framing of two 'independent problems' is somewhat misleading — the expected output suggests the expired tokens likely caused most of the 34 extra failures, including many NO_TRANSACTION ones. The actual output also does not mention that the 10 AUTH_REJECTED visits came from 7 specific drivers who had all succeeded the prior week, which is a detail the expected output emphasizes. The actual output also misses the DeAuthorized stop reason detail. These are minor-to-moderate omissions/misleading framings rather than outright contradictions, keeping the score in the 6-8 range.",
+			"Completeness": "The actual output covers the core finding well: visit success dropped from 91.6% to 68.9%, first-attempt success drove the decline, visit volume was stable, both locations and all chargers degraded, AUTH_REJECTED failures with Expired id_tag_status appeared (10 new failures from 7 drivers), and NO_TRANSACTION failures rose sharply (+23). However, the actual output misses several specific elements required by the expected output: it does not mention that the same 7 drivers had successful visits the week of Nov 3 (6 of 7 visited, all 10 visits succeeded), nor that none of their 10 visits in Nov 10 succeeded — this driver-level continuity is central to the expected explanation. The actual output also does not note the stop reason 'DeAuthorized' or that energy never flowed. It also does not explicitly state that no error codes were recorded for NO_TRANSACTION visits and that this makes attribution uncertain (it hints at this but hedges differently). The expected output emphasizes that the equipment didn't change and that the drop is fundamentally a driver-credential issue, while the actual output treats NO_TRANSACTION and AUTH_REJECTED as 'two independent problems' rather than likely the same root cause. These omissions and framing differences represent partial coverage of required elements."
+		},
+		"judge_short": {
+			"Correctness": 0.9,
+			"Completeness": 1.0
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion aligns well with the expected output: success rate fell from 91.6% to 68.9%, AUTH_REJECTED failures with Expired tokens (+10) are correctly identified, NO_TRANSACTION failures rose from 10 to 33, the drop affected both locations and all chargers, and uptime/downtime was not the cause. The key figures match precisely. The actual output correctly notes no error codes were recorded for NO_TRANSACTION failures. One minor divergence: the expected output suggests the NO_TRANSACTION spike is 'likely for the same reason' (expired tokens) as AUTH_REJECTED, while the actual output treats them as potentially independent causes and hedges more broadly (driver abandonment, OCPP Authorize path). This is a slight framing difference but not a contradiction — the expected output also acknowledges the data can't tie NO_TRANSACTION to a driver. No central values, entities, or causes contradict the expected output.",
+			"Completeness": "The actual output covers all key elements of the expected output: the success rate drop from 91.6% to 68.9%, the spread across both locations and all chargers, the stable uptime (CH-002 offline in both weeks), the 10 AUTH_REJECTED failures with Expired id_tag_status, and the NO_TRANSACTION failures rising from 10 to 33. The actual output also correctly notes that NO_TRANSACTION failures carry no error code, matching the expected output's point about no error codes recorded. The actual output goes further with charger-level breakdowns and recommended next steps, but this additional detail does not detract from coverage. All required elements of the expected output are addressed clearly and accurately."
+		}
+	},
+	{
+		"item": "R05",
+		"id": "q030",
+		"arm": "A",
+		"file": "evals_results_20261123_164343.json",
+		"answer_id": "812e3eb0-eb11-4c42-ac49-2b39a308226a",
+		"repetition": 2,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.9,
+			"Completeness": 0.4
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: fewer drivers charged successfully in the week of Nov 10 than Nov 3, with 57 vs 41 unique drivers succeeding. The total visits figures (143 vs 148) are correct. The success rate and successful visits counts are provided and not contradicted by the expected output. However, the actual output omits the key explanatory detail about token expiration and anonymous visits rising from 10 to 33 (all failed), but omissions are not penalized here. No claim in the actual output directly contradicts the expected output. The figures cited (57, 41, 143, 148) all match. The claim about '−29' successful visits (131 vs 102) is not contradicted by the expected output. The response is factually consistent with the expected output on all stated claims.",
+			"Completeness": "The actual output correctly answers the core question (No, fewer drivers charged successfully) and provides the key numbers: 57 unique drivers succeeded in the week of Nov 3 vs. 41 in the week of Nov 10. However, it omits several important elements from the expected output: (1) the explanation that 6 drivers who charged in Nov 3 had every visit in Nov 10 rejected due to expired tokens, (2) the significant rise in anonymous visits from 10 to 33 and the explanation that these likely represent drivers whose tokens were rejected at authorization (leaving no idTag), (3) the nuance that counting anonymous visits as drivers would show active drivers rising from 68 to 82 but this reflects a shift from identified to anonymous visits rather than more people, and (4) the caveat that the number of people behind the 33 anonymous visits cannot be measured but none of them charged. These omissions represent substantial missing context that the expected output considers critical to fully answering the question."
+		},
+		"judge_short": {
+			"Correctness": 0.9,
+			"Completeness": 0.6
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion matches the expected output: fewer drivers charged successfully in the week of Nov 10 (41) versus Nov 3 (57). The core figures of 57 and 41 unique drivers are correct. The actual output does not mention the key explanatory detail about expired tokens causing charge refusals, nor the rise in anonymous visits (10 to 33) and their zero success rate — but omissions are not penalized here. The factual claims made (total visits, successful visits, unique drivers, success rate) do not contradict the expected output. The success rate and visit counts are additional details not contradicted by the expected output. No misleading or contradictory claims are present.",
+			"Completeness": "The actual output correctly answers the core question (No, fewer drivers charged successfully) and provides the exact same figures as the expected output (57 vs 41 unique drivers who succeeded). However, it omits a key explanatory element from the expected output: the reason why fewer drivers succeeded (expired tokens causing charge refusals) and the important caveat about anonymous visits rising from 10 to 33 with none succeeding, and the warning against counting anonymous visits as drivers. These are substantive omissions of required elements that provide critical context for understanding the data."
+		}
+	},
+	{
+		"item": "R06",
+		"id": "q025",
+		"arm": "B",
+		"file": "evals_results_20261123_153302.json",
+		"answer_id": "57f7d7c0-d8bb-4e9c-bdff-18efcad8f593",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.7,
+			"Completeness": 0.7
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion matches: a new location (LOC-002) opened on Oct 20 with two new chargers, explaining the increase in drivers after Oct 19, while Oct 15–19 had zero drivers due to no active chargers. The claim about 20 new drivers is correct. However, the actual output states CH-003 and CH-004 each had visits but doesn't specify the 10/10 split per charger. More importantly, the actual output claims CH-002 'remained commissioned' but went silent, while the expected output implies no charger was available Oct 15–19 (suggesting CH-002 was also effectively unavailable — this aligns). The actual output incorrectly characterizes the pre-gap driver composition, stating '101 anonymous visits alongside only 10 known new drivers' — the expected output says LOC-001 had 10 known drivers with no mention of 101 anonymous drivers in this context, and states 'none of LOC-001's 10 known drivers came to LOC-002.' The 101 anonymous figure is not contradicted by the expected output but the framing is slightly off. The core facts are largely correct with minor discrepancies in detail (missing the 10/10 charger split, and some characterization of the anonymous driver count). Overall the main conclusion and central claims agree well.",
+			"Completeness": "The actual output covers the core explanation well: a new location (LOC-002) opened on Oct 20 with two new chargers (CH-003 and CH-004), the Oct 15–19 period had zero drivers due to no active chargers, and the 20 post-Oct-19 drivers were all new. However, it omits or misrepresents some specific details from the expected output: it does not mention the split of 10 drivers on CH-003 and 10 on CH-004, it does not explicitly state that none of LOC-001's 10 known drivers came to LOC-002, and it conflates 'anonymous visits' with the driver count in a way that diverges from the expected output's cleaner framing. The actual output adds substantial extra detail (tables, step-by-step breakdown) which is not penalized, but the missing specifics about the 10/10 charger split and the explicit non-return of LOC-001's known drivers are notable omissions relative to the expected output."
+		},
+		"judge_short": {
+			"Correctness": 0.9,
+			"Completeness": 1.0
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion matches the expected output: LOC-002 opened on Oct 20, brought 20 new drivers, and none were returning drivers from LOC-001. The core mechanism — new supply bringing new drivers, not returning demand — is correctly identified. The claim about CH-002 going 'silent' is an additional detail not contradicted by the expected output. The framing of the Oct 15–19 gap as a 'network dead zone' is consistent with the expected output's implication. All central values (LOC-002, Oct 20, 20 drivers, all new) align precisely. No claims contradict the expected output.",
+			"Completeness": "The actual output fully covers the core required elements of the expected output: it explains that LOC-002 opened on Oct 20, brought new drivers (20), and that none were returning drivers from LOC-001. It also correctly characterizes the rise as new supply bringing new drivers, not returning demand. The actual output goes into significantly more detail (tables, step-by-step breakdown, CH-001 decommission context), but this additional detail does not detract from coverage. All key points from the expected output are present and clearly stated."
+		}
+	},
+	{
+		"item": "R07",
+		"id": "q030",
+		"arm": "B",
+		"file": "evals_results_20261123_155355.json",
+		"answer_id": "9b06a4fb-3d33-422d-b5d1-3e535f6728c5",
+		"repetition": 2,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.3,
+			"Completeness": 0.3
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees: fewer drivers charged successfully in the week of Nov 10 (41) vs Nov 3 (57), with no anonymous visits succeeding. However, several central claims contradict the expected output. The actual output states 'Successful visits' went from 131 to 102 (a drop of 29), but the expected output says total visits barely moved, going from 143 to 148. This is a significant factual contradiction about visit volume. The actual output claims anonymous visits were '≈0' in both weeks, but the expected output states anonymous visits rose from 10 to 33 — a major discrepancy. The expected output also highlights a key mechanism: 6 drivers had tokens expire causing rejections, and the rise in anonymous visits likely reflects drivers whose tokens were rejected at authorization (leaving no idTag). None of this causal explanation appears in the actual output. The new/returning driver breakdown (40→3 new, 17→38 returning) cannot be verified against the expected output, which doesn't provide this breakdown. The visit count error and the anonymous visit count error are central factual contradictions.",
+			"Completeness": "The actual output correctly answers the core question (no, fewer drivers charged successfully) and provides the same key numbers (57 vs 41 identified drivers). However, it omits several critical elements from the expected output: (1) the explanation about anonymous visits rising from 10 to 33, all failed, likely due to token rejections leaving no idTag; (2) the detail that total visits barely moved (143 to 148); (3) the specific finding that 6 drivers from Nov 3 had every visit in Nov 10 rejected due to expired tokens; (4) the nuance that counting anonymous visits as drivers would show active drivers rising from 68 to 82, and the explanation of why that would be misleading. The actual output instead focuses on new vs. returning driver breakdown and a data history caveat, which are not part of the expected answer. These omissions represent significant gaps in coverage of the required elements, particularly the anonymous visit analysis and the token expiry explanation, which are central to understanding why the count dropped."
+		},
+		"judge_short": {
+			"Correctness": 0.5,
+			"Completeness": 0.4
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion is correct: fewer drivers charged successfully in the week of Nov 10 (41) vs Nov 3 (57), matching the expected output exactly. The core values (57 and 41) are accurate. However, the actual output states 'Anonymous drivers ≈0' for both weeks, which directly contradicts the expected output stating anonymous visits rose from 10 to 33. The expected output also explains that anonymous visits rose but none succeeded, and that counting them would wrongly inflate driver counts — this is a central explanatory claim that the actual output gets wrong by showing ~0 anonymous drivers. The actual output's explanation for the new/returning driver split (data history starting Oct 1) is not contradicted by the expected output, but the anonymous driver figures are a clear factual contradiction of a central claim.",
+			"Completeness": "The actual output correctly answers the core question (No, fewer drivers charged successfully in Nov 10 vs Nov 3) and provides the correct figures (57 vs 41). However, it misses two key elements from the expected output: (1) the explanation that some drivers had charges refused due to expired tokens, and (2) the critical detail about anonymous visits rising from 10 to 33 with none succeeding, and the caveat that counting them would wrongly inflate the driver count. Instead, the actual output states anonymous drivers were '≈0' for both weeks, which directly contradicts the expected output's data. This is a significant omission and factual discrepancy on a required element of the answer."
+		}
+	},
+	{
+		"item": "R08",
+		"id": "q031",
+		"arm": "B",
+		"file": "evals_results_20261123_155716.json",
+		"answer_id": "7e016ce2-fa38-4694-8d03-2b1098cd3992",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.2,
+			"Completeness": 0.2
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion of the actual output directly contradicts the expected output. The actual output concludes 'success rate is trending upward from the Nov 10–16 trough' and frames the situation as a 'partial recovery,' while the expected output explicitly states 'the data can't show a recovery: the week is partial and the failure continues.' The expected output emphasizes that the failure rate (visits without idTag) remains the same share as the prior week (~22%) and three times the week of Nov 3, meaning the underlying problem persists. The actual output never mentions the idTag-less failures or their consistent share, which is central to the expected conclusion. The actual output also mischaracterizes the data cutoff as 'Nov 17–19 (3 days)' when the expected output specifies it ends at noon on Nov 19 (2.5 days). The actual output's framing of improvement as meaningful contradicts the expected output's conclusion that the higher rate rests on too few failed visits to constitute a trend, and that equipment uptime was unchanged. These are not minor discrepancies — the core conclusion is opposite.",
+			"Completeness": "The actual output concludes 'Yes, success rate improved' and frames the situation as a 'partial recovery,' while the expected output explicitly states 'No, the data can't show a recovery' and explains why the improvement is not meaningful. The actual output misses several critical elements required by the expected output: (1) it does not mention that failed visits without an idTag represent 22% of visits, the same share as the prior week and three times the week of Nov 3; (2) it does not analyze the one failed visit by an identified driver (token rejected as Expired/DeAuthorized); (3) it does not explain that the higher rate rests on fewer 'Other' stop-reason failures (0 vs 3) and fewer token rejections (1 vs 10), which on small numbers isn't a trend; (4) it does not mention equipment uptime being unchanged. The actual output reaches the opposite conclusion from the expected output and omits the key analytical reasoning about why the apparent improvement is not a genuine recovery signal."
+		},
+		"judge_short": {
+			"Correctness": 0.2,
+			"Completeness": 0.2
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion directly contradicts the expected output. The actual output concludes 'success rate is trending upward' and calls it a 'partial recovery,' while the expected output explicitly states 'the data can't show a recovery.' The actual output misses the key causal claim that the root cause (failed visits without an idTag at 22% of visits) continues unchanged, which is central to why the expected output rejects the recovery narrative. The actual output also frames the higher success rate as meaningful improvement, whereas the expected output correctly notes it 'rests on 11 failed visits and isn't a trend.' The actual output does acknowledge the partial week, but uses it as a caveat rather than a reason to reject the recovery conclusion entirely. These are not minor discrepancies — the core conclusion and the causal explanation are both wrong relative to the expected output.",
+			"Completeness": "The actual output partially addresses the question but diverges significantly from the expected output in its conclusion and key reasoning. The expected output concludes 'No, recovery cannot be confirmed' and cites two specific reasons: (1) the data ends mid-week (Nov 19 at 12:00), and (2) the root cause persists — failed visits without an idTag remain at 22% of visits, the same as the week of Nov 10. The actual output does note the incomplete week, which is a shared element, but it frames the answer as 'partial recovery' and leans toward 'yes, success rate improved.' Critically, the actual output completely omits the key diagnostic detail about failed visits without an idTag (22% share), which is the core reason the expected output says recovery hasn't occurred. The actual output also does not mention that the higher success rate rests on only 11 failed visits. These omissions represent major gaps in coverage of the required elements of the expected output."
+		}
+	},
+	{
+		"item": "R09",
+		"id": "q029",
+		"arm": "A",
+		"file": "evals_results_20261123_164151.json",
+		"answer_id": "cb5d8eca-099e-4579-a5f1-130804d92e7b",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.5,
+			"Completeness": 0.5
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion of the actual output agrees with the expected output on key metrics: visit success fell from 91.6% to 68.9%, visits were stable (143 vs 148), and failed visits jumped from 12 to 46. The AUTH_REJECTED/Expired token finding is correctly identified and matches the expected output (10 failures, 7 drivers, Expired status, both locations). However, the actual output introduces a significant misleading framing: it treats NO_TRANSACTION as a separate, distinct failure mode and suggests it may be caused by a systemic backend/network issue, whereas the expected output explicitly states these 33 anonymous failed visits (no idTag, no status) cannot be attributed to a specific cause and that expired tokens likely explain most of the 34 extra failures. The actual output's characterization of NO_TRANSACTION as a 'progressive worsening' systemic issue (connectivity, firmware, backend) contradicts the expected output's position that the data cannot distinguish the cause and that expired tokens likely explain most failures. Additionally, the actual output incorrectly labels the failure reason as 'NO_TRANSACTION' and 'AUTH_REJECTED' as if these are data fields, while the expected output describes them differently (no idTag/no status vs. DeAuthorized stop reason). The actual output also misses that stop reason was 'DeAuthorized' for the expired token cases. These are meaningful contradictions in cause attribution for the largest failure group.",
+			"Completeness": "The actual output covers the core finding (visit success dropped 22.7pp, stable visit volume, two failure modes) and correctly identifies AUTH_REJECTED/Expired tokens as a key driver. However, it diverges from the expected output in important ways: (1) It introduces NO_TRANSACTION as a major separate failure mode with equal weight, whereas the expected output treats the 33 anonymous failed visits (no idTag) as likely related to the same expired-token issue but acknowledges they can't be definitively attributed. (2) The expected output explicitly notes that the 7 drivers with expired tokens had all succeeded the prior week (6 of 7 visited, all 10 visits succeeded), a critical piece of evidence the actual output omits entirely. (3) The expected output clarifies that no error codes were recorded and uptime was unchanged, which the actual output does not address. (4) The actual output speculates about connectivity/firmware/backend degradation for NO_TRANSACTION without the expected output's more cautious framing that expired tokens likely explain most failures. The actual output provides good coverage of the structural breakdown but misses key evidentiary details from the expected output and frames the NO_TRANSACTION issue as a separate systemic problem rather than potentially the same credential expiry issue."
+		},
+		"judge_short": {
+			"Correctness": 0.6,
+			"Completeness": 0.6
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion agrees with the expected output on the key metrics (91.6% → 68.9%, +34 failed visits, stable volume). It correctly identifies AUTH_REJECTED with 'Expired' status affecting 10 visits and NO_TRANSACTION rising from 10 to 33. However, the actual output treats NO_TRANSACTION as a separate, uncertain failure mode (possibly connectivity/firmware/backend), whereas the expected output suggests these are 'likely for the same reason' as the expired tokens — i.e., drivers without a valid idTag. This is a meaningful divergence in the causal interpretation of the dominant failure mode. The actual output also correctly notes the spread across all chargers and both locations. The claim about 'no uptime change' is not contradicted. The main discrepancy is that the actual output frames NO_TRANSACTION as a systemic/backend issue requiring further investigation, while the expected output attributes it to the same credential expiry problem, making the actual output's central causal claim partially misleading in context.",
+			"Completeness": "The actual output covers the AUTH_REJECTED/Expired credentials failure mode and the NO_TRANSACTION increase, which aligns with the expected output's core findings. However, the expected output specifically states that uptime didn't change and no attempt recorded an error code, and that the NO_TRANSACTION failures are 'likely for the same reason' as the Expired token rejections — implying a unified root cause of expired credentials. The actual output instead treats NO_TRANSACTION as a separate, unresolved systemic issue (connectivity, firmware, backend) rather than attributing it to the same expired-credential cause. The expected output also notes 'no attempt recorded an error code,' which the actual output does not mention. The actual output provides substantially more detail than required, which is not penalized, but it diverges on the key interpretive conclusion: the expected output points to expired credentials as the likely unified cause, while the actual output leaves NO_TRANSACTION as an open question with a different framing. The core metrics and failure counts are correctly reported, and the AUTH_REJECTED/Expired finding is well-covered."
+		}
+	},
+	{
+		"item": "R10",
+		"id": "q023",
+		"arm": "B",
+		"file": "evals_results_20261123_152411.json",
+		"answer_id": "6a87cbf6-6ef6-453f-8a34-017cd06491b7",
+		"repetition": 1,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.4,
+			"Completeness": 0.6
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: CH-002 went offline (NoHeartbeat) at 07:55 on Oct 15, CH-001 was decommissioned at the same moment, and uptime was 0% from Oct 16–19. However, several central values are wrong. The actual output states network uptime was '0–33%' for Oct 15–19, while the expected output gives a precise aggregate of 12.38% (1,900 of 15,350 commissioned port-minutes). The actual output claims total downtime in the window is 6,725 minutes per port, but the expected output states 13,450 total minutes of downtime. The actual output's uptime table shows Oct 15 at 33% with 1,930 downtime minutes, which is roughly consistent with the expected output's 1,900 uptime minutes on Oct 15, but the framing and aggregate figures diverge significantly. The claim that the pre-period uptime was '100% on Oct 10–14' contradicts the expected output's 98.64% from Oct 1–14. These are central quantitative errors that affect the accuracy of the root-cause analysis, though the qualitative conclusion and mechanism are correct.",
+			"Completeness": "The actual output covers the core elements well: CH-002 going offline (NoHeartbeat) at 07:55 on Oct 15, CH-001 being decommissioned at the same moment, and the resulting 0% uptime on Oct 16–19. However, it omits the specific aggregate uptime figure of 12.38% for the Oct 15–19 period and the baseline comparison of 98.64% from Oct 1–14. It also does not mention the precise commissioned port-minutes figure (15,350 total, 1,900 uptime, 13,450 downtime) that the expected output requires. The actual output uses different per-day breakdowns and approximations (e.g., '33%' for Oct 15, '6,725 minutes per port') rather than the aggregate metrics specified. These omissions of key quantitative elements from the expected output result in a partial but not fully complete answer."
+		},
+		"judge_short": {
+			"Correctness": 0.4,
+			"Completeness": 0.5
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion agrees with the expected output: CH-002 went offline (NoHeartbeat) on Oct 15 and stayed offline, causing low network uptime Oct 15–19, and CH-001's decommissioning removed ports from the count rather than adding downtime. However, several central values are wrong. The actual output states uptime was '0–33%' for Oct 15–19, while the expected output gives 12.38% for that period — a specific figure the actual output never produces. The actual output also states the prior period (Oct 10–14) was 100% uptime, while the expected output references 98.64% from Oct 1–14. The actual output claims Oct 16–19 uptime was 0%, but the expected output implies some uptime existed (12.38% average across Oct 15–19 with Oct 15 being 33% would require non-zero days after). The table showing '0%' for Oct 16–19 contradicts the expected 12.38% average. These are central quantitative errors, not minor ones.",
+			"Completeness": "The actual output covers the core elements of the expected output: CH-002 going offline (NoHeartbeat) on Oct 15, staying offline through the period, and CH-001's decommissioning on Oct 15 removing ports from the commissioned count rather than adding downtime. However, there are notable discrepancies. The expected output states network uptime was 12.38% from Oct 15–19 and 98.64% from Oct 1–14, while the actual output reports 0–33% uptime and 100% uptime for Oct 10–14 — these figures conflict materially. The actual output also states Oct 16–19 uptime was 0%, whereas the expected output implies some uptime existed (12.38% average across the full Oct 15–19 window). The actual output does correctly identify CH-002's NoHeartbeat outage, CH-001's decommissioning effect, and the commissioned fleet context, which are key required elements. The discrepancy in the specific uptime percentages (a core required element) is a significant shortcoming, though the qualitative explanation aligns reasonably well with the expected output."
+		}
+	},
+	{
+		"item": "R11",
+		"id": "q026",
+		"arm": "A",
+		"file": "evals_results_20261123_162749.json",
+		"answer_id": "a9f0adeb-7dd1-4990-b74f-9ff07688c0a5",
+		"repetition": 1,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.7,
+			"Completeness": 0.4
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: the jump after Oct 19 is explained by CH-003 and CH-004 being commissioned at LOC-002 on Oct 20, 2025. However, several central claims contradict the expected output. The actual output states the active charger count went from 1 to 3 on Oct 20, but the expected output clarifies there were 3 chargers (CH-002, CH-003, CH-004) — CH-002 still counts as commissioned even though it was offline, which the actual output implicitly handles correctly by showing 3. The actual output's timeline shows CH-002 commissioned Sep 15 and CH-001 commissioned Oct 1, but the expected output implies CH-002 was the sole commissioned charger from Oct 16-19 (after CH-001 decommissioned Oct 15), which aligns. However, the actual output omits the port count (2 ports each, 6 total), the commissioned port-minutes detail (rising from 2,880 to 8,640/day, with 6,720 on Oct 20 due to 08:00 start), and the nuance that CH-002 was offline but still counted as commissioned. The actual output also incorrectly implies CH-001 was commissioned before CH-002 (Oct 1 vs Sep 15), whereas the expected output suggests CH-002 was commissioned first — this matches the actual output's own table. The omission of port-minutes and the 08:00 commissioning time are omissions (not penalized), but the claim that the jump is 'entirely explained' without mentioning CH-002's offline status is slightly misleading. Overall, the main conclusion is correct with minor missing nuances.",
+			"Completeness": "The actual output correctly identifies the core reason (LOC-002 commissioned on Oct 20 with CH-003 and CH-004) and provides accurate timeline context including CH-001 decommissioning. However, it omits several required elements from the expected output: the specific commissioning time (08:00), the port count (2 ports each, 6 total), the commissioned port-minutes calculation (2,880/day before, 8,640/day after, 6,720 on Oct 20 due to 08:00 start), the note that the data records commissioning not the reason for it, and the clarification that CH-002 still counts as commissioned even though it was offline. These are meaningful omissions of quantitative and contextual details explicitly required by the expected output."
+		},
+		"judge_short": {
+			"Correctness": 0.7,
+			"Completeness": 0.7
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion agrees with the expected output: the jump after Oct 19 is explained by LOC-002 being commissioned on Oct 20, 2025, with two chargers CH-003 and CH-004. However, the actual output contains one notable contradiction: it states the active charger count before Oct 20 was 1 (only CH-002 active), which aligns with the expected output's mention of CH-002 being the one commissioned charger. But the actual output's timeline shows CH-001 was commissioned on Oct 1 and decommissioned on Oct 15, leaving 1 active — this is consistent. The key minor issue is that the expected output notes CH-002 'counts although it was offline,' implying offline chargers still count as commissioned, a nuance the actual output misses by framing it purely as 'active chargers.' The actual output also does not mention the port count (2 ports each for CH-003 and CH-004), which is an omission not penalized here. The claim about CH-001 being commissioned Oct 1 and decommissioned Oct 15 is neither supported nor contradicted by the expected output. Overall, the main conclusion and central claims are correct with minor contextual differences.",
+			"Completeness": "The actual output correctly identifies the core reason: LOC-002 was commissioned on Oct 20, 2025, with CH-003 and CH-004 being commissioned simultaneously, increasing active chargers from 1 to 3. This aligns well with the expected output's key elements. However, the actual output misses one nuance from the expected output: that CH-002 'counts although it was offline' — i.e., the expected output clarifies that decommissioned/offline chargers still count in the tally, which is an important detail about how the data is recorded. The actual output also does not mention that the data records the commissioning event, not the reason for it. These are minor omissions but represent specific required elements of the expected output."
+		}
+	},
+	{
+		"item": "R12",
+		"id": "q024",
+		"arm": "B",
+		"file": "evals_results_20261123_152857.json",
+		"answer_id": "d74317fb-051f-4672-bd42-af85b1b4e954",
+		"repetition": 1,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.6,
+			"Completeness": 0.3
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion aligns with the expected output: the improvement in successful visits is due to LOC-002's new chargers (CH-003 and CH-004) coming online on Oct 20, not a fix to the existing failing charger. The actual output correctly identifies the Oct 15–19 gap with no successful visits, CH-001's decommissioning, CH-002's failure state, and LOC-002 opening on Oct 20. However, several specific claims in the expected output are absent or contradicted: the actual output does not mention CH-002 being 'offline' (it says CH-002 was 'still active' but broken/faulted, which is a meaningful distinction), does not mention the 99.69% uptime figure for LOC-002 chargers, does not mention that there were exactly 38 successful visits (19 per charger), and does not mention that all 20 drivers were new or that every visit succeeded on the first attempt. The claim that CH-002 was 'still active' while the expected output says it was 'offline' is a minor factual tension. The core narrative matches well, but several central quantitative and qualitative details from the expected output are missing or slightly mischaracterized.",
+			"Completeness": "The actual output correctly identifies that CH-001 was decommissioned, that Oct 15–19 had no successful visits, and that LOC-002 opened on Oct 20 with CH-003 and CH-004. However, it misses several required elements from the expected output: it does not mention the 99.69% uptime figure for LOC-002 chargers, does not state that there were exactly 38 successful visits in the week of Oct 20, does not note that each charger (CH-003 and CH-004) had 19 successful visits, does not mention that every visit succeeded on the first attempt, and does not mention that all 20 drivers were new. The core causal narrative is partially correct but the specific quantitative details and driver-level facts required by the expected output are entirely absent."
+		},
+		"judge_short": {
+			"Correctness": 0.9,
+			"Completeness": 0.9
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion aligns well with the expected output: the improvement is due to new supply (LOC-002 opening with CH-003 and CH-004 on Oct 20), not LOC-001 recovering. It correctly identifies the Oct 15–19 gap with no successful visits, and that LOC-002 is entirely new infrastructure. The claim about '38 successful visits in the week of Oct 20' is not contradicted — the actual output states 4.0 successful visits/day average for Oct 20–31, which is consistent. The actual output adds detail about CH-001 decommissioning and CH-002's fault state, which the expected output neither supports nor contradicts, so these are not penalized. No central claims contradict the expected output, and the framing as 'location substitution effect, not reliability improvement' matches the expected conclusion precisely.",
+			"Completeness": "The actual output covers all required elements of the expected output: it explains that LOC-002 opened on Oct 20 with CH-003 and CH-004, that there were no successful visits Oct 15–19 due to LOC-001 having no working charger, and that the improvement is due to new supply (location substitution), not LOC-001 recovering. The core answer matches the expected output's key points — new location opened, not a fix to the old one. The actual output provides significantly more detail (tables, decomposition, charger-level data) but does not omit any required element. All critical facts from the expected output are present."
+		}
+	},
+	{
+		"item": "R13",
+		"id": "q022",
+		"arm": "A",
+		"file": "evals_results_20261123_161355.json",
+		"answer_id": "c9f20b05-a098-48d1-89b9-fd636f493b67",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.8,
+			"Completeness": 0.7
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: the gap is explained by CH-001 being decommissioned and CH-002 going offline simultaneously at 07:55 on Oct 15, leaving zero available chargers. The actual output correctly identifies the decommissioning of CH-001, the OFFLINE status of CH-002, and the commissioning of CH-003/CH-004 on Oct 20. However, the actual output states CH-002 'lost heartbeat' and had a 'full outage' but does not explicitly note it stayed OFFLINE for the rest of the period (NoHeartbeat). More importantly, the actual output claims 'zero visits is correct — not a data gap,' which is accurate, but it omits the nuance that drivers who came while CH-002 was offline leave no record, making demand unmeasurable — though omissions are not penalized here. The claim that 'Oct 10–14: CH-001 and CH-002 together served ~10 visits/day' is not contradicted by the expected output. The statement that the last visit ended on Oct 14 at 20:38 is absent but not contradicted. No claims directly contradict the expected output; the core facts align well with only minor differences in framing.",
+			"Completeness": "The actual output covers the core explanation well: CH-001 was decommissioned on Oct 15 at 07:55, CH-002 went offline at the same time, and CH-003/CH-004 didn't come online until Oct 20, leaving zero chargers available. However, it omits two specific details from the expected output: (1) the exact timestamp of the last visit (Oct 14 at 20:38), and (2) the important caveat that drivers who arrived during the outage leave no record, meaning demand during those days cannot be measured. The actual output also adds useful detail (table, timeline) that is not penalized. The missing demand-invisibility caveat is a meaningful omission since it addresses a key analytical limitation, but the primary causal explanation is well covered."
+		},
+		"judge_short": {
+			"Correctness": 0.7,
+			"Completeness": 0.8
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion agrees with the expected output: the gap is explained by CH-001 being decommissioned and CH-002 going offline simultaneously on Oct 15, leaving zero available chargers. The actual output correctly identifies the decommissioning of CH-001 and the offline status of CH-002 due to lost heartbeat. However, the actual output states the gap covers Oct 15–19 with zero chargers, while the expected output specifies uptime was 0% from Oct 16 to Oct 19 (implying Oct 15 may have had some partial uptime before 07:55). Additionally, the expected output notes that drivers who came during the offline period leave no record, meaning demand cannot be measured — this important nuance about unmeasurable latent demand is absent from the actual output, though omissions are not penalized here. The actual output also adds details about CH-003 through CH-006 commissioning dates, which are not contradicted by the expected output. The minor discrepancy is the framing of the gap as Oct 15–19 vs. Oct 16–19 for the 0% uptime period, which is a small but notable difference in the timeline claim.",
+			"Completeness": "The actual output covers all the key elements of the expected output: CH-001 was decommissioned on Oct 15, CH-002 went offline (NoHeartbeat/lost heartbeat) at the same time, and no chargers were available from Oct 15–19. It also correctly notes that CH-003 and CH-004 came online Oct 20. The one element from the expected output not explicitly addressed is the point about drivers who came during the offline period leaving no record, meaning demand can't be measured — this nuance about unmeasurable demand is absent. However, the core explanation is fully and accurately covered with additional helpful detail (table, timeline, other chargers). The omission of the demand-measurement caveat is minor but notable."
+		}
+	},
+	{
+		"item": "R14",
+		"id": "q027",
+		"arm": "A",
+		"file": "evals_results_20261123_163306.json",
+		"answer_id": "b5d7789c-5a20-4fbc-a679-5003c2f9e455",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.6,
+			"Completeness": 0.4
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: the drop is demand-side, not a reliability or hardware problem, and visits fell from 38 to 12 at LOC-002 with 100% success rates and negligible downtime. However, several central claims from the expected output are absent or contradicted. The actual output does not mention active drivers falling from 20 to 8, nor the per-driver visit frequency breakdown (1.9 vs 1.5 visits/driver), nor the attribution split (~80% from fewer drivers, ~20% from fewer visits per driver), nor the specific finding that 12 of 20 drivers didn't return. The actual output also states uptime was better (less downtime) which is consistent but frames it differently. The claim that 'both chargers went 19→6' is slightly inconsistent with the expected total of 38→12 (19+19=38, 6+6=12, so this checks out). The main gap is the absence of the driver-level decomposition, which is a central analytical finding in the expected output, not merely a supporting detail. This constitutes missing central claims rather than contradictions, but the rubric penalizes wrong or misleading central claims — the actual output's framing is not wrong, just incomplete on key mechanisms.",
+			"Completeness": "The actual output correctly identifies the core finding — a demand-side reduction rather than a reliability/hardware problem — and provides the visit drop from 38 to 12 (68%), 100% success rate, and minimal downtime. However, it omits several key required elements from the expected output: (1) the active driver count drop from 20 to 8, (2) the per-driver visit frequency comparison (1.9 vs 1.5 visits per driver), (3) the breakdown of how much of the drop is attributable to fewer drivers (~80%) vs. fewer visits per driver, and (4) the specific detail that 12 of the 20 drivers from the prior week did not return. These are concrete, quantified insights that the expected output requires and the actual output entirely misses, replacing them with a more general symmetry-based analysis."
+		},
+		"judge_short": {
+			"Correctness": 0.9,
+			"Completeness": 0.8
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion matches the expected output: the drop is demand-side (fewer drivers), not a reliability problem. The visit counts (38 to 12) and 100% success rate align with the expected output. The claim about uptime is consistent (expected output says >99.6%, actual output notes only 40 min downtime which is negligible). One minor discrepancy: the actual output does not mention the active driver count falling from 20 to 8, but omissions are not penalized here. The actual output's claims do not contradict the expected output. The 68% drop calculation is consistent with 38→12. No misleading or contradictory factual claims are present.",
+			"Completeness": "The actual output covers all required elements from the expected output: the visit drop from 38 to 12, the 100% success rate (no reliability problem), the uptime/downtime being negligible, and the conclusion that it is a demand-side issue with unknown root cause. The actual output goes into more detail (per-charger breakdown, per-day analysis, symmetric drop pattern) but does not omit any required element. The one minor gap is that the expected output mentions 'active drivers fell from 20 to 8,' which the actual output does not explicitly state — it references the symmetric charger split but not the distinct driver count. Overall coverage is strong with only this one specific metric missing."
+		}
+	},
+	{
+		"item": "R15",
+		"id": "q028",
+		"arm": "B",
+		"file": "evals_results_20261123_154445.json",
+		"answer_id": "90523042-9ee2-4f4b-b276-61cab105b9e0",
+		"repetition": 2,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.9,
+			"Completeness": 1.0
+		},
+		"reasons_long": {
+			"Correctness": "The actual output's main conclusion matches the expected output: the two weeks cover different sites, so the data cannot show whether LOC-001's demand recovered. Key claims align well — CH-001 decommissioned Oct 15, LOC-001 had no visits after Oct 14, LOC-002 commissioned Oct 20, 38 visits all at LOC-002, 20 all-new drivers, none of LOC-001's known drivers appearing at LOC-002. One minor discrepancy: the actual output states CH-002 'stayed offline' is not explicitly mentioned (the actual output says CH-002 was commissioned Sep 15 and served LOC-001, but doesn't clearly state it stayed offline after Oct 15, which is a slight omission rather than a contradiction). The actual output adds a claim that CH-002 served LOC-001 during the Oct 6 week, which the expected output neither supports nor contradicts, so no penalty. Overall the central facts and conclusion are accurate and non-misleading.",
+			"Completeness": "The actual output covers all key elements of the expected output: it explains that the two weeks cover different sites (LOC-001 vs LOC-002), notes CH-001 was decommissioned on Oct 15 leaving LOC-001 with no usable ports, confirms all 38 Oct 20 visits were at the new LOC-002 site commissioned that day, mentions the 20 all-new drivers with none of LOC-001's known drivers returning, and concludes that the week of Oct 20 represents new demand at a new location rather than recovered demand. The actual output goes further with a detailed table and additional context, but none of the required elements are omitted or deflected. The conclusion directly answers the question as asked."
+		},
+		"judge_short": {
+			"Correctness": 1.0,
+			"Completeness": 1.0
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion matches the expected output precisely: the two weeks cover different sites, so the comparison is not apples-to-apples and does not show demand recovery. The actual output correctly identifies that the week of Oct 20 covers LOC-002 (a new location that opened that day), that all drivers were new, and that LOC-001 had no working charger after Oct 14 (decommissioned Oct 15), leaving no record of its demand. All central claims align with the expected output. The additional detail about CH-001 being commissioned Oct 1, CH-002 on Sep 15, and CH-003/CH-004 on Oct 20 are not contradicted by the expected output. The anonymous driver statistics and visits-per-day figures are supplementary and not contradicted. No claim in the actual output contradicts the expected output, and none is misleading in context.",
+			"Completeness": "The actual output fully addresses the core question and covers all required elements from the expected output: it explains that the two weeks cover different sites (LOC-001 vs LOC-002), that LOC-002 opened on Oct 20 with all-new drivers, that LOC-001 had no working charger after Oct 14/15, and that the 38 visits in Oct 20 represent new demand at a new location rather than recovered demand. The conclusion explicitly states 'Demand did not simply recover' and explains why the comparison is not apples-to-apples. The actual output goes further with detailed tables and citations, but the essential reasoning matches the expected output completely."
+		}
+	},
+	{
+		"item": "R16",
+		"id": "q026",
+		"arm": "B",
+		"file": "evals_results_20261123_153521.json",
+		"answer_id": "45b0f45c-dffb-4d81-b78a-fbd4cacfbf76",
+		"repetition": 1,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.7,
+			"Completeness": 0.4
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: the increase after Oct 19 is caused by CH-003 and CH-004 being commissioned at LOC-002 on Oct 20, 2025. The core causal claim is correct. However, several specific claims contradict the expected output: (1) The actual output states the network went from 1 active charger to 3, which aligns, but omits the port-level detail (2 ports each, 6 total ports). (2) The actual output implies CH-002 was the only active charger before Oct 20 (count of 1), which matches. (3) The actual output does not mention the commissioned port-minutes rising from 2,880 to 8,640 per day, but omissions are not penalized. (4) The actual output states Nov 3 brought the count to 5 chargers with CH-005 and CH-006 at LOC-003, which the expected output neither supports nor contradicts explicitly, so no penalty. (5) The actual output does not mention that Oct 20 commissioning started at 08:00, causing a partial-day effect (6,720 port-minutes vs 8,640), but this is an omission. (6) The actual output does not note that CH-002 was offline despite being commissioned — a nuance the expected output flags. No claims directly contradict the expected output on the central facts, though the port-count detail and partial-day nuance are missing. The response is largely accurate with minor omissions and no contradictions.",
+			"Completeness": "The actual output correctly identifies the core reason (LOC-002 commissioned on Oct 20 with CH-003 and CH-004) and provides a useful timeline table. However, it omits several required elements from the expected output: (1) no mention of ports (2 ports each, 6 total ports after Oct 20), (2) no mention of commissioned port-minutes (2,880/day before, 8,640/day after, 6,720 on Oct 20 due to 08:00 start), (3) no clarification that CH-002 still counts as commissioned even though it was offline, and (4) no explicit note that the data records commissioning events, not the reasons behind them. These are specific quantitative and contextual details required by the expected output that are entirely absent from the actual response."
+		},
+		"judge_short": {
+			"Correctness": 0.7,
+			"Completeness": 0.7
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion agrees with the expected output: the increase after Oct 19 is caused by LOC-002 being commissioned on Oct 20, 2025, with CH-003 and CH-004. The actual output correctly identifies the date, location, and chargers involved. However, the actual output states the network went from 1 active charger to 3, while the expected output clarifies it went from 1 commissioned charger (CH-002, which counts even though offline) to 3. The actual output's framing of '1 active charger' could be misleading since CH-002 was offline but still counted. Additionally, the expected output mentions each charger has 2 ports, which the actual output omits (but omissions are not penalized). The claim about CH-001 being decommissioned on Oct 15 is not contradicted by the expected output. The minor misleading element is the characterization of the pre-Oct 20 state as '1 active charger' when the expected output emphasizes CH-002 counted despite being offline, which is a contextually meaningful distinction.",
+			"Completeness": "The actual output correctly identifies the core reason: LOC-002 was commissioned on Oct 20, 2025 with CH-003 and CH-004, causing the jump from 1 to 3 active chargers. This aligns with the expected output's key elements. However, the actual output misses one nuance from the expected output: that CH-002 'counts although it was offline' — i.e., the expected output clarifies that commissioning is recorded regardless of online status, and that CH-002 was the sole commissioned charger before Oct 20 despite being offline. The actual output does not mention CH-002's offline status or the distinction between commissioning records and operational status. Otherwise, the coverage is strong and the main causal explanation is fully addressed."
+		}
+	},
+	{
+		"item": "R17",
+		"id": "q022",
+		"arm": "B",
+		"file": "evals_results_20261123_151949.json",
+		"answer_id": "3f101883-494a-4b17-a9e8-a8700aee3484",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.6,
+			"Completeness": 0.7
+		},
+		"reasons_long": {
+			"Correctness": "The actual output's main conclusion matches the expected output: the Oct 15–19 gap is due to CH-001 being decommissioned and CH-002 going offline simultaneously at 07:55 on Oct 15, leaving no operational chargers. The key facts align — CH-001 decommissioned at Oct 15 07:55, CH-002 going OFFLINE (NoHeartbeat) at the same time, and visits resuming Oct 20 with new chargers CH-003 and CH-004. However, the actual output states 'there were genuinely zero visits' and calls it a 'real zero,' while the expected output clarifies that drivers who came while CH-002 was offline leave no record, meaning demand can't be measured — this is a meaningful distinction the actual output contradicts by asserting the zero is real rather than a measurement gap. This is a minor but contextually important misleading claim. The actual output also does not mention the last visit ending Oct 14 at 20:38, but omissions are not penalized. Overall, the central claims agree with one misleading assertion about the nature of the zero.",
+			"Completeness": "The actual output covers the core required elements well: CH-001 decommissioned on Oct 15 at 07:55, CH-002 going OFFLINE (NoHeartbeat) at the same time, and the resulting zero visits. It also correctly notes that CH-003 and CH-004 came online Oct 20, explaining the recovery. However, it omits two specific details from the expected output: (1) the last visit ending on Oct 14 at 20:38, and (2) the important caveat that drivers who came while CH-002 was offline leave no record, so demand during those days cannot be measured. These are meaningful omissions — the demand-invisibility point is a distinct analytical insight required by the expected output. The rest of the coverage is strong and accurate."
+		},
+		"judge_short": {
+			"Correctness": 0.7,
+			"Completeness": 0.8
+		},
+		"reasons_short": {
+			"Correctness": "The actual output's main conclusion matches the expected output: the Oct 15–19 gap is explained by CH-001 being decommissioned and CH-002 going offline (NoHeartbeat) simultaneously on Oct 15, leaving zero operational chargers. The claim that CH-003 and CH-004 came online Oct 20 restoring service is consistent with the expected output. One minor issue: the actual output states 'there were genuinely zero visits' and frames it as 'no data is missing,' whereas the expected output notes that drivers who came while chargers were offline leave no record, meaning demand can't be measured — implying visits may have occurred but weren't recorded. This is a subtle but meaningful distinction: the actual output treats the zero as a true zero rather than an unmeasurable gap, which slightly contradicts the expected output's framing. Otherwise, the central claims about CH-001 decommissioning, CH-002 going offline, and the Oct 20 recovery are all accurate.",
+			"Completeness": "The actual output covers all key elements of the expected output: CH-001 was decommissioned on Oct 15, CH-002 went offline (NoHeartbeat) at the same time, and the result was zero operational chargers from Oct 15–19. It also correctly identifies that new chargers (CH-003/CH-004) came online Oct 20, explaining the resumption of visits. The only element from the expected output not explicitly addressed is the note that 'drivers who came while it was offline leave no record, so demand in those days can't be measured' — the actual output states the zero is real and not missing data, which partially covers this point but doesn't explicitly mention unmeasurable demand. Overall coverage is strong with only a minor omission."
+		}
+	},
+	{
+		"item": "R18",
+		"id": "q031",
+		"arm": "A",
+		"file": "evals_results_20261123_164715.json",
+		"answer_id": "b3403c11-a249-45b2-8d29-694f9075fc58",
+		"repetition": 2,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.1,
+			"Completeness": 0.2
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion directly contradicts the expected output. The actual output concludes 'Yes — the available data shows a recovery,' while the expected output concludes 'No, the data can't show a recovery.' This is a fundamental disagreement on the central question. Additionally, several specific claims conflict: the actual output says the data covers 3 days (Nov 17–19), while the expected output specifies 2.5 days (ending Nov 19 at 12:00). The actual output attributes improvement to LOC-002's AUTH_REJECTED failures 'nearly disappearing' and frames this as a meaningful recovery signal, while the expected output explains that the lower failure count (1 token rejection vs. 10, and no 'Other' stops) on such small numbers isn't a trend. The actual output also does not mention that the NO_TRANSACTION/unidentified driver failure rate (22%) is the same as the prior week and three times the week of Nov 3, which is central to the expected output's conclusion. The actual output's framing of LOC-003 deterioration and LOC-002 recovery as directional findings contradicts the expected output's position that the partial data cannot support recovery conclusions.",
+			"Completeness": "The actual output concludes 'Yes — the available data shows a recovery' while the expected output concludes 'No, the data can't show a recovery.' This is a fundamental directional disagreement. The expected output emphasizes that the partial week (2.5 days, not 3), the persistence of NO_TRANSACTION failures at the same share (~22%), the token rejection pattern, and the unchanged equipment uptime all indicate the failure continues rather than recovering. The actual output misses several key required elements: it does not mention that NO_TRANSACTION failures represent the same share of visits as the prior week (~22%), it does not compare to the week of Nov 3 as a baseline (three times the failure rate), it does not note the equipment uptime was unchanged, and it incorrectly frames the partial data as supporting recovery rather than being inconclusive. The actual output does correctly note the partial week caveat and the LOC-002 vs LOC-003 breakdown, but the core conclusion and several critical analytical points required by the expected output are absent or contradicted."
+		},
+		"judge_short": {
+			"Correctness": 0.1,
+			"Completeness": 0.1
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion directly contradicts the expected output. The actual output concludes 'Yes — the available data shows a recovery' driven by LOC-002's improvement, while the expected output concludes 'No, the data can't show a recovery.' The expected output specifically states the cause of the drop continues (failed visits without an idTag remain at 22% of visits), and that the higher success rate rests on only 11 failed visits and isn't a trend. The actual output misidentifies AUTH_REJECTED as the key failure mechanism rather than the no-idTag pattern, and frames the partial data as showing a 'clear recovery signal' rather than being insufficient to draw conclusions. This is a fundamental disagreement on the main conclusion, not merely a difference in framing.",
+			"Completeness": "The actual output reaches the opposite conclusion from the expected output. The expected output states 'No, the data can't show a recovery' and highlights that the cause of the drop continues (failed visits without an idTag remain at 22%), while the actual output concludes 'Yes — the available data shows a recovery.' The actual output does acknowledge the partial week caveat, but it frames the higher success rate as a genuine recovery signal rather than an insufficient basis for conclusion. The expected output's key finding — that the failure cause persists at the same rate — is not addressed in the actual output. Instead, the actual output focuses on AUTH_REJECTED failures and location-level breakdowns, missing the core analytical point about idTag-less failed visits remaining constant. The fundamental answer to the question is inverted."
+		}
+	},
+	{
+		"item": "R19",
+		"id": "q023",
+		"arm": "A",
+		"file": "evals_results_20261123_161859.json",
+		"answer_id": "0ccd83d1-d7fa-4503-871b-ec70dbb0c568",
+		"repetition": 3,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.7,
+			"Completeness": 0.7
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees with the expected output: CH-002 went OFFLINE at 07:55 on Oct 15 due to NoHeartbeat, CH-001 was decommissioned at the same moment, CH-002 was the sole commissioned charger, and uptime was 0% Oct 16–19. However, the actual output states Oct 15 uptime was 33% with 965 minutes of downtime per port, while the expected output gives total commissioned port-minutes of 15,350 and uptime of 1,900 port-minutes (12.38% overall). The Oct 15 figure of 475 uptime minutes × 2 ports = 950 port-minutes, which is close to but not exactly matching the expected 1,900 total uptime minutes (which would be 475 × 2 = 950 for Oct 15 alone — this actually does match if the rest of the days contribute 0). The overall 12.38% figure is not stated in the actual output. The actual output also does not mention the 98.64% uptime from Oct 1–14 or the total 15,350 commissioned port-minutes figure. More critically, the actual output claims 965 minutes of downtime on Oct 15 (1440 - 475 = 965), which implies 475 uptime minutes × 2 ports = 950 uptime port-minutes, consistent with the expected 1,900 total — wait, 950 ≠ 1,900. The expected output says 1,900 of 15,350 port-minutes, meaning 1,900 uptime port-minutes total. If Oct 15 had 475 min × 2 ports = 950, that's only 950, not 1,900. This is a discrepancy. However, CH-001 may have contributed uptime minutes before decommissioning (07:55 = 475 min × 2 ports from CH-001 = 950 more), totaling 1,900. The actual output omits CH-001's uptime contribution and mischaracterizes the overall network uptime calculation. These are minor but notable inaccuracies in the uptime breakdown.",
+			"Completeness": "The actual output correctly identifies the root cause (CH-002 going OFFLINE at 07:55 on Oct 15 due to NoHeartbeat), explains the network topology context, provides per-day uptime breakdowns, and notes CH-001's decommissioning at the same timestamp. However, it omits the specific overall network uptime figure of 12.38% (1,900 of 15,350 commissioned port-minutes) and the baseline comparison of 98.64% from Oct 1–Oct 14, which are key quantitative elements of the expected output. The actual output also slightly misframes CH-001's decommissioning — the expected output clarifies that decommissioning removes ports from commissioned minutes rather than adding downtime, a nuance the actual output does not explicitly address. Despite these omissions, the core explanation is well-covered and accurate."
+		},
+		"judge_short": {
+			"Correctness": 0.6,
+			"Completeness": 0.5
+		},
+		"reasons_short": {
+			"Correctness": "The main conclusion agrees with the expected output: CH-002 went offline (NoHeartbeat) on Oct 15 and stayed offline, and this is the root cause of low uptime. The actual output correctly identifies CH-002 as the sole commissioned charger and explains the topology. However, there are notable discrepancies: (1) The actual output states the network uptime was 33% on Oct 15, but the expected output gives an overall figure of 12.38% for Oct 15–19, suggesting the per-day breakdown may be inconsistent with the aggregate. (2) The actual output claims Oct 15 had 965 minutes of downtime (implying 475 minutes of uptime before 07:55), which is plausible, but the overall 12.38% figure from the expected output doesn't align cleanly with the breakdown presented. (3) The actual output says 'CH-001 was decommissioned at 07:55 on Oct 15' and implies this contributed to the impact, but the expected output explicitly clarifies that CH-001's decommissioning added no downtime — it only removed ports from the count. The actual output's framing that CH-001's decommissioning made the impact 'catastrophic' is somewhat misleading in context. (4) The actual output states CH-002 was the only commissioned charger from Oct 15, but the expected output specifies this is true from Oct 16 onward (on Oct 15, CH-001 was still part of the count until decommissioned). These are minor but meaningful inaccuracies in central claims.",
+			"Completeness": "The actual output correctly identifies CH-002's OFFLINE/NoHeartbeat failure starting Oct 15 as the root cause, and explains that CH-002 was the sole commissioned charger during the period. However, it omits the specific overall network uptime figure of 12.38% for Oct 15–19 and the comparison baseline of 98.64% from Oct 1–14, both of which are required elements of the expected output. The actual output also incorrectly implies CH-001's decommissioning contributed to the impact (framing it as 'catastrophic' partly due to CH-001 being gone), whereas the expected output clarifies that CH-001's decommissioning added no downtime — it simply removed ports from the count. These are meaningful omissions and a partial mischaracterization of the CH-001 decommissioning effect."
+		}
+	},
+	{
+		"item": "R20",
+		"id": "q025",
+		"arm": "A",
+		"file": "evals_results_20261123_162608.json",
+		"answer_id": "2bcec12f-0a9d-45e6-acc6-e5d302dcd0bb",
+		"repetition": 1,
+		"arm_hint_in_text": false,
+		"judge_long": {
+			"Correctness": 0.4,
+			"Completeness": 0.4
+		},
+		"reasons_long": {
+			"Correctness": "The main conclusion agrees: the rise in unique drivers is explained by a new location (LOC-002) opening on Oct 20, not organic growth. The actual output correctly identifies the commissioning of CH-003 and CH-004 at LOC-002 on Oct 20, the gap Oct 15–19 with zero visits, and that LOC-002 had 20 unique drivers all authenticated. However, several central claims contradict the expected output: (1) The actual output claims LOC-001 had 101 unauthenticated visits out of 139 total, and attributes the low unique-driver count at LOC-001 to anonymity — but the expected output states there were no anonymous visits after Oct 20 and implies the 10 known drivers from LOC-001 simply didn't return to LOC-002. The expected output does not mention unauthenticated visits as a key factor at all; the 20 new drivers at LOC-002 are described as entirely new, not as previously anonymous users. (2) The actual output's framing that unauthenticated visits 'suppressed' the unique-driver count at LOC-001 is misleading in context — the expected output's explanation is that new supply brought new drivers, not that authentication rates changed the count. (3) The claim that 'visits/day fell from 9.9 to 5.0' is a minor additional claim not contradicted by the expected output. The core mechanism described (authentication rate difference) is not supported by the expected output and is potentially misleading.",
+			"Completeness": "The actual output correctly identifies the core reason (a new location came online) and mentions LOC-002 being commissioned on Oct 20 with CH-003 and CH-004. However, it misses several key elements from the expected output: it does not state that the 20 drivers were all new (first-time) drivers, does not mention that none of LOC-001's 10 known drivers came to LOC-002, and does not clearly articulate that the rise comes from new supply bringing entirely new drivers rather than returning demand. Instead, the actual output introduces a lengthy and somewhat misleading comparison about unauthenticated visits (Oct 1–14 vs Oct 20–27) that is not part of the expected answer and conflates the question about Oct 15–19 vs after Oct 19. The expected output is focused and specific: zero chargers available Oct 15–19, 20 new drivers split evenly across CH-003 and CH-004, no returning drivers from LOC-001, no anonymous visits. These specific details are largely absent or obscured in the actual output."
+		},
+		"judge_short": {
+			"Correctness": 0.5,
+			"Completeness": 0.6
+		},
+		"reasons_short": {
+			"Correctness": "The actual output correctly identifies that a new location (LOC-002) opened on Oct 20 as the root cause of the increase in unique drivers, which aligns with the expected output's main conclusion. However, the actual output introduces a misleading central claim: it attributes the higher unique driver count primarily to LOC-001 having unauthenticated visits that suppressed its count, rather than the expected output's explanation that LOC-002 brought entirely new drivers (none of LOC-001's known drivers charged at LOC-002). The actual output never mentions that the 20 drivers at LOC-002 were all new and distinct from LOC-001's driver base, which is the key mechanism in the expected output. Instead, it frames the difference as an authentication artifact, which is misleading in context — it implies the driver populations might overlap and the count difference is a measurement issue, rather than genuinely new drivers arriving with new supply. This is a central causal claim that contradicts the spirit of the expected output.",
+			"Completeness": "The actual output correctly identifies that a new location (LOC-002) opened on Oct 20 as the primary reason for more drivers after Oct 19, which aligns with the expected output's core answer. However, the expected output specifically emphasizes that none of LOC-001's known drivers charged at LOC-002 (i.e., all 20 drivers were entirely new), framing the rise as 'new supply bringing new drivers, not returning demand.' The actual output does not explicitly address this point about driver overlap — it never states that none of the previous LOC-001 drivers appeared at LOC-002. Instead, it focuses on authentication rates as the explanation, which is additional detail not required. The omission of the 'no overlap between driver populations' element is a notable gap relative to the expected output."
+		}
+	}
+]
